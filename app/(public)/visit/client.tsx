@@ -37,11 +37,27 @@ function todayISO() {
   return d.toISOString().slice(0, 10);
 }
 
-export default function VisitPage() {
+interface VisitPageProps {
+  cmsHero?: { headline?: string; subheadline?: string };
+  cmsMap?: { headline?: string; subheadline?: string };
+  cmsDirections?: { headline?: string; subheadline?: string; steps?: string[] };
+  cmsNearby?: { headline?: string; subheadline?: string };
+}
+
+export default function VisitPage({
+  cmsHero,
+  cmsMap,
+  cmsDirections,
+  cmsNearby,
+}: VisitPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
+
+  const directionsSteps = Array.isArray(cmsDirections?.steps) && cmsDirections.steps.length > 0
+    ? cmsDirections.steps
+    : DIRECTIONS;
 
   // const {
   //   register,
@@ -150,12 +166,11 @@ export default function VisitPage() {
             <div className="text-center">
               <h1 className="text-4xl md:text-6xl font-bold mb-4">
                 <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-emerald-300 bg-clip-text text-transparent">
-                  Visit Us
+                  {cmsHero?.headline || "Visit Us"}
                 </span>
               </h1>
               <p className="text-lg md:text-xl text-slate-300/95 max-w-2xl mx-auto">
-                Plan your journey to Lake View Villa Tangalle with precise
-                directions and fast contact options.
+                {cmsHero?.subheadline || "Plan your journey to Lake View Villa Tangalle with precise directions and fast contact options."}
               </p>
             </div>
           </SectionReveal>
@@ -171,8 +186,11 @@ export default function VisitPage() {
               <div className="rounded-2xl p-8 shadow-2xl ring-1 ring-white/10 bg-white/10 backdrop-blur-xl">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
                   <MapPin className="text-cyan-300" size={24} />
-                  Location & Map
+                  {cmsMap?.headline || "Location & Map"}
                 </h2>
+                {cmsMap?.subheadline && (
+                  <p className="text-slate-300 text-sm mb-4">{cmsMap.subheadline}</p>
+                )}
 
                 <motion.div
                   className="relative mx-auto aspect-square max-w-lg overflow-hidden rounded-[2rem] shadow-[0_24px_80px_rgba(14,165,233,.18)] ring-1 ring-white/10 md:max-w-none md:rounded-[2.5rem] md:[clip-path:circle(48%_at_50%_50%)]"
@@ -232,11 +250,11 @@ export default function VisitPage() {
               <div className="rounded-2xl p-8 shadow-2xl ring-1 ring-white/10 bg-white/10 backdrop-blur-xl">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
                   <Car className="text-cyan-300" size={24} />
-                  How to Get Here
+                  {cmsDirections?.headline || "How to Get Here"}
                 </h2>
 
                 <div className="space-y-4">
-                  {DIRECTIONS.map((step, i) => (
+                  {directionsSteps.map((step, i) => (
                     <div key={i} className="flex items-start gap-4">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400 flex items-center justify-center text-slate-900 font-semibold text-sm">
                         {i + 1}
@@ -257,13 +275,36 @@ export default function VisitPage() {
                         Typical Travel Time
                       </h3>
                       <p className="text-slate-300 text-sm">
-                        ~3 hours from Colombo Airport • ~45 minutes from Matara
+                        {cmsDirections?.subheadline || "~3 hours from Colombo Airport • ~45 minutes from Matara"}
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
             </SectionReveal>
+
+            {/* Nearby Attractions */}
+            {((cmsNearby?.headline) || PROPERTY.location.noted_nearby.length > 0) && (
+              <SectionReveal>
+                <div className="rounded-2xl p-8 shadow-2xl ring-1 ring-white/10 bg-white/10 backdrop-blur-xl">
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                    <MapPin className="text-cyan-300" size={24} />
+                    {cmsNearby?.headline || "Nearby Attractions"}
+                  </h2>
+                  {cmsNearby?.subheadline && (
+                    <p className="text-slate-300 text-sm mb-4">{cmsNearby.subheadline}</p>
+                  )}
+                  <div className="grid gap-3">
+                    {PROPERTY.location.noted_nearby.map((n, i) => (
+                      <div key={i} className="flex justify-between items-center rounded-xl bg-white/5 p-4 border border-white/5">
+                        <span className="font-medium">{n.place}</span>
+                        <span className="text-sm text-cyan-300">{n.distance_mi} miles away</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </SectionReveal>
+            )}
 
             {/* Quick contact */}
             <SectionReveal>

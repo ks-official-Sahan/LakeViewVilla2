@@ -6,12 +6,15 @@ import { gsap, EASE, DURATION } from "@/lib/gsap";
 import { Plus, Minus } from "lucide-react";
 import { FAQ_ITEMS } from "@/data/content";
 
-export function FAQ() {
+export function FAQ({ cmsData }: { cmsData?: any }) {
   const sectionRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const contentRefs = useRef<(HTMLDivElement | null)[]>([]);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const eyebrow = cmsData?.eyebrow || "Got Questions?";
+  const descriptionText = cmsData?.description || "Everything you need to know about your stay at Lake View Villa.";
 
   // Section entrance
   useGSAP(
@@ -90,19 +93,25 @@ export function FAQ() {
         {/* Heading */}
         <div ref={headingRef} className="mb-14 text-center md:mb-16">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-primary)]">
-            Got Questions?
+            {eyebrow}
           </p>
           <h2
             id="faq-heading"
             className="font-[var(--font-display)] text-[clamp(2rem,4.5vw,3rem)] font-extrabold leading-tight tracking-tight text-[var(--color-foreground)]"
           >
-            Frequently asked{" "}
-            <span className="bg-gradient-to-r from-[#0ea5e9] to-[#22d3ee] bg-clip-text text-transparent">
-              questions
-            </span>
+            {cmsData?.title ? (
+              cmsData.title
+            ) : (
+              <>
+                Frequently asked{" "}
+                <span className="bg-gradient-to-r from-[#0ea5e9] to-[#22d3ee] bg-clip-text text-transparent">
+                  questions
+                </span>
+              </>
+            )}
           </h2>
           <p className="mt-4 text-[var(--color-muted)]">
-            Everything you need to know about your stay at Lake View Villa.
+            {descriptionText}
           </p>
         </div>
 

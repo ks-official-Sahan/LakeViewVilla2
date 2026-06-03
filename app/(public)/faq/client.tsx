@@ -41,7 +41,11 @@ export default function FAQPage({ cmsHero, cmsQuestions }: FAQClientProps) {
           <div className="container mx-auto px-4">
             <SectionReveal>
               <div className="text-center">
-
+                <h1 className="text-4xl md:text-6xl font-bold mb-4">
+                  <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-emerald-300 bg-clip-text text-transparent">
+                    {headline}
+                  </span>
+                </h1>
                 <p className="text-xl text-slate-300 max-w-2xl mx-auto">
                   {subheadline}
                 </p>

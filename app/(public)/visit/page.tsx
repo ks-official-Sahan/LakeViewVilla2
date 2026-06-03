@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import VisitPage from "./client";
 import { DIRECTIONS } from "@/data/content";
+import { getContentBlock } from "@/lib/cms/get-content-block";
 
 export const metadata: Metadata = {
   title: "Things to Do in Tangalle — Visit & Location | Lake View Villa",
@@ -29,7 +30,28 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Page() {
+export default async function Page() {
+  const heroBlock = await getContentBlock("visit", "hero", {
+    headline: "Visit Us",
+    subheadline: "Plan your journey to Lake View Villa Tangalle with precise directions and fast contact options.",
+  });
+  const mapBlock = await getContentBlock("visit", "map", {
+    headline: "Location & Map",
+    subheadline: "",
+  });
+  const directionsBlock = await getContentBlock("visit", "directions", {
+    headline: "How to Get Here",
+    subheadline: "~35 minutes from Matara • ~3 hours from Colombo Airport",
+  });
+  const nearbyBlock = await getContentBlock("visit", "nearby", {
+    headline: "Nearby Attractions",
+    subheadline: "",
+  });
+
+  const stepsList = Array.isArray(directionsBlock?.steps) && directionsBlock.steps.length > 0
+    ? directionsBlock.steps
+    : DIRECTIONS;
+
   return (
     <>
       <SeoJsonLd
@@ -40,14 +62,19 @@ export default function Page() {
         howTo={{
           name: "Driving directions to Lake View Villa Tangalle",
           description:
-            "Overview of reaching the villa by road from Tangalle. Confirm the exact pin via WhatsApp.",
-          steps: DIRECTIONS.map((text, i) => ({
+            directionsBlock?.subheadline || "Overview of reaching the villa by road from Tangalle. Confirm the exact pin via WhatsApp.",
+          steps: stepsList.map((text: string, i: number) => ({
             name: `Step ${i + 1}`,
             text,
           })),
         }}
       />
-      <VisitPage />
+      <VisitPage
+        cmsHero={heroBlock}
+        cmsMap={mapBlock}
+        cmsDirections={directionsBlock}
+        cmsNearby={nearbyBlock}
+      />
     </>
   );
 }

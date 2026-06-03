@@ -68,12 +68,20 @@ function AmenityMarquee() {
   );
 }
 
-export function Highlights() {
+export function Highlights({ cmsData }: { cmsData?: { eyebrow?: string; title?: string; description?: string; items?: any[] } }) {
   const sectionRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
 
-  const HIGHLIGHTS = useMemo(() => normalize([...RAW_HIGHLIGHTS] as Item[]), []);
+  const eyebrow = cmsData?.eyebrow || "The Villa Experience";
+  const descriptionText = cmsData?.description || "Every detail at Lake View Villa is engineered to erase friction and deliver serenity — from the moment you arrive until the moment you reluctantly depart.";
+
+  const HIGHLIGHTS = useMemo(() => {
+    const rawItems = Array.isArray(cmsData?.items) && cmsData.items.length > 0
+      ? cmsData.items
+      : [...RAW_HIGHLIGHTS];
+    return normalize(rawItems as Item[]);
+  }, [cmsData]);
 
   useGSAP(
     () => {
@@ -144,7 +152,7 @@ export function Highlights() {
           <p className="flex items-center gap-3 mb-[clamp(0.75rem,2vw,1.25rem)]">
             <span className="inline-block h-px w-8 bg-[var(--color-gold)]" />
             <span className="font-bold uppercase tracking-[0.22em] text-[var(--color-gold)] text-[0.625rem] sm:text-xs">
-              The Villa Experience
+              {eyebrow}
             </span>
           </p>
 
@@ -154,24 +162,30 @@ export function Highlights() {
             className="font-[var(--font-display)] font-black leading-[1.04] tracking-[-0.02em] text-[var(--color-foreground)]"
             style={{ fontSize: "clamp(2.25rem, 5.5vw, 5rem)" }}
           >
-            Crafted for{" "}
-            <span
-              className="relative inline-block"
-              style={{
-                backgroundImage: "linear-gradient(120deg, var(--color-gold) 0%, #e8c87d 50%, var(--color-gold) 100%)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              discerning
-            </span>{" "}
-            <br className="hidden sm:block" />
-            guests.
+            {cmsData?.title ? (
+              cmsData.title
+            ) : (
+              <>
+                Crafted for{" "}
+                <span
+                  className="relative inline-block"
+                  style={{
+                    backgroundImage: "linear-gradient(120deg, var(--color-gold) 0%, #e8c87d 50%, var(--color-gold) 100%)",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
+                  discerning
+                </span>{" "}
+                <br className="hidden sm:block" />
+                guests.
+              </>
+            )}
           </h2>
 
           <p className="mt-[clamp(1rem,2.5vw,1.5rem)] max-w-xl text-[var(--color-muted)] leading-relaxed text-[clamp(0.9rem,1.5vw,1.0625rem)]">
-            Every detail at Lake View Villa is engineered to erase friction and deliver serenity — from the moment you arrive until the moment you reluctantly depart.
+            {descriptionText}
           </p>
         </div>
       </div>

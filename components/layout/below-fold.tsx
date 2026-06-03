@@ -55,7 +55,23 @@ const FAQ = dynamic(
   { ssr: false, loading: () => null }
 );
 
-export function BelowFold() {
+interface BelowFoldProps {
+  experiencesBlock?: any;
+  galleryTeaserBlock?: any;
+  facilitiesBlock?: any;
+  staysTeaserBlock?: any;
+  valuesBlock?: any;
+  faqBlock?: any;
+}
+
+export function BelowFold({
+  experiencesBlock,
+  galleryTeaserBlock,
+  facilitiesBlock,
+  staysTeaserBlock,
+  valuesBlock,
+  faqBlock,
+}: BelowFoldProps) {
   // Don’t even render children until near viewport
   const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -78,13 +94,13 @@ export function BelowFold() {
     <div ref={ref}>
       {visible && (
         <Suspense fallback={null}>
-          <ExperiencesReel />
-          <GalleryTeaser />
-          <FacilitiesSection />
-          <StaysTeaser />
+          <ExperiencesReel cmsData={experiencesBlock} />
+          <GalleryTeaser cmsData={galleryTeaserBlock} />
+          <FacilitiesSection cmsData={facilitiesBlock} />
+          <StaysTeaser cmsData={staysTeaserBlock} />
           <MapDirections />
-          <ValuesSection />
-          <FAQ />
+          <ValuesSection cmsData={valuesBlock} />
+          <FAQ cmsData={faqBlock} />
         </Suspense>
       )}
     </div>

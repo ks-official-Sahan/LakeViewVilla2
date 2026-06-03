@@ -7,6 +7,7 @@ import { PROPERTY } from "@/data/content";
 import { breadcrumbSchema } from "@/lib/seo";
 import { serializeJsonLd } from "@/lib/utils";
 import { getGalleryGridAssets } from "@/lib/media/queries";
+import { getContentBlock } from "@/lib/cms/get-content-block";
 
 const GalleryClient = dynamic(() => import("./gallery-client"), {
   loading: () => (
@@ -89,6 +90,11 @@ function getGalleryImages() {
 export default async function Page() {
   await connection();
 
+  const heroBlock = await getContentBlock("gallery", "hero", {
+    headline: "Villa Gallery",
+    subheadline: "A curated reel of the lagoon, interiors, and surrounding nature.",
+  });
+
   let dbImages: { src: string; alt: string; w: number; h: number }[] = [];
   try {
     const assets = await getGalleryGridAssets({ limit: 500 });
@@ -139,12 +145,11 @@ export default async function Page() {
               <div className="text-center">
                 <h1 className="text-4xl md:text-6xl font-bold mb-4">
                   <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-emerald-300 bg-clip-text text-transparent">
-                    Villa Gallery
+                    {heroBlock.headline}
                   </span>
                 </h1>
                 <p className="text-lg md:text-xl text-slate-300/95 max-w-2xl mx-auto">
-                  A curated reel of the lagoon, interiors, and surrounding
-                  nature.
+                  {heroBlock.subheadline}
                 </p>
                 <p className="text-sm text-slate-400 mt-2">
                   {images.length} photos

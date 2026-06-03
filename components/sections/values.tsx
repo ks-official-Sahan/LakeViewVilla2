@@ -25,11 +25,33 @@ const NEARBY = [
   "Free WiFi · Air Conditioning · Free Parking",
 ];
 
-export function ValuesSection() {
+export function ValuesSection({ cmsData }: { cmsData?: { eyebrow?: string; title?: string; sublines?: any; items?: any[] } }) {
   const sectionRef = useRef<HTMLElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+
+  const eyebrow = cmsData?.eyebrow || "Our Values";
+  const title = cmsData?.title || "The value we provide to you";
+  
+  const sublines = useMemo(() => {
+    if (!cmsData?.sublines) return NEARBY;
+    if (Array.isArray(cmsData.sublines)) return cmsData.sublines;
+    if (typeof cmsData.sublines === "string") {
+      try {
+        const parsed = JSON.parse(cmsData.sublines);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+      return [cmsData.sublines];
+    }
+    return NEARBY;
+  }, [cmsData]);
+
+  const itemsList = useMemo(() => {
+    return Array.isArray(cmsData?.items) && cmsData.items.length > 0
+      ? cmsData.items
+      : VALUES_ITEMS;
+  }, [cmsData]);
 
   useGSAP(
     () => {
@@ -63,44 +85,31 @@ export function ValuesSection() {
         revertList = () => mm.revert();
         mm.add("(max-width: 767px)", () => {
           ScrollTrigger.batch(items, {
-            batchMax: 3,
+            batchMax: 2,
             interval: 0.05,
             once: true,
             start: "top 88%",
             onEnter: (batch) => {
               gsap.fromTo(
                 batch,
-                { opacity: 0, x: 16 },
-                {
-                  opacity: 1,
-                  x: 0,
-                  duration: 0.48,
-                  stagger: 0.06,
-                  ease: EASE.out,
-                  overwrite: true,
-                }
+                { opacity: 0, y: 20 },
+                { opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: EASE.out }
               );
             },
           });
         });
+
         mm.add("(min-width: 768px)", () => {
           ScrollTrigger.batch(items, {
             batchMax: 3,
-            interval: 0.07,
+            interval: 0.06,
             once: true,
-            start: "top 84%",
+            start: "top 82%",
             onEnter: (batch) => {
               gsap.fromTo(
                 batch,
-                { opacity: 0, x: 24 },
-                {
-                  opacity: 1,
-                  x: 0,
-                  duration: 0.55,
-                  stagger: 0.09,
-                  ease: EASE.out,
-                  overwrite: true,
-                }
+                { opacity: 0, y: 35, rotateX: 5, transformOrigin: "top center" },
+                { opacity: 1, y: 0, rotateX: 0, duration: 0.65, stagger: 0.08, ease: EASE.out }
               );
             },
           });
@@ -116,7 +125,7 @@ export function ValuesSection() {
     <section
       ref={sectionRef}
       aria-labelledby="values-heading"
-      className="relative overflow-hidden py-24 md:py-32"
+      className="relative overflow-hidden py-24 md:py-32 bg-[var(--color-background)] border-t border-[var(--color-border)]"
     >
       {/* Ambient */}
       <div
@@ -181,7 +190,7 @@ export function ValuesSection() {
           {/* Right — copy */}
           <div ref={copyRef}>
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-primary)]">
-              Our Values
+              {eyebrow}
             </p>
             <h2
               id="values-heading"
@@ -191,15 +200,12 @@ export function ValuesSection() {
                 aria-hidden
                 className="pointer-events-none absolute -left-1 top-1/2 hidden h-[72%] w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-[#0ea5e9] to-[#22d3ee] md:block"
               />
-              The value we{" "}
-              <span className="bg-gradient-to-r from-[#0ea5e9] to-[#22d3ee] bg-clip-text text-transparent">
-                provide to you
-              </span>
+              {title}
             </h2>
 
             {/* Highlights */}
             <ul className="mt-5 space-y-2">
-              {NEARBY.map((item, i) => (
+              {sublines.map((item: any, i: number) => (
                 <li key={i} className="flex items-center gap-2.5 text-sm text-[var(--color-muted)]">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-primary)]" />
                   {item}
@@ -209,7 +215,7 @@ export function ValuesSection() {
 
             {/* Value list */}
             <ul ref={listRef} className="mt-8 space-y-3">
-              {VALUES_ITEMS.map((item) => {
+              {itemsList.map((item) => {
                 const Icon = iconMap[item.icon as keyof typeof iconMap] ?? Car;
                 return (
                   <li

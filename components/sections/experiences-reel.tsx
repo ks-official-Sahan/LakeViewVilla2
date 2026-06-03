@@ -33,9 +33,15 @@ const EXPERIENCES: Experience[] = [
   { name: "Sigiriya Rock Fortress", image: "/images/optimized/sigiriya.webp", description: "A UNESCO World Heritage Site — an ancient palace city perched atop a towering volcanic rock.", ctaHref: sendMsg("Sigiriya Rock Fortress") },
 ];
 
-const wrap = (i: number) => ((i % EXPERIENCES.length) + EXPERIENCES.length) % EXPERIENCES.length;
+export function ExperiencesReel({ cmsData }: { cmsData?: { eyebrow?: string; title?: string; description?: string; items?: any[] } }) {
+  const itemsList = useMemo(() => {
+    return Array.isArray(cmsData?.items) && cmsData.items.length > 0
+      ? cmsData.items
+      : EXPERIENCES;
+  }, [cmsData]);
 
-export function ExperiencesReel() {
+  const wrap = useCallback((i: number) => ((i % itemsList.length) + itemsList.length) % itemsList.length, [itemsList]);
+
   const sectionRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
   const reelRef = useRef<HTMLDivElement>(null);
@@ -47,6 +53,10 @@ export function ExperiencesReel() {
   const [isChanging, setIsChanging] = useState(false);
   const autoRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
+  const eyebrow = cmsData?.eyebrow || "Surroundings & Activities";
+  const title = cmsData?.title || "Lagoon Life & Coastal Safaris";
+  const descriptionText = cmsData?.description || "Wander beyond the gates to find ancient temples, protected turtle beaches, and Sri Lanka's finest wildlife reserves.";
+
   const prefersReduced = useMemo(
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     []
@@ -57,7 +67,7 @@ export function ExperiencesReel() {
     if (paused || prefersReduced) return;
     autoRef.current = setInterval(() => setIndex((i) => wrap(i + 1)), 6000);
     return () => clearInterval(autoRef.current);
-  }, [paused, prefersReduced]);
+  }, [paused, prefersReduced, wrap]);
 
   const go = useCallback((dir: 1 | -1) => {
     if (isChanging) return;
@@ -66,7 +76,7 @@ export function ExperiencesReel() {
     clearInterval(autoRef.current);
     setPaused(false);
     setTimeout(() => setIsChanging(false), 800);
-  }, [isChanging]);
+  }, [isChanging, wrap]);
 
   // Section entrance
   useGSAP(
@@ -107,7 +117,7 @@ export function ExperiencesReel() {
 
   const prev = wrap(index - 1);
   const next = wrap(index + 1);
-  const cur = EXPERIENCES[index];
+  const cur = itemsList[index] || itemsList[0];
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowLeft") {
@@ -132,16 +142,18 @@ export function ExperiencesReel() {
       e.preventDefault();
       clearInterval(autoRef.current);
       setPaused(false);
-      setIndex(EXPERIENCES.length - 1);
+      setIndex(itemsList.length - 1);
     }
   };
+
+  if (!cur) return null;
 
   return (
     <section
       ref={sectionRef}
       id="experiences"
       aria-labelledby="experiences-heading"
-      className="relative overflow-hidden py-24 md:py-36 bg-[var(--color-surface)] section-connector"
+      className="relative overflow-hidden py-24 md:py-36 bg-[var(--color-background)] section-connector border-t border-[var(--color-border)]"
     >
       {/* Ambient glow map pattern */}
       <div aria-hidden className="pointer-events-none absolute inset-0 opacity-40 mix-blend-overlay"
@@ -153,15 +165,14 @@ export function ExperiencesReel() {
         {/* Heading */}
         <div ref={headingRef} className="mb-12 flex flex-col items-center md:items-start text-center md:text-left md:mb-20">
           <p className="mb-4 flex items-center gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-gold)]">
-            <Compass className="h-4 w-4" /> Around the Villa
+            <Compass className="h-4 w-4" /> {eyebrow}
           </p>
           <h2 id="experiences-heading"
             className="font-[var(--font-display)] text-[clamp(2.5rem,5vw,4.5rem)] font-black tracking-tighter text-[var(--color-foreground)] leading-[1.1] max-w-3xl">
-            Discover Tangalle&apos;s{" "}
-            <span className="text-gradient-gold inline-block italic pr-2">wonders</span>
+            {title}
           </h2>
           <p className="mt-6 max-w-xl text-base md:text-lg text-[var(--color-muted)] font-medium">
-            Ancient temples, ocean dramas, wildlife corridors — curated excursions all within easy reach of your sanctuary.
+            {descriptionText}
           </p>
         </div>
 
@@ -179,18 +190,18 @@ export function ExperiencesReel() {
           aria-keyshortcuts="ArrowLeft ArrowRight Space Home End"
         >
           <p className="sr-only" aria-live="polite">
-            {cur.name}. Slide {index + 1} of {EXPERIENCES.length}.
+            {cur.name}. Slide {index + 1} of {itemsList.length}.
           </p>
           {/* Peek — prev */}
           <button
             type="button"
             onClick={() => go(-1)}
             disabled={isChanging}
-            aria-label={`Previous: ${EXPERIENCES[prev].name}`}
+            aria-label={`Previous: ${itemsList[prev]?.name}`}
             className="group absolute left-0 top-0 bottom-0 z-10 hidden md:block w-[12%] overflow-hidden rounded-l-[2rem] transition-all hover:w-[15%]"
           >
             <div className="absolute inset-0">
-              <Image src={EXPERIENCES[prev].image} alt="" aria-hidden fill className="object-cover transition-transform duration-[1.5s] group-hover:scale-110 saturate-50 brightness-50" sizes="15vw" />
+              <Image src={itemsList[prev]?.image || "/images/placeholder.jpg"} alt="" aria-hidden fill className="object-cover transition-transform duration-[1.5s] group-hover:scale-110 saturate-50 brightness-50" sizes="15vw" />
               <div className="absolute inset-0" style={{
                 background: "linear-gradient(90deg, rgba(0,0,0,0.8), rgba(0,0,0,0.4) 70%, transparent)",
                 maskImage: "linear-gradient(to right, black 80%, transparent)"
@@ -206,11 +217,11 @@ export function ExperiencesReel() {
             type="button"
             onClick={() => go(1)}
             disabled={isChanging}
-            aria-label={`Next: ${EXPERIENCES[next].name}`}
+            aria-label={`Next: ${itemsList[next]?.name}`}
             className="group absolute right-0 top-0 bottom-0 z-10 hidden md:block w-[12%] overflow-hidden rounded-r-[2rem] transition-all hover:w-[15%]"
           >
             <div className="absolute inset-0">
-              <Image src={EXPERIENCES[next].image} alt="" aria-hidden fill className="object-cover transition-transform duration-[1.5s] group-hover:scale-110 saturate-50 brightness-50" sizes="15vw" />
+              <Image src={itemsList[next]?.image || "/images/placeholder.jpg"} alt="" aria-hidden fill className="object-cover transition-transform duration-[1.5s] group-hover:scale-110 saturate-50 brightness-50" sizes="15vw" />
               <div className="absolute inset-0" style={{
                 background: "linear-gradient(270deg, rgba(0,0,0,0.8), rgba(0,0,0,0.4) 70%, transparent)",
                 maskImage: "linear-gradient(to left, black 80%, transparent)"
@@ -295,7 +306,7 @@ export function ExperiencesReel() {
 
           {/* Minimalist Dot Navigation */}
           <div className="mt-8 flex items-center justify-center gap-3" role="tablist" aria-label="Slide navigation">
-            {EXPERIENCES.map((exp, i) => (
+            {itemsList.map((exp, i) => (
               <button
                 key={i}
                 role="tab"

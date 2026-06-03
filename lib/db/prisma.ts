@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { neonConfig } from "@neondatabase/serverless";
+import { neonConfig, Pool } from "@neondatabase/serverless";
 import ws from "ws";
 import {
   readFallbackData,
@@ -103,7 +103,13 @@ function createResilientPrismaClient(): any {
     return new PrismaClient({ adapter: undefined as any }) as any;
   }
 
-  const adapter = new PrismaNeon({ connectionString });
+  const pool = new Pool({
+    connectionString,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  });
+  const adapter = new PrismaNeon(pool);
   const rawClient = new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
@@ -143,6 +149,8 @@ function createResilientPrismaClient(): any {
                     err.message?.includes("timeout") ||
                     err.message?.includes("Neon") ||
                     err.message?.includes("socket") ||
+                    err.message?.includes("ECONNRESET") ||
+                    err.message?.includes("RESET") ||
                     err.code === "P1001" ||
                     err.code === "P1002" ||
                     err.code === "P1017";

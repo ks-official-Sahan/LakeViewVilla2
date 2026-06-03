@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -9,7 +9,7 @@ import { gsap, EASE, DURATION } from "@/lib/gsap";
 import { X, ChevronLeft, ChevronRight, ArrowRight, Maximize2 } from "lucide-react";
 import { BOOKING_FACTS } from "@/data/content";
 
-export function GalleryTeaser() {
+export function GalleryTeaser({ cmsData }: { cmsData?: { eyebrow?: string; title?: string; description?: string; items?: any[] } }) {
   const sectionRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -18,8 +18,17 @@ export function GalleryTeaser() {
   const [lightbox, setLightbox] = useState<number | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
-  const images = BOOKING_FACTS.images ?? [];
-  const preview = images.slice(0, 6);
+  const eyebrow = cmsData?.eyebrow || "Visual Story";
+  const title = cmsData?.title || "A glimpse of paradise";
+  const descriptionText = cmsData?.description || "Step into the serene elegance of Lake View Villa. Curated spaces designed to harmonize with the raw beauty of Tangalle's lagoon.";
+
+  const images = useMemo(() => {
+    return Array.isArray(cmsData?.items) && cmsData.items.length > 0
+      ? cmsData.items
+      : BOOKING_FACTS.images ?? [];
+  }, [cmsData]);
+
+  const preview = useMemo(() => images.slice(0, 6), [images]);
 
   useGSAP(
     () => {
@@ -42,7 +51,7 @@ export function GalleryTeaser() {
 
       let revertParallax: (() => void) | undefined;
 
-      // Staggered grid reveal + tiered scrub parallax (plan §4.5: ~0.3 / 0.5 / 0.7 × baseline)
+      // Staggered grid reveal + tiered scrub parallax
       const cells = gridRef.current?.querySelectorAll<HTMLElement>("[data-cell]");
       if (cells?.length) {
         gsap.fromTo(
@@ -62,22 +71,30 @@ export function GalleryTeaser() {
 
         const mm = gsap.matchMedia();
         revertParallax = () => mm.revert();
-        const PARALLAX_BASE_Y = -24;
-        const SPEED_TIERS = [0.3, 0.5, 0.5, 0.5, 0.7, 0.7];
 
         mm.add("(min-width: 768px)", () => {
-          cells.forEach((cell, i) => {
-            const tier = SPEED_TIERS[i] ?? 0.55;
-            gsap.to(cell, {
-              yPercent: PARALLAX_BASE_Y * tier,
-              ease: "none",
-              scrollTrigger: {
-                trigger: gridRef.current!,
-                start: "top bottom",
-                end: "bottom top",
-                scrub: 1.5,
-              },
-            });
+          cells.forEach((cell, idx) => {
+            const inner = cell.querySelector<HTMLElement>("[data-parallax]");
+            if (!inner) return;
+
+            let rate = 15;
+            if (idx === 0 || idx === 3) rate = 25;
+            else if (idx === 1 || idx === 5) rate = 10;
+
+            gsap.fromTo(
+              inner,
+              { yPercent: -rate },
+              {
+                yPercent: rate,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: cell,
+                  start: "top bottom",
+                  end: "bottom top",
+                  scrub: true,
+                },
+              }
+            );
           });
         });
       }
@@ -85,28 +102,31 @@ export function GalleryTeaser() {
       // CTA reveal
       gsap.fromTo(
         ctaRef.current,
-        { opacity: 0, y: 20 },
+        { opacity: 0, y: 30, filter: "blur(4px)" },
         {
           opacity: 1,
           y: 0,
+          filter: "blur(0px)",
           duration: 0.8,
           ease: EASE.out,
-          scrollTrigger: { trigger: ctaRef.current, start: "top 90%", once: true },
+          scrollTrigger: { trigger: ctaRef.current, start: "top 88%", once: true },
         }
       );
 
-      return () => revertParallax?.();
+      return () => {
+        revertParallax?.();
+      };
     },
     { scope: sectionRef }
   );
 
-  // Lightbox keyboard navigation
+  // Lightbox keyboard controls
   useEffect(() => {
+    if (lightbox === null) return;
     const onKey = (e: KeyboardEvent) => {
-      if (lightbox === null) return;
-      if (e.key === "Escape") setLightbox(null);
-      if (e.key === "ArrowRight") setLightbox((i) => ((i ?? 0) + 1) % images.length);
-      if (e.key === "ArrowLeft") setLightbox((i) => ((i ?? 0) - 1 + images.length) % images.length);
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") setLightbox((i) => (i === null ? 0 : (i - 1 + images.length) % images.length));
+      if (e.key === "ArrowRight") setLightbox((i) => (i === null ? 0 : (i + 1) % images.length));
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -127,7 +147,7 @@ export function GalleryTeaser() {
       ref={sectionRef}
       id="gallery"
       aria-labelledby="gallery-heading"
-      className="relative overflow-hidden py-24 md:py-36 bg-[var(--color-background)]"
+      className="relative overflow-hidden py-24 md:py-36 bg-[var(--color-background)] border-t border-[var(--color-border)]"
     >
       {/* Cinematic gradient ambient overlay */}
       <div
@@ -142,19 +162,16 @@ export function GalleryTeaser() {
         {/* Heading */}
         <div ref={headingRef} className="mb-16 flex flex-col items-center text-center md:mb-24">
           <p className="mb-4 text-[10px] sm:text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-gold)]">
-            Visual Story
+            {eyebrow}
           </p>
           <h2
             id="gallery-heading"
             className="font-[var(--font-display)] text-[clamp(2.5rem,5vw,4.5rem)] font-black tracking-tighter text-[var(--color-foreground)] leading-[1.1]"
           >
-            A glimpse of{" "}
-            <span className="text-gradient-gold inline-block italic pr-2">
-              paradise
-            </span>
+            {title}
           </h2>
           <p className="mt-6 max-w-2xl text-base md:text-lg text-[var(--color-muted)] font-medium">
-            Step into the serene elegance of Lake View Villa. Curated spaces designed to harmonize with the raw beauty of Tangalle's lagoon.
+            {descriptionText}
           </p>
         </div>
 
@@ -208,7 +225,7 @@ export function GalleryTeaser() {
                     className="object-cover transition-all duration-[1.2s] cubic-bezier(0.23, 1, 0.32, 1) group-hover:scale-110 group-hover:brightness-[0.85]"
                     sizes={i === 0 ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 50vw, 25vw"}
                   />
-                  
+
                   {/* Cinematic grain overlay on images */}
                   <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
 

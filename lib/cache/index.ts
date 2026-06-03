@@ -4,8 +4,20 @@ import { Ratelimit } from "@upstash/ratelimit";
 // ─── Redis Client ─────────────────────────────────────────────────────────────
 
 let redis: Redis | null = null;
+let isRedisOffline = false;
+let lastRedisErrorTime = 0;
+const REDIS_OFFLINE_COOLDOWN_MS = 60000; // 1 minute cooldown
 
 function getRedis(): Redis | null {
+  if (isRedisOffline) {
+    if (Date.now() - lastRedisErrorTime > REDIS_OFFLINE_COOLDOWN_MS) {
+      console.log("[Cache] Cooldown over, retrying Upstash Redis connection...");
+      isRedisOffline = false;
+    } else {
+      return null;
+    }
+  }
+
   if (redis) return redis;
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
     console.warn("[Cache] Upstash Redis not configured — caching disabled.");
@@ -18,6 +30,12 @@ function getRedis(): Redis | null {
   return redis;
 }
 
+function handleRedisError(error: any) {
+  console.error("[Cache] Upstash Redis operation failed, entering 60s cooldown:", error);
+  isRedisOffline = true;
+  lastRedisErrorTime = Date.now();
+}
+
 // ─── Cache Helpers ────────────────────────────────────────────────────────────
 
 export async function cacheGet<T>(key: string): Promise<T | null> {
@@ -25,7 +43,8 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
   if (!client) return null;
   try {
     return await client.get<T>(key);
-  } catch {
+  } catch (error) {
+    handleRedisError(error);
     return null;
   }
 }
@@ -40,7 +59,7 @@ export async function cacheSet(
   try {
     await client.set(key, value, { ex: ttlSeconds });
   } catch (error) {
-    console.error("[Cache] Set failed:", error);
+    handleRedisError(error);
   }
 }
 
@@ -50,7 +69,7 @@ export async function cacheDelete(key: string): Promise<void> {
   try {
     await client.del(key);
   } catch (error) {
-    console.error("[Cache] Delete failed:", error);
+    handleRedisError(error);
   }
 }
 
@@ -63,7 +82,7 @@ export async function cacheInvalidatePattern(pattern: string): Promise<void> {
       await client.del(...keys);
     }
   } catch (error) {
-    console.error("[Cache] Invalidate failed:", error);
+    handleRedisError(error);
   }
 }
 
@@ -99,7 +118,8 @@ export async function rateLimit(
   try {
     const result = await limiter.limit(identifier);
     return { success: result.success, remaining: result.remaining };
-  } catch {
+  } catch (error) {
+    handleRedisError(error);
     return { success: true, remaining: 999 };
   }
 }

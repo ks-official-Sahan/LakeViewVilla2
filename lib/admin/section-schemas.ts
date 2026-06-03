@@ -25,8 +25,85 @@ export const SECTION_SCHEMAS: Record<string, SectionSchema> = {
       { key: "bgImage", type: "image", label: "Hero Background Image" },
     ],
   },
+  "home/highlights": {
+    label: "Home — Highlights",
+    fields: [
+      { key: "eyebrow", type: "text", label: "Eyebrow", maxLength: 100 },
+      { key: "title", type: "text", label: "Title", maxLength: 120 },
+      { key: "description", type: "textarea", label: "Description", maxLength: 400 },
+    ],
+  },
+  "home/experiences": {
+    label: "Home — Experiences Reel",
+    fields: [
+      { key: "eyebrow", type: "text", label: "Eyebrow", maxLength: 100 },
+      { key: "title", type: "text", label: "Title", maxLength: 120 },
+      { key: "description", type: "textarea", label: "Description", maxLength: 400 },
+    ],
+  },
+  "home/facilities": {
+    label: "Home — Facilities Gallery",
+    fields: [
+      { key: "eyebrow", type: "text", label: "Eyebrow", maxLength: 100 },
+      { key: "title", type: "text", label: "Title", maxLength: 120 },
+      { key: "description", type: "textarea", label: "Description", maxLength: 400 },
+    ],
+  },
+  "home/stays-teaser": {
+    label: "Home — Stays Teaser",
+    fields: [
+      { key: "eyebrow", type: "text", label: "Eyebrow", maxLength: 100 },
+      { key: "title", type: "text", label: "Title", maxLength: 120 },
+      { key: "description", type: "textarea", label: "Description", maxLength: 400 },
+    ],
+  },
+  "home/gallery-teaser": {
+    label: "Home — Gallery Teaser",
+    fields: [
+      { key: "eyebrow", type: "text", label: "Eyebrow", maxLength: 100 },
+      { key: "title", type: "text", label: "Title", maxLength: 120 },
+      { key: "description", type: "textarea", label: "Description", maxLength: 400 },
+    ],
+  },
+  "home/values": {
+    label: "Home — Core Values",
+    fields: [
+      { key: "eyebrow", type: "text", label: "Eyebrow", maxLength: 100 },
+      { key: "title", type: "text", label: "Title", maxLength: 120 },
+      { key: "sublines", type: "textarea", label: "Sublines/Info", maxLength: 400 },
+    ],
+  },
+  "home/faq": {
+    label: "Home — FAQ Preview",
+    fields: [
+      { key: "eyebrow", type: "text", label: "Eyebrow", maxLength: 100 },
+      { key: "title", type: "text", label: "Title", maxLength: 120 },
+      { key: "description", type: "textarea", label: "Description", maxLength: 400 },
+    ],
+  },
   "stays/hero": {
     label: "Stays — Hero",
+    fields: [
+      { key: "headline", type: "text", label: "Headline", maxLength: 120 },
+      { key: "subheadline", type: "textarea", label: "Subheadline", maxLength: 280 },
+    ],
+  },
+  "stays/rooms": {
+    label: "Stays — Rooms Info",
+    fields: [
+      { key: "headline", type: "text", label: "Headline", maxLength: 120 },
+      { key: "subheadline", type: "textarea", label: "Subheadline", maxLength: 280 },
+    ],
+  },
+  "stays/pricing": {
+    label: "Stays — Rates Table Info",
+    fields: [
+      { key: "headline", type: "text", label: "Headline", maxLength: 120 },
+      { key: "subheadline", type: "textarea", label: "Subheadline", maxLength: 280 },
+    ],
+  },
+  "stays/amenities": {
+    label: "Stays — Amenities List Info",
     fields: [
       { key: "headline", type: "text", label: "Headline", maxLength: 120 },
       { key: "subheadline", type: "textarea", label: "Subheadline", maxLength: 280 },
@@ -39,6 +116,13 @@ export const SECTION_SCHEMAS: Record<string, SectionSchema> = {
       { key: "subheadline", type: "textarea", label: "Subheadline", maxLength: 200 },
     ],
   },
+  "gallery/grid": {
+    label: "Gallery — Grid Settings",
+    fields: [
+      { key: "headline", type: "text", label: "Headline", maxLength: 120 },
+      { key: "subheadline", type: "textarea", label: "Description", maxLength: 280 },
+    ],
+  },
   "visit/hero": {
     label: "Visit — Hero",
     fields: [
@@ -46,8 +130,43 @@ export const SECTION_SCHEMAS: Record<string, SectionSchema> = {
       { key: "subheadline", type: "textarea", label: "Subheadline", maxLength: 280 },
     ],
   },
+  "visit/map": {
+    label: "Visit — Map Location Text",
+    fields: [
+      { key: "headline", type: "text", label: "Headline", maxLength: 120 },
+      { key: "subheadline", type: "textarea", label: "Description", maxLength: 280 },
+    ],
+  },
+  "visit/directions": {
+    label: "Visit — Directions Info",
+    fields: [
+      { key: "headline", type: "text", label: "Headline", maxLength: 120 },
+      { key: "subheadline", type: "textarea", label: "Description", maxLength: 280 },
+    ],
+  },
+  "visit/nearby": {
+    label: "Visit — Nearby Places Info",
+    fields: [
+      { key: "headline", type: "text", label: "Headline", maxLength: 120 },
+      { key: "subheadline", type: "textarea", label: "Description", maxLength: 280 },
+    ],
+  },
   "faq/hero": {
     label: "FAQ — Hero",
+    fields: [
+      { key: "headline", type: "text", label: "Headline", maxLength: 120 },
+      { key: "subheadline", type: "textarea", label: "Intro", maxLength: 400 },
+    ],
+  },
+  "faq/questions": {
+    label: "FAQ — Questions Data",
+    fields: [
+      { key: "headline", type: "text", label: "Headline", maxLength: 120 },
+      { key: "subheadline", type: "textarea", label: "Subheading", maxLength: 280 },
+    ],
+  },
+  "blog/hero": {
+    label: "Blog — Hero Text",
     fields: [
       { key: "headline", type: "text", label: "Headline", maxLength: 120 },
       { key: "subheadline", type: "textarea", label: "Intro", maxLength: 400 },

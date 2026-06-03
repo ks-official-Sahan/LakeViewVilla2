@@ -12,6 +12,14 @@ export default async function HomePage() {
     subheadline: "Where every morning belongs to the lagoon."
   });
 
+  const highlightsBlock = await getContentBlock("home", "highlights", null as any);
+  const experiencesBlock = await getContentBlock("home", "experiences", null as any);
+  const staysTeaserBlock = await getContentBlock("home", "stays-teaser", null as any);
+  const galleryTeaserBlock = await getContentBlock("home", "gallery-teaser", null as any);
+  const facilitiesBlock = await getContentBlock("home", "facilities", null as any);
+  const valuesBlock = await getContentBlock("home", "values", null as any);
+  const faqBlock = await getContentBlock("home", "faq", null as any);
+
   const homepageFaq = FAQ_ITEMS.map((item) => ({
     q: item.question,
     a: item.answer,
@@ -28,11 +36,18 @@ export default async function HomePage() {
 
       {/* Amenity highlights grid */}
       <section id="highlights" aria-label="Villa highlights">
-        <Highlights />
+        <Highlights cmsData={highlightsBlock} />
       </section>
 
       {/* Below-fold sections: experiences, gallery teaser, stays, map, values, FAQ */}
-      <BelowFold />
+      <BelowFold
+        experiencesBlock={experiencesBlock}
+        galleryTeaserBlock={galleryTeaserBlock}
+        facilitiesBlock={facilitiesBlock}
+        staysTeaserBlock={staysTeaserBlock}
+        valuesBlock={valuesBlock}
+        faqBlock={faqBlock}
+      />
       <Footer />
     </>
   );

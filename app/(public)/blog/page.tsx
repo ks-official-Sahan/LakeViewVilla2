@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 import { estimateReadTime } from "@/lib/blog/markdown";
 import { Clock, ArrowRight, Sparkles, Pen, Search } from "lucide-react";
 import { serializeJsonLd } from "@/lib/utils";
+import { getContentBlock } from "@/lib/cms/get-content-block";
 
 export const metadata: Metadata = {
   title: "Stories & Guides — Lake View Villa Tangalle",
@@ -42,6 +43,11 @@ export default async function BlogPage({
 }) {
   await connection();
   const params = await searchParams;
+
+  const heroBlock = await getContentBlock("blog", "hero", {
+    headline: "Stories & Guides",
+    subheadline: "Travel tips, Tangalle explorations, and villa life. Your curated guide to Sri Lanka's breathtaking southern coast.",
+  });
   const page = Number(params.page) || 1;
   const category = params.category || "All";
   const tag = params.tag || "";
@@ -121,12 +127,10 @@ export default async function BlogPage({
               <Pen className="h-3.5 w-3.5" /> Lake View Villa Blog
             </p>
             <h1 className="font-[var(--font-display)] text-[clamp(2.5rem,6vw,5rem)] font-black tracking-tighter text-[var(--color-foreground)] leading-[1.05]">
-              Stories &{" "}
-              <span className="text-gradient-gold inline-block italic">Guides</span>
+              {heroBlock.headline}
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-base md:text-lg text-[var(--color-muted)] font-medium">
-              Travel tips, Tangalle explorations, and villa life. Your curated guide to
-              Sri Lanka's breathtaking southern coast.
+              {heroBlock.subheadline}
             </p>
             {posts.length > 0 && (
               <p className="mt-4 text-sm text-[var(--color-muted)]/70">

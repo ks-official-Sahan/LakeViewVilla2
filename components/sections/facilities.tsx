@@ -14,10 +14,27 @@ import {
 } from "@/components/ui/carousel";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export default function FacilitiesSection() {
+interface FacilitiesSectionProps {
+  cmsData?: {
+    eyebrow?: string;
+    title?: string;
+    description?: string;
+    items?: any[];
+  };
+}
+
+export default function FacilitiesSection({ cmsData }: FacilitiesSectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  const eyebrow = cmsData?.eyebrow || "Best Choice";
+  const title = cmsData?.title || "Villa Facilities";
+  const descriptionText = cmsData?.description || "Swipe on mobile or use the arrows to browse every amenity.";
+
+  const facilitiesList = Array.isArray(cmsData?.items) && cmsData.items.length > 0
+    ? cmsData.items
+    : FACILITIES;
 
   useGSAP(
     () => {
@@ -49,7 +66,7 @@ export default function FacilitiesSection() {
     <section
       ref={sectionRef}
       aria-labelledby="facilities-heading"
-      className="relative overflow-hidden py-24 md:py-32"
+      className="relative overflow-hidden py-24 md:py-32 bg-[var(--color-background)] border-t border-[var(--color-border)]"
     >
       {/* Ambient */}
       <div
@@ -65,19 +82,19 @@ export default function FacilitiesSection() {
         {/* Heading */}
         <div ref={headingRef} className="mb-10 md:mb-14">
           <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-primary)]">
-            Best Choice
+            {eyebrow}
           </p>
           <div className="flex items-end gap-2">
             <h2
               id="facilities-heading"
               className="font-[var(--font-display)] text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold tracking-tight text-[var(--color-foreground)]"
             >
-              Villa Facilities
+              {title}
             </h2>
             <span aria-hidden className="mb-2.5 h-2 w-2 rounded-full bg-amber-400" />
           </div>
           <p className="mt-3 max-w-xl text-sm text-[var(--color-muted)] md:text-base">
-            Swipe on mobile or use the arrows to browse every amenity.
+            {descriptionText}
           </p>
         </div>
 
@@ -88,7 +105,7 @@ export default function FacilitiesSection() {
             className="w-full"
           >
             <CarouselContent className="-ml-4">
-              {FACILITIES.map((f) => (
+              {facilitiesList.map((f) => (
                 <CarouselItem
                   key={f.id}
                   className="pl-4 basis-full md:basis-1/2 lg:basis-1/3"

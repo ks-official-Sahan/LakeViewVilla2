@@ -41,6 +41,11 @@ export const ADMIN_CONTENT_PAGES: ContentPageDef[] = [
     label: "FAQ Page",
     sections: ["hero", "questions"],
   },
+  {
+    slug: "blog",
+    label: "Blog Page",
+    sections: ["hero"],
+  },
 ];
 
 export function getContentPage(slug: string): ContentPageDef | undefined {

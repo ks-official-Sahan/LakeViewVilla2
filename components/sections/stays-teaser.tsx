@@ -12,11 +12,20 @@ import {
   IconBrandBooking,
 } from "@tabler/icons-react";
 
-export function StaysTeaser() {
+export function StaysTeaser({ cmsData }: { cmsData?: { eyebrow?: string; title?: string; description?: string; ctaLabel?: string; items?: any[] } }) {
   const sectionRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
+
+  const eyebrow = cmsData?.eyebrow || "Accommodation";
+  const title = cmsData?.title || "Your perfect stay awaits";
+  const descriptionText = cmsData?.description || STAYS_INTRO;
+  const ctaLabel = cmsData?.ctaLabel || "Get Best Rate on WhatsApp";
+
+  const roomsList = Array.isArray(cmsData?.items) && cmsData.items.length > 0
+    ? cmsData.items
+    : BOOKING_FACTS.rooms;
 
   const handleWhatsApp = () => {
     const msg = `Hi! I'd like to enquire about availability and rates for Lake View Villa Tangalle. Could you please share the best available rate and confirm availability?`;
@@ -71,12 +80,13 @@ export function StaysTeaser() {
             onEnter: (batch) => {
               gsap.fromTo(
                 batch,
-                { opacity: 0, y: 32 },
+                { opacity: 0, y: 44, rotateX: 6, transformOrigin: "top center" },
                 {
                   opacity: 1,
                   y: 0,
-                  duration: 0.65,
-                  stagger: 0.12,
+                  rotateX: 0,
+                  duration: 0.75,
+                  stagger: 0.1,
                   ease: EASE.out,
                   overwrite: true,
                 }
@@ -86,7 +96,7 @@ export function StaysTeaser() {
         });
       }
 
-      gsap.fromTo(ctaRef.current, { opacity: 0, y: 24 }, {
+      gsap.fromTo(ctaRef.current, { opacity: 0, y: 32 }, {
         opacity: 1, y: 0, duration: 0.65, ease: EASE.out, delay: 0.1,
         scrollTrigger: { trigger: ctaRef.current, start: "top 88%", once: true },
       });
@@ -101,7 +111,7 @@ export function StaysTeaser() {
       ref={sectionRef}
       id="stays"
       aria-labelledby="stays-heading"
-      className="relative overflow-hidden py-24 md:py-32"
+      className="relative overflow-hidden py-24 md:py-32 bg-[var(--color-background)] border-t border-[var(--color-border)]"
     >
       {/* Ambient */}
       <div aria-hidden className="pointer-events-none absolute inset-0"
@@ -110,17 +120,14 @@ export function StaysTeaser() {
       <div className="relative mx-auto max-w-7xl px-4 md:px-6">
         {/* Heading */}
         <div ref={headingRef} className="mb-12 text-center md:mb-16">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-primary)]">Accommodation</p>
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-primary)]">{eyebrow}</p>
           <h2
             id="stays-heading"
             className="font-[var(--font-display)] text-[clamp(2rem,4.5vw,3.25rem)] font-extrabold tracking-tight text-[var(--color-foreground)]"
           >
-            Your perfect{" "}
-            <span className="bg-gradient-to-r from-[#0ea5e9] to-[#22d3ee] bg-clip-text text-transparent">
-              stay awaits
-            </span>
+            {title}
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-[var(--color-muted)]">{STAYS_INTRO}</p>
+          <p className="mx-auto mt-4 max-w-xl text-[var(--color-muted)]">{descriptionText}</p>
 
           {/* Rating pill */}
           <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 shadow-sm">
@@ -140,7 +147,7 @@ export function StaysTeaser() {
 
         {/* Room cards */}
         <div ref={cardsRef} className="mb-10 grid gap-5 md:grid-cols-2">
-          {BOOKING_FACTS.rooms?.map((room, i) => (
+          {roomsList?.map((room: any, i: number) => (
             <article
               key={room.name}
               data-room
@@ -162,7 +169,7 @@ export function StaysTeaser() {
 
               {/* Features */}
               <ul className="space-y-2">
-                {room.features.slice(0, 5).map((f, fi) => (
+                {room.features?.slice(0, 5).map((f: any, fi: number) => (
                   <li key={fi} className="flex items-center gap-2.5 text-sm text-[var(--color-muted)]">
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-primary)]" />
                     {f}
@@ -187,7 +194,7 @@ export function StaysTeaser() {
             className="group flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-4 font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:shadow-emerald-500/40 hover:brightness-110"
           >
             <Phone className="h-5 w-5" />
-            Get Best Rate on WhatsApp
+            {ctaLabel}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </button>
 
