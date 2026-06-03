@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import FAQClient from "./client";
 import { FAQ_ITEMS } from "@/data/content";
-import { getContentBlocks } from "@/lib/admin/content-actions";
+import { getContentBlock } from "@/lib/cms/get-content-block";
 
 export const metadata: Metadata = {
   title: "Tangalle Villa FAQ — Bookings & Directions | Lake View Villa",
@@ -31,15 +31,11 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  let dbBlocks: any[] = [];
-  try {
-    dbBlocks = await getContentBlocks("faq");
-  } catch (error) {
-    console.error("Failed to load FAQ CMS blocks:", error);
-  }
-
-  const heroBlock = dbBlocks.find(b => b.sectionSlug === "hero")?.data;
-  const questionsBlock = dbBlocks.find(b => b.sectionSlug === "questions")?.data;
+  const heroBlock = await getContentBlock<any>("faq", "hero", {
+    headline: "Frequently Asked Questions",
+    subheadline: "Find answers to common questions about Lake View Villa Tangalle",
+  });
+  const questionsBlock = await getContentBlock<any>("faq", "questions", [] as any[]);
 
   // Map to format required by SeoJsonLd
   const faqList = Array.isArray(questionsBlock)

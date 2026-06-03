@@ -137,15 +137,18 @@ export default function StaysPage({
   const amenitiesList = cmsAmenities || BOOKING_FACTS.amenities || [];
 
   return (
-    <div className="min-h-screen relative overflow-hidden text-white">
+    <div className="min-h-screen relative overflow-hidden text-[var(--color-foreground)] bg-[var(--color-background)]">
       {/* Ambient background */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_40%_at_20%_10%,rgba(56,189,248,0.16),transparent_70%),radial-gradient(50%_30%_at_80%_20%,rgba(45,212,191,0.14),transparent_70%),linear-gradient(180deg,#0b1220,#0b1220_30%,#0f172a)]"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "radial-gradient(60% 40% at 20% 10%, rgba(14,165,233,0.08), transparent 70%), radial-gradient(50% 30% at 80% 20%, rgba(201,165,90,0.06), transparent 70%)"
+        }}
       />
       <motion.div
         aria-hidden
-        className="absolute inset-0 mix-blend-screen opacity-70"
+        className="absolute inset-0 mix-blend-overlay opacity-30 dark:mix-blend-screen dark:opacity-75"
         animate={{ backgroundPosition: ["0px 0px", "36px 24px", "0px 0px"] }}
         transition={{ duration: 16, repeat: Infinity, ease: "linear" }}
         style={{
@@ -161,11 +164,11 @@ export default function StaysPage({
           <SectionReveal>
             <div className="text-center">
               <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-emerald-300 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#0ea5e9] to-[#22d3ee] bg-clip-text text-transparent">
                   {headline}
                 </span>
               </h1>
-              <p className="text-lg md:text-xl text-slate-300/95 max-w-2xl mx-auto">
+              <p className="text-lg md:text-xl text-[var(--color-muted)] max-w-2xl mx-auto">
                 {subheadline}
               </p>
               {(rating || ratingCount) && (
@@ -187,15 +190,15 @@ export default function StaysPage({
           {/* Rates + Room listings */}
           <div className="space-y-8">
             <SectionReveal>
-              <div className="rounded-2xl p-8 shadow-2xl ring-1 ring-white/10 bg-white/10 backdrop-blur-xl">
+              <div className="glass-premium rounded-2xl p-8 shadow-2xl">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                  <Star className="text-yellow-300" size={22} />
+                  <Star className="text-yellow-500 dark:text-yellow-300" size={22} />
                   Rates & Availability
                 </h2>
 
-                <div className="overflow-x-auto rounded-xl ring-1 ring-white/10">
-                  <table className="w-full text-sm md:text-base text-white/95">
-                    <thead className="bg-white/5">
+                <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]/50">
+                  <table className="w-full text-sm md:text-base text-[var(--color-foreground)]/90">
+                    <thead className="bg-[var(--color-primary)]/8">
                       <tr>
                         <th className="text-left py-3 px-3 font-semibold">
                           Season
@@ -213,19 +216,19 @@ export default function StaysPage({
                     </thead>
                     <tbody>
                       {pricingList.map((r, i) => (
-                        <tr key={i} className="border-t border-white/10">
-                          <td className="py-4 px-3 font-medium text-white">
+                        <tr key={i} className="border-t border-[var(--color-border)]/50">
+                          <td className="py-4 px-3 font-medium text-[var(--color-foreground)]">
                             {r.season}
                           </td>
-                          <td className="py-4 px-3 text-slate-300">
+                          <td className="py-4 px-3 text-[var(--color-muted)]">
                             {r.period}
                           </td>
                           <td className="py-4 px-3">
-                            <span className="inline-flex items-center rounded-md px-2 py-1 bg-emerald-400/15 text-emerald-300 ring-1 ring-emerald-300/30">
+                            <span className="inline-flex items-center rounded-md px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300 ring-1 ring-emerald-300/30">
                               {r.nightly}
                             </span>
                           </td>
-                          <td className="py-4 px-3 text-slate-300">
+                          <td className="py-4 px-3 text-[var(--color-muted)]">
                             {r.minNights}
                           </td>
                         </tr>
@@ -235,7 +238,7 @@ export default function StaysPage({
                 </div>
 
                 {pricingList[0]?.notes ? (
-                  <p className="text-xs md:text-sm text-slate-400 mt-4">
+                  <p className="text-xs md:text-sm text-[var(--color-muted)] mt-4">
                     {pricingList[0].notes}
                   </p>
                 ) : null}
@@ -254,7 +257,7 @@ export default function StaysPage({
 
                 return (
                   <SectionReveal key={room.name}>
-                    <article className="group overflow-hidden rounded-2xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-xl transition-all duration-300 hover:border-cyan-500/30 hover:shadow-[0_8px_32px_rgba(14,165,233,.12)]">
+                    <article className="group overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl transition-all duration-300 hover:border-[var(--color-primary)]/30 hover:shadow-[0_8px_32px_rgba(14,165,233,.10)]">
                       {/* Room dynamic image */}
                       {roomImg && (
                         <div className="relative -mx-6 -mt-6 mb-5 aspect-[16/10] overflow-hidden rounded-t-2xl">
@@ -272,8 +275,8 @@ export default function StaysPage({
                       {/* Room properties */}
                       <div className="mb-4 flex items-start justify-between">
                         <div>
-                          <h3 className="text-xl font-bold text-white">{room.name}</h3>
-                          <div className="mt-1 flex items-center gap-1.5 text-sm text-slate-300">
+                          <h3 className="text-xl font-bold text-[var(--color-foreground)]">{room.name}</h3>
+                          <div className="mt-1 flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
                             <Users className="h-4 w-4" />
                             <span>Sleeps {room.sleeps}</span>
                           </div>
@@ -285,8 +288,8 @@ export default function StaysPage({
 
                       <ul className="space-y-2">
                         {room.features.slice(0, 5).map((f, fi) => (
-                          <li key={fi} className="flex items-center gap-2.5 text-sm text-slate-300">
-                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" />
+                          <li key={fi} className="flex items-center gap-2.5 text-sm text-[var(--color-muted)]">
+                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500" />
                             {f}
                           </li>
                         ))}
@@ -300,16 +303,16 @@ export default function StaysPage({
 
           {/* WhatsApp enquiry form */}
           <SectionReveal>
-            <div className="rounded-2xl p-8 shadow-2xl ring-1 ring-white/10 bg-white/10 backdrop-blur-xl">
+            <div className="glass-premium rounded-2xl p-8 shadow-2xl">
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
                 <WhatsappIcon className="h-5 w-5" />
                 WhatsApp Enquiry
               </h2>
 
               {/* Live summary chip */}
-              <div className="mb-5 text-slate-300 text-sm">
+              <div className="mb-5 text-[var(--color-muted)] text-sm">
                 <span className="mr-2">Preview:</span>
-                <span className="rounded-full bg-white/10 px-3 py-1 ring-1 ring-white/10">
+                <span className="rounded-full bg-[var(--color-primary)]/8 px-3 py-1 ring-1 ring-[var(--color-border)]">
                   {name || "Your name"} • {checkIn || "Check-in"} →{" "}
                   {checkOut || "Check-out"} • {guests ?? 2}{" "}
                   {guests === 1 ? "guest" : "guests"}
@@ -325,7 +328,7 @@ export default function StaysPage({
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label
-                      className="block text-sm font-medium text-white mb-2"
+                      className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
                       htmlFor="s-name"
                     >
                       Full Name *
@@ -333,20 +336,20 @@ export default function StaysPage({
                     <input
                       id="s-name"
                       {...register("name")}
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/55 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-transparent [color-scheme:dark]"
+                      className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
                       placeholder="Your full name"
                       autoComplete="name"
                       aria-invalid={!!errors.name}
                     />
                     {errors.name && (
-                      <p className="text-red-400 text-sm mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.name.message}
                       </p>
                     )}
                   </div>
                   <div>
                     <label
-                      className="block text-sm font-medium text-white mb-2"
+                      className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
                       htmlFor="s-phone"
                     >
                       Phone Number *
@@ -354,14 +357,14 @@ export default function StaysPage({
                     <input
                       id="s-phone"
                       {...register("phone")}
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/55 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-transparent [color-scheme:dark]"
+                      className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
                       placeholder="+94717448391"
                       inputMode="tel"
                       autoComplete="tel"
                       aria-invalid={!!errors.phone}
                     />
                     {errors.phone && (
-                      <p className="text-red-400 text-sm mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.phone.message}
                       </p>
                     )}
@@ -371,7 +374,7 @@ export default function StaysPage({
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label
-                      className="block text-sm font-medium text-white mb-2"
+                      className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
                       htmlFor="s-in"
                     >
                       Check-in *
@@ -381,11 +384,11 @@ export default function StaysPage({
                       {...register("checkIn")}
                       type="date"
                       min={todayISO()}
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-transparent [color-scheme:dark]"
+                      className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
                       aria-invalid={!!errors.checkIn}
                     />
                     {errors.checkIn && (
-                      <p className="text-red-400 text-sm mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.checkIn.message}
                       </p>
                     )}
@@ -393,7 +396,7 @@ export default function StaysPage({
 
                   <div>
                     <label
-                      className="block text-sm font-medium text-white mb-2"
+                      className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
                       htmlFor="s-out"
                     >
                       Check-out *
@@ -403,11 +406,11 @@ export default function StaysPage({
                       {...register("checkOut")}
                       type="date"
                       min={minCheckout}
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-transparent [color-scheme:dark]"
+                      className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
                       aria-invalid={!!errors.checkOut}
                     />
                     {errors.checkOut && (
-                      <p className="text-red-400 text-sm mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.checkOut.message}
                       </p>
                     )}
@@ -432,7 +435,7 @@ export default function StaysPage({
 
                 <div>
                   <label
-                    className="block text-sm font-medium text-white mb-2"
+                    className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
                     htmlFor="s-msg"
                   >
                     Additional Message
@@ -441,7 +444,7 @@ export default function StaysPage({
                     id="s-msg"
                     {...register("message")}
                     rows={4}
-                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/55 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-transparent resize-none [color-scheme:dark]"
+                    className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent resize-none"
                     placeholder="Any special requests or questions…"
                   />
                 </div>
@@ -451,7 +454,7 @@ export default function StaysPage({
                   disabled={isSubmitting}
                   whileHover={{ y: -1, scale: 1.01 }}
                   whileTap={{ scale: 0.985 }}
-                  className="w-full py-4 px-6 rounded-xl text-slate-900 font-semibold shadow-xl disabled:opacity-60 disabled:cursor-not-allowed bg-[linear-gradient(135deg,#67e8f9,#22d3ee_40%,#34d399)] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 inline-flex items-center justify-center gap-2"
+                  className="w-full py-4 px-6 rounded-xl font-semibold shadow-xl disabled:opacity-60 disabled:cursor-not-allowed bg-[var(--color-primary)] text-[var(--color-primary-foreground)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50 inline-flex items-center justify-center gap-2 transition-all"
                 >
                   <WhatsappIcon className="h-5 w-5" />
                   {isSubmitting ? "Sending…" : "Send WhatsApp Enquiry"}

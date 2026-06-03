@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import Image from "next/image";
 import { useGSAP } from "@/lib/gsap";
 import { gsap, ScrollTrigger, EASE, DURATION } from "@/lib/gsap";
@@ -215,7 +215,7 @@ export function ValuesSection({ cmsData }: { cmsData?: { eyebrow?: string; title
 
             {/* Value list */}
             <ul ref={listRef} className="mt-8 space-y-3">
-              {itemsList.map((item) => {
+              {itemsList.map((item: any) => {
                 const Icon = iconMap[item.icon as keyof typeof iconMap] ?? Car;
                 return (
                   <li

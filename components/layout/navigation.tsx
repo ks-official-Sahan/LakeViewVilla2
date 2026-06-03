@@ -162,11 +162,9 @@ export function Navigation() {
 
           {/* Desktop right actions */}
           <div className="hidden items-center gap-[clamp(0.35rem,1vw,0.65rem)] md:flex">
-            {process.env.NODE_ENV !== "production" && (
-              <div className="rounded-lg p-1">
-                <ThemeSwitch />
-              </div>
-            )}
+            <div className="rounded-lg p-1">
+              <ThemeSwitch />
+            </div>
             <a
               href={whatsappUrl}
               target="_blank"

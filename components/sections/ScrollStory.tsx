@@ -473,7 +473,7 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
         ref={revealRef}
         id="villa-story"
         aria-labelledby="story-heading"
-        className="relative overflow-hidden bg-[#f5f2e8]"
+        className="relative overflow-hidden bg-[var(--color-background)] border-t border-[var(--color-border)]/50"
       >
         {/* Phase 3 — parallax ghost typography (scrolls at 40% speed) */}
         <div
@@ -483,7 +483,7 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
           style={{ willChange: "transform" }}
         >
           <span
-            className="block font-serif font-black text-[#0f1011]/[0.032] leading-none"
+            className="block font-serif font-black text-[var(--color-foreground)]/[0.032] leading-none"
             style={{ fontSize: "clamp(6rem, 22vw, 20rem)", letterSpacing: "-0.04em" }}
           >
             SANCTUARY
@@ -501,7 +501,7 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
             </p>
             <h2
               id="story-heading"
-              className="font-serif font-black leading-[1.04] tracking-[-0.025em] text-[#0f1011]"
+              className="font-serif font-black leading-[1.04] tracking-[-0.025em] text-[var(--color-foreground)]"
               style={{ fontSize: "clamp(2.25rem, 5vw, 4.5rem)" }}
             >
               A private{" "}
@@ -509,7 +509,7 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
               <br />
               on Sri Lanka's lagoon.
             </h2>
-            <p className="mt-5 max-w-xl text-[#3d3d3d] leading-relaxed text-[clamp(0.9rem,1.4vw,1.0625rem)]">
+            <p className="mt-5 max-w-xl text-[var(--color-muted)] leading-relaxed text-[clamp(0.9rem,1.4vw,1.0625rem)]">
               Lake View Villa blends architectural precision with the raw, unhurried beauty of Tangalle. A rare escape where the lagoon is your living room and the sky your ceiling.
             </p>
           </div>
@@ -570,20 +570,20 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
           ref={statsRowRef}
           className="relative z-10 lv-container pb-[clamp(4rem,8vw,6rem)]"
         >
-          <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-[#0f1011]/12">
+          <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-[var(--color-border)]/50">
             {STATS.map((s, i) => (
               <div
                 key={s.label}
                 data-stat
-                className="px-6 py-8 border-r border-[#0f1011]/12 last:border-r-0 text-center sm:text-left"
+                className="px-6 py-8 border-r border-[var(--color-border)]/50 last:border-r-0 text-center sm:text-left"
               >
                 <p
-                  className="font-serif font-black text-[#0f1011] mb-1"
+                  className="font-serif font-black text-[var(--color-foreground)] mb-1"
                   style={{ fontSize: "clamp(1.75rem, 4vw, 2.75rem)" }}
                 >
                   {s.value}
                 </p>
-                <p className="text-[0.6875rem] uppercase tracking-[0.18em] text-[#3d3d3d]/70 font-medium">
+                <p className="text-[0.6875rem] uppercase tracking-[0.18em] text-[var(--color-muted)] font-medium">
                   {s.label}
                 </p>
               </div>

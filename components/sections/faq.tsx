@@ -16,6 +16,16 @@ export function FAQ({ cmsData }: { cmsData?: any }) {
   const eyebrow = cmsData?.eyebrow || "Got Questions?";
   const descriptionText = cmsData?.description || "Everything you need to know about your stay at Lake View Villa.";
 
+  const questionsList: { question: string; answer: string }[] = Array.isArray(cmsData?.items) && cmsData.items.length > 0
+    ? cmsData.items.map((item: any) => ({
+        question: item.question || item.q || "",
+        answer: item.answer || item.a || "",
+      }))
+    : FAQ_ITEMS.map((item) => ({
+        question: item.question,
+        answer: item.answer,
+      }));
+
   // Section entrance
   useGSAP(
     () => {
@@ -117,7 +127,7 @@ export function FAQ({ cmsData }: { cmsData?: any }) {
 
         {/* Accordion */}
         <div className="space-y-3">
-          {FAQ_ITEMS.map((item, idx) => {
+          {questionsList.map((item, idx) => {
             const isOpen = openIndex === idx;
             return (
               <div

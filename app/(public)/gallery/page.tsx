@@ -133,25 +133,28 @@ export default async function Page() {
         }}
       />
 
-      <div className="min-h-screen relative overflow-hidden">
-        {/* Ambient background (GPU-cheap, no hydration issues) */}
+      <div className="min-h-screen relative overflow-hidden bg-[var(--color-background)]">
+        {/* Ambient background using design tokens */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_40%_at_20%_10%,rgba(56,189,248,0.16),transparent_70%),radial-gradient(50%_30%_at_80%_20%,rgba(45,212,191,0.14),transparent_70%),linear-gradient(180deg,#0b1220,#0b1220_30%,#0f172a)]"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: "radial-gradient(60% 40% at 20% 10%, rgba(14,165,233,0.08), transparent 70%), radial-gradient(50% 30% at 80% 20%, rgba(201,165,90,0.06), transparent 70%)"
+          }}
         />
         <div className="relative z-10 pt-24 pb-12">
           <div className="container mx-auto px-4">
             <SectionReveal>
               <div className="text-center">
                 <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                  <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-emerald-300 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-[#0ea5e9] to-[#22d3ee] bg-clip-text text-transparent">
                     {heroBlock.headline}
                   </span>
                 </h1>
-                <p className="text-lg md:text-xl text-slate-300/95 max-w-2xl mx-auto">
+                <p className="text-lg md:text-xl text-[var(--color-muted)] max-w-2xl mx-auto">
                   {heroBlock.subheadline}
                 </p>
-                <p className="text-sm text-slate-400 mt-2">
+                <p className="text-sm text-[var(--color-muted)]/70 mt-2">
                   {images.length} photos
                 </p>
               </div>

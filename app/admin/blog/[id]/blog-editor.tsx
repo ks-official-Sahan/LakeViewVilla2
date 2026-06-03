@@ -120,6 +120,8 @@ async function consumeBlogGenerateSse(res: Response): Promise<{
   excerpt: string;
   content: string;
   model?: string;
+  featuredImageId?: string | null;
+  featuredImageUrl?: string | null;
 }> {
   const reader = res.body?.getReader();
   if (!reader) throw new Error("No response body");
@@ -152,11 +154,15 @@ async function consumeBlogGenerateSse(res: Response): Promise<{
             const title = typeof j.title === "string" ? j.title.trim() : "";
             const excerpt = typeof j.excerpt === "string" ? j.excerpt.trim() : "";
             const content = typeof j.content === "string" ? j.content.trim() : "";
+            const featuredImageId = typeof j.featuredImageId === "string" ? j.featuredImageId.trim() : null;
+            const featuredImageUrl = typeof j.featuredImageUrl === "string" ? j.featuredImageUrl.trim() : null;
             if (!title || !content) throw new Error("Incomplete AI payload");
             return {
               title,
               excerpt,
               content,
+              featuredImageId,
+              featuredImageUrl,
               ...(typeof j.model === "string" ? { model: j.model } : {}),
             };
           }
@@ -412,11 +418,19 @@ export function BlogEditor({ initialPost, isNew }: BlogEditorProps) {
   }, [formData, storageKey, initialPost?.updatedAt]);
 
   const mergeAiPayload = (
-    data: { title?: string; excerpt?: string; content?: string },
+    data: {
+      title?: string;
+      excerpt?: string;
+      content?: string;
+      featuredImageId?: string | null;
+      featuredImageUrl?: string | null;
+    },
   ): BlogEditorFormData => {
     let newContent = "";
     let newTitle = formData.title;
     let newExcerpt = formData.excerpt;
+    let newFeaturedImageId = formData.featuredImageId;
+    let newFeaturedImageUrl = formData.featuredImageUrl;
 
     if (
       typeof data.title === "string" &&
@@ -429,6 +443,8 @@ export function BlogEditor({ initialPost, isNew }: BlogEditorProps) {
           ? data.excerpt.trim()
           : newExcerpt;
       newContent = data.content.trim();
+      newFeaturedImageId = data.featuredImageId ?? newFeaturedImageId;
+      newFeaturedImageUrl = data.featuredImageUrl ?? newFeaturedImageUrl;
     } else if (typeof data.content === "string" && data.content.trim()) {
       const legacy = parseLegacyAiMarkdownBody(data.content);
       newContent = legacy.body;
@@ -446,6 +462,8 @@ export function BlogEditor({ initialPost, isNew }: BlogEditorProps) {
       title: newTitle || formData.title,
       excerpt: newExcerpt || formData.excerpt,
       slug: formData.slug.trim() ? formData.slug : slugFromTitle || formData.slug,
+      featuredImageId: newFeaturedImageId,
+      featuredImageUrl: newFeaturedImageUrl,
     };
   };
 

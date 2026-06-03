@@ -141,15 +141,18 @@ export default function VisitPage({
   }, []);
 
   return (
-    <div className="min-h-screen relative overflow-hidden text-white">
-      {/* Ambient background (GPU-cheap) */}
+    <div className="min-h-screen relative overflow-hidden text-[var(--color-foreground)] bg-[var(--color-background)]">
+      {/* Ambient background using design tokens */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_40%_at_20%_10%,rgba(56,189,248,0.16),transparent_70%),radial-gradient(50%_30%_at_80%_20%,rgba(45,212,191,0.14),transparent_70%),linear-gradient(180deg,#0b1220,#0b1220_30%,#0f172a)]"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "radial-gradient(60% 40% at 20% 10%, rgba(14,165,233,0.08), transparent 70%), radial-gradient(50% 30% at 80% 20%, rgba(201,165,90,0.06), transparent 70%)"
+        }}
       />
       <motion.div
         aria-hidden
-        className="absolute inset-0 mix-blend-screen opacity-70"
+        className="absolute inset-0 mix-blend-overlay opacity-30 dark:mix-blend-screen dark:opacity-75"
         animate={{ backgroundPosition: ["0px 0px", "36px 24px", "0px 0px"] }}
         transition={{ duration: 16, repeat: Infinity, ease: "linear" }}
         style={{
@@ -165,11 +168,11 @@ export default function VisitPage({
           <SectionReveal>
             <div className="text-center">
               <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-emerald-300 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-gold)] bg-clip-text text-transparent">
                   {cmsHero?.headline || "Visit Us"}
                 </span>
               </h1>
-              <p className="text-lg md:text-xl text-slate-300/95 max-w-2xl mx-auto">
+              <p className="text-lg md:text-xl text-[var(--color-muted)] max-w-2xl mx-auto">
                 {cmsHero?.subheadline || "Plan your journey to Lake View Villa Tangalle with precise directions and fast contact options."}
               </p>
             </div>
@@ -183,21 +186,21 @@ export default function VisitPage({
           <div className="space-y-8">
             {/* Map */}
             <SectionReveal>
-              <div className="rounded-2xl p-8 shadow-2xl ring-1 ring-white/10 bg-white/10 backdrop-blur-xl">
+              <div className="rounded-2xl p-8 shadow-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                  <MapPin className="text-cyan-300" size={24} />
+                  <MapPin className="text-[var(--color-primary)]" size={24} />
                   {cmsMap?.headline || "Location & Map"}
                 </h2>
                 {cmsMap?.subheadline && (
-                  <p className="text-slate-300 text-sm mb-4">{cmsMap.subheadline}</p>
+                  <p className="text-[var(--color-muted)] text-sm mb-4">{cmsMap.subheadline}</p>
                 )}
 
                 <motion.div
-                  className="relative mx-auto aspect-square max-w-lg overflow-hidden rounded-[2rem] shadow-[0_24px_80px_rgba(14,165,233,.18)] ring-1 ring-white/10 md:max-w-none md:rounded-[2.5rem] md:[clip-path:circle(48%_at_50%_50%)]"
+                  className="relative mx-auto aspect-square max-w-lg overflow-hidden rounded-[2rem] shadow-[0_24px_80px_rgba(14,165,233,.08)] ring-1 ring-[var(--color-border)] md:max-w-none md:rounded-[2.5rem] md:[clip-path:circle(48%_at_50%_50%)]"
                   whileHover={{ scale: 1.01 }}
                   transition={{ type: "spring", stiffness: 180, damping: 18 }}
                 >
-                  <div className="pointer-events-none absolute -inset-px rounded-[inherit] bg-gradient-to-br from-cyan-400/30 to-emerald-400/30 blur-[6px]" />
+                  <div className="pointer-events-none absolute -inset-px rounded-[inherit] bg-gradient-to-br from-[var(--color-primary)]/20 to-[var(--color-gold)]/20 blur-[6px]" />
                   <iframe
                     src={mapsEmbedSrc}
                     title="Lake View Villa Tangalle Location"
@@ -214,7 +217,7 @@ export default function VisitPage({
                     rel="noopener noreferrer"
                     whileHover={{ y: -1, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-slate-900 font-semibold shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 bg-[linear-gradient(135deg,#67e8f9,#22d3ee_40%,#34d399)]"
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-[var(--color-primary-foreground)] font-semibold shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50 bg-[var(--color-primary)] hover:opacity-90"
                   >
                     <Navigation size={20} />
                     Open in Google Maps
@@ -236,7 +239,7 @@ export default function VisitPage({
                     }}
                     whileHover={{ y: -1, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-white font-semibold shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 bg-white/10 hover:bg-white/14 ring-1 ring-white/15 transition"
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-[var(--color-foreground)] font-semibold shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50 bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface)]/85 transition"
                   >
                     <Navigation size={20} />
                     Get Directions via WhatsApp
@@ -247,34 +250,34 @@ export default function VisitPage({
 
             {/* How to get here */}
             <SectionReveal>
-              <div className="rounded-2xl p-8 shadow-2xl ring-1 ring-white/10 bg-white/10 backdrop-blur-xl">
+              <div className="rounded-2xl p-8 shadow-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                  <Car className="text-cyan-300" size={24} />
+                  <Car className="text-[var(--color-primary)]" size={24} />
                   {cmsDirections?.headline || "How to Get Here"}
                 </h2>
 
                 <div className="space-y-4">
                   {directionsSteps.map((step, i) => (
                     <div key={i} className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400 flex items-center justify-center text-slate-900 font-semibold text-sm">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-gold)] flex items-center justify-center text-[var(--color-primary-foreground)] font-semibold text-sm">
                         {i + 1}
                       </div>
-                      <p className="text-slate-200/90 pt-1">{step}</p>
+                      <p className="text-[var(--color-foreground)]/90 pt-1">{step}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-6 p-4 rounded-xl ring-1 ring-cyan-300/30 bg-cyan-400/10">
+                <div className="mt-6 p-4 rounded-xl ring-1 ring-[var(--color-primary)]/20 bg-[var(--color-primary)]/[0.04]">
                   <div className="flex items-start gap-3">
                     <Clock
-                      className="text-cyan-300 mt-1 flex-shrink-0"
+                      className="text-[var(--color-primary)] mt-1 flex-shrink-0"
                       size={20}
                     />
                     <div>
-                      <h3 className="font-semibold mb-1">
+                      <h3 className="font-semibold mb-1 text-[var(--color-foreground)]">
                         Typical Travel Time
                       </h3>
-                      <p className="text-slate-300 text-sm">
+                      <p className="text-[var(--color-muted)] text-sm">
                         {cmsDirections?.subheadline || "~3 hours from Colombo Airport • ~45 minutes from Matara"}
                       </p>
                     </div>
@@ -286,19 +289,19 @@ export default function VisitPage({
             {/* Nearby Attractions */}
             {((cmsNearby?.headline) || PROPERTY.location.noted_nearby.length > 0) && (
               <SectionReveal>
-                <div className="rounded-2xl p-8 shadow-2xl ring-1 ring-white/10 bg-white/10 backdrop-blur-xl">
+                <div className="rounded-2xl p-8 shadow-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
                   <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                    <MapPin className="text-cyan-300" size={24} />
+                    <MapPin className="text-[var(--color-primary)]" size={24} />
                     {cmsNearby?.headline || "Nearby Attractions"}
                   </h2>
                   {cmsNearby?.subheadline && (
-                    <p className="text-slate-300 text-sm mb-4">{cmsNearby.subheadline}</p>
+                    <p className="text-[var(--color-muted)] text-sm mb-4">{cmsNearby.subheadline}</p>
                   )}
                   <div className="grid gap-3">
                     {PROPERTY.location.noted_nearby.map((n, i) => (
-                      <div key={i} className="flex justify-between items-center rounded-xl bg-white/5 p-4 border border-white/5">
+                      <div key={i} className="flex justify-between items-center rounded-xl bg-[var(--color-background)] p-4 border border-[var(--color-border)]">
                         <span className="font-medium">{n.place}</span>
-                        <span className="text-sm text-cyan-300">{n.distance_mi} miles away</span>
+                        <span className="text-sm font-semibold text-[var(--color-primary)]">{n.distance_mi} miles away</span>
                       </div>
                     ))}
                   </div>
@@ -308,20 +311,20 @@ export default function VisitPage({
 
             {/* Quick contact */}
             <SectionReveal>
-              <div className="rounded-2xl p-8 shadow-2xl ring-1 ring-white/10 bg-white/10 backdrop-blur-xl">
+              <div className="rounded-2xl p-8 shadow-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
                 <h2 className="text-2xl font-bold mb-6">Quick Contact</h2>
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <a
                     href={`tel:${SITE_CONFIG.whatsappNumber}`}
-                    className="group flex items-center gap-3 p-4 rounded-xl bg-white/6 ring-1 ring-white/10 hover:bg-white/10 transition"
+                    className="group flex items-center gap-3 p-4 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] hover:bg-[var(--color-surface)]/50 transition"
                   >
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500/90">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500/95">
                       <Phone className="h-5 w-5 text-white" />
                     </span>
                     <div>
                       <p className="font-medium">Call Us</p>
-                      <p className="text-slate-300 text-sm">
+                      <p className="text-[var(--color-muted)] text-sm">
                         {SITE_CONFIG.whatsappNumber}
                       </p>
                     </div>
@@ -329,14 +332,14 @@ export default function VisitPage({
 
                   <a
                     href={`mailto:${PROPERTY.email}`}
-                    className="group flex items-center gap-3 p-4 rounded-xl bg-white/6 ring-1 ring-white/10 hover:bg-white/10 transition"
+                    className="group flex items-center gap-3 p-4 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] hover:bg-[var(--color-surface)]/50 transition"
                   >
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500/90">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500/95">
                       <Mail className="h-5 w-5 text-white" />
                     </span>
                     <div>
                       <p className="font-medium">Email Us</p>
-                      <p className="text-slate-300 text-sm">{PROPERTY.email}</p>
+                      <p className="text-[var(--color-muted)] text-sm">{PROPERTY.email}</p>
                     </div>
                   </a>
                 </div>
@@ -346,8 +349,8 @@ export default function VisitPage({
 
           {/* Right column: form */}
           <SectionReveal>
-            <div className="rounded-2xl p-8 shadow-2xl ring-1 ring-white/10 bg-white/10 backdrop-blur-xl">
-              <h2 className="text-2xl font-bold mb-6">Send us a Message</h2>
+            <div className="rounded-2xl p-8 shadow-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+              <h2 className="text-2xl font-bold mb-6 text-[var(--color-foreground)]">Send us a Message</h2>
 
               <form
                 onSubmit={handleSubmit(onSubmit)}
@@ -358,7 +361,7 @@ export default function VisitPage({
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label
-                      className="block text-sm font-medium text-white mb-2"
+                      className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
                       htmlFor="v-name"
                     >
                       Full Name *
@@ -366,13 +369,13 @@ export default function VisitPage({
                     <input
                       id="v-name"
                       {...register("name")}
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/55 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent [color-scheme:dark]"
+                      className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
                       placeholder="Your full name"
                       autoComplete="name"
                       aria-invalid={!!errors.name}
                     />
                     {errors.name && (
-                      <p className="text-red-400 text-sm mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.name.message}
                       </p>
                     )}
@@ -380,7 +383,7 @@ export default function VisitPage({
 
                   <div>
                     <label
-                      className="block text-sm font-medium text-white mb-2"
+                      className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
                       htmlFor="v-phone"
                     >
                       Phone Number *
@@ -388,14 +391,14 @@ export default function VisitPage({
                     <input
                       id="v-phone"
                       {...register("phone")}
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/55 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent [color-scheme:dark]"
+                      className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
                       placeholder="+94717448391"
                       inputMode="tel"
                       autoComplete="tel"
                       aria-invalid={!!errors.phone}
                     />
                     {errors.phone && (
-                      <p className="text-red-400 text-sm mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.phone.message}
                       </p>
                     )}
@@ -404,7 +407,7 @@ export default function VisitPage({
 
                 <div>
                   <label
-                    className="block text-sm font-medium text-white mb-2"
+                    className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
                     htmlFor="v-email"
                   >
                     Email Address *
@@ -413,13 +416,13 @@ export default function VisitPage({
                     id="v-email"
                     {...register("email")}
                     type="email"
-                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/55 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent [color-scheme:dark]"
+                    className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
                     placeholder="your.email@example.com"
                     autoComplete="email"
                     aria-invalid={!!errors.email}
                   />
                   {errors.email && (
-                    <p className="text-red-400 text-sm mt-1">
+                    <p className="text-red-500 text-sm mt-1">
                       {errors.email.message}
                     </p>
                   )}
@@ -428,7 +431,7 @@ export default function VisitPage({
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
                     <label
-                      className="block text-sm font-medium text-white mb-2"
+                      className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
                       htmlFor="v-in"
                     >
                       Check-in *
@@ -438,11 +441,11 @@ export default function VisitPage({
                       {...register("checkIn")}
                       type="date"
                       min={todayISO()}
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent [color-scheme:dark]"
+                      className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
                       aria-invalid={!!errors.checkIn}
                     />
                     {errors.checkIn && (
-                      <p className="text-red-400 text-sm mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.checkIn.message}
                       </p>
                     )}
@@ -450,7 +453,7 @@ export default function VisitPage({
 
                   <div>
                     <label
-                      className="block text-sm font-medium text-white mb-2"
+                      className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
                       htmlFor="v-out"
                     >
                       Check-out *
@@ -460,11 +463,11 @@ export default function VisitPage({
                       {...register("checkOut")}
                       type="date"
                       min={minCheckout}
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent [color-scheme:dark]"
+                      className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
                       aria-invalid={!!errors.checkOut}
                     />
                     {errors.checkOut && (
-                      <p className="text-red-400 text-sm mt-1">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.checkOut.message}
                       </p>
                     )}
@@ -489,7 +492,7 @@ export default function VisitPage({
 
                 <div>
                   <label
-                    className="block text-sm font-medium text-white mb-2"
+                    className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
                     htmlFor="v-msg"
                   >
                     Message *
@@ -498,12 +501,12 @@ export default function VisitPage({
                     id="v-msg"
                     {...register("message")}
                     rows={5}
-                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/55 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent resize-none [color-scheme:dark]"
+                    className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent resize-none"
                     placeholder="Tell us your dates, flexibility, special requests…"
                     aria-invalid={!!errors.message}
                   />
                   {errors.message && (
-                    <p className="text-red-400 text-sm mt-1">
+                    <p className="text-red-500 text-sm mt-1">
                       {errors.message.message}
                     </p>
                   )}
@@ -514,14 +517,14 @@ export default function VisitPage({
                   disabled={isSubmitting}
                   whileHover={{ y: -1, scale: 1.01 }}
                   whileTap={{ scale: 0.985 }}
-                  className="w-full py-4 px-6 rounded-xl text-slate-900 font-semibold shadow-xl disabled:opacity-60 disabled:cursor-not-allowed bg-[linear-gradient(135deg,#67e8f9,#22d3ee_40%,#34d399)] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+                  className="w-full py-4 px-6 rounded-xl font-semibold shadow-xl disabled:opacity-60 disabled:cursor-not-allowed bg-[var(--color-primary)] text-[var(--color-primary-foreground)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50 transition-all"
                 >
                   {isSubmitting ? "Sending…" : "Send Message"}
                 </motion.button>
 
                 {submitStatus === "success" && (
                   <div
-                    className="text-emerald-400 text-center"
+                    className="text-emerald-600 dark:text-emerald-400 text-center"
                     role="status"
                     aria-live="polite"
                   >
@@ -530,7 +533,7 @@ export default function VisitPage({
                 )}
                 {submitStatus === "error" && (
                   <div
-                    className="text-red-400 text-center"
+                    className="text-red-600 dark:text-red-400 text-center"
                     role="status"
                     aria-live="polite"
                   >

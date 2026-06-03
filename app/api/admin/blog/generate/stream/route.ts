@@ -119,7 +119,25 @@ export async function POST(req: Request) {
             detail: full.slice(0, 280),
           });
         } else {
-          send({ type: "done", ...parsed, model: usedModel });
+          let aiFeaturedImageId = null;
+          let aiFeaturedImageUrl = null;
+          if (parsed.featuredImageId) {
+            const asset = await prisma.mediaAsset.findUnique({
+              where: { id: parsed.featuredImageId },
+              select: { url: true },
+            });
+            if (asset) {
+              aiFeaturedImageId = parsed.featuredImageId;
+              aiFeaturedImageUrl = asset.url;
+            }
+          }
+          send({
+            type: "done",
+            ...parsed,
+            featuredImageId: aiFeaturedImageId,
+            featuredImageUrl: aiFeaturedImageUrl,
+            model: usedModel,
+          });
         }
       } catch (e) {
         console.error("Blog stream error:", e);

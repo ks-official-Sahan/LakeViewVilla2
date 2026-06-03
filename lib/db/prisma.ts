@@ -97,21 +97,30 @@ async function updateFallbackCache(client: PrismaClient, modelName: string) {
 
 function createResilientPrismaClient(): any {
   const connectionString = process.env.DATABASE_URL;
+  let isDbOffline = !connectionString;
 
-  if (!connectionString) {
-    console.warn("[DB] DATABASE_URL not set — PrismaClient will fail on queries.");
-    return new PrismaClient({ adapter: undefined as any }) as any;
+  if (isDbOffline) {
+    console.warn("[Fallback DB] DATABASE_URL not set — PrismaClient initialized in offline fallback mode.");
   }
 
-  const pool = new Pool({
-    connectionString,
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-  });
-  const adapter = new PrismaNeon(pool);
+  const pool = connectionString
+    ? new Pool({
+        connectionString,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000, // 2s connection timeout for faster fallback
+      })
+    : null;
+
+  if (pool) {
+    pool.on("error", (err: any) => {
+      console.error("[Fallback DB] Neon Pool connection error:", err.message);
+    });
+  }
+
+  const adapter = pool ? new PrismaNeon(pool as any) : undefined;
   const rawClient = new PrismaClient({
-    adapter,
+    adapter: adapter as any,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 
@@ -123,10 +132,38 @@ function createResilientPrismaClient(): any {
         return new Proxy(orig, {
           get(modelTarget, method) {
             const origMethod = (modelTarget as any)[method];
-            if (typeof origMethod === "function") {
+            const methodName = typeof method === "string" ? method : method.toString();
+            const PRISMA_METHODS = ["findMany", "findFirst", "findUnique", "count", "create", "update", "delete", "upsert", "updateMany", "deleteMany", "createMany"];
+
+            if (typeof origMethod === "function" && PRISMA_METHODS.includes(methodName)) {
               return async function (...args: any[]) {
                 const modelName = prop.toString();
-                const methodName = method.toString();
+
+                // If circuit breaker is open, directly return local offline data
+                if (isDbOffline) {
+                  if (methodName === "findMany") {
+                    return readFallbackMany(modelName, args[0]);
+                  } else if (methodName === "findFirst" || methodName === "findUnique") {
+                    return readFallbackFirst(modelName, args[0]);
+                  } else if (methodName === "count") {
+                    return readFallbackMany(modelName, args[0]).length;
+                  }
+
+                  if (methodName === "create") {
+                    const data = args[0]?.data;
+                    addToSyncQueue("CREATE", modelName, data);
+                    return { id: `mock_${Date.now()}`, ...data };
+                  } else if (methodName === "update") {
+                    const where = args[0]?.where;
+                    const data = args[0]?.data;
+                    addToSyncQueue("UPDATE", modelName, { where, data });
+                    return { ...where, ...data };
+                  } else if (methodName === "delete") {
+                    const where = args[0]?.where;
+                    addToSyncQueue("DELETE", modelName, { where });
+                    return { ...where };
+                  }
+                }
 
                 // Trigger background sync if there's a queue
                 if (methodName.startsWith("find") || methodName === "count") {
@@ -143,45 +180,33 @@ function createResilientPrismaClient(): any {
 
                   return res;
                 } catch (err: any) {
-                  const isConnectionError =
-                    err.message?.includes("Can't reach database server") ||
-                    err.message?.includes("connection") ||
-                    err.message?.includes("timeout") ||
-                    err.message?.includes("Neon") ||
-                    err.message?.includes("socket") ||
-                    err.message?.includes("ECONNRESET") ||
-                    err.message?.includes("RESET") ||
-                    err.code === "P1001" ||
-                    err.code === "P1002" ||
-                    err.code === "P1017";
+                  // Open the circuit breaker to prevent subsequent timeouts
+                  isDbOffline = true;
+                  console.warn(
+                    `[Fallback DB] Database query failed. Circuit breaker opened. Falling back to local offline DB. Method: ${methodName} on ${modelName}. Error: ${err?.message || err}`
+                  );
 
-                  if (isConnectionError) {
-                    console.warn(
-                      `[Fallback DB] Database query failed. Falling back to local offline DB. Method: ${methodName} on ${modelName}`
-                    );
+                  if (methodName === "findMany") {
+                    return readFallbackMany(modelName, args[0]);
+                  } else if (methodName === "findFirst" || methodName === "findUnique") {
+                    return readFallbackFirst(modelName, args[0]);
+                  } else if (methodName === "count") {
+                    return readFallbackMany(modelName, args[0]).length;
+                  }
 
-                    if (methodName === "findMany") {
-                      return readFallbackMany(modelName, args[0]);
-                    } else if (methodName === "findFirst" || methodName === "findUnique") {
-                      return readFallbackFirst(modelName, args[0]);
-                    } else if (methodName === "count") {
-                      return readFallbackMany(modelName, args[0]).length;
-                    }
-
-                    if (methodName === "create") {
-                      const data = args[0]?.data;
-                      addToSyncQueue("CREATE", modelName, data);
-                      return { id: `mock_${Date.now()}`, ...data };
-                    } else if (methodName === "update") {
-                      const where = args[0]?.where;
-                      const data = args[0]?.data;
-                      addToSyncQueue("UPDATE", modelName, { where, data });
-                      return { ...where, ...data };
-                    } else if (methodName === "delete") {
-                      const where = args[0]?.where;
-                      addToSyncQueue("DELETE", modelName, { where });
-                      return { ...where };
-                    }
+                  if (methodName === "create") {
+                    const data = args[0]?.data;
+                    addToSyncQueue("CREATE", modelName, data);
+                    return { id: `mock_${Date.now()}`, ...data };
+                  } else if (methodName === "update") {
+                    const where = args[0]?.where;
+                    const data = args[0]?.data;
+                    addToSyncQueue("UPDATE", modelName, { where, data });
+                    return { ...where, ...data };
+                  } else if (methodName === "delete") {
+                    const where = args[0]?.where;
+                    addToSyncQueue("DELETE", modelName, { where });
+                    return { ...where };
                   }
 
                   throw err;

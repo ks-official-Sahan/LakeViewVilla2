@@ -39,18 +39,17 @@ export default async function Page() {
     headline: "Location & Map",
     subheadline: "",
   });
-  const directionsBlock = await getContentBlock("visit", "directions", {
+  const directionsBlock = await getContentBlock<any>("visit", "directions", {
     headline: "How to Get Here",
     subheadline: "~35 minutes from Matara • ~3 hours from Colombo Airport",
+    steps: DIRECTIONS,
   });
   const nearbyBlock = await getContentBlock("visit", "nearby", {
     headline: "Nearby Attractions",
     subheadline: "",
   });
 
-  const stepsList = Array.isArray(directionsBlock?.steps) && directionsBlock.steps.length > 0
-    ? directionsBlock.steps
-    : DIRECTIONS;
+  const stepsList = directionsBlock?.steps || DIRECTIONS;
 
   return (
     <>

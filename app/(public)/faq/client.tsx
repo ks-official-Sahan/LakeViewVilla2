@@ -35,18 +35,18 @@ export default function FAQPage({ cmsHero, cmsQuestions }: FAQClientProps) {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+      <div className="min-h-screen bg-[var(--color-background)]">
         {/* Header */}
         <div className="relative z-10 pt-24 pb-12">
           <div className="container mx-auto px-4">
             <SectionReveal>
               <div className="text-center">
                 <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                  <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-emerald-300 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-gold)] bg-clip-text text-transparent">
                     {headline}
                   </span>
                 </h1>
-                <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+                <p className="text-xl text-[var(--color-muted)] max-w-2xl mx-auto">
                   {subheadline}
                 </p>
               </div>
@@ -65,20 +65,20 @@ export default function FAQPage({ cmsHero, cmsQuestions }: FAQClientProps) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="backdrop-blur-sm bg-white/10 border border-white/20 rounded-2xl shadow-2xl overflow-hidden"
+                    className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-md overflow-hidden"
                   >
                     <button
                       onClick={() => toggleItem(index)}
-                      className="w-full px-8 py-6 text-left flex items-center justify-between hover:bg-white/5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-inset"
+                      className="w-full px-8 py-6 text-left flex items-center justify-between hover:bg-[var(--color-background)]/50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:ring-inset"
                       aria-expanded={openItems.includes(index)}
                       aria-controls={`faq-answer-${index}`}
                     >
                       <div className="flex items-center gap-4">
                         <HelpCircle
-                          className="text-cyan-400 flex-shrink-0"
+                          className="text-[var(--color-primary)] flex-shrink-0"
                           size={24}
                         />
-                        <h3 className="text-lg font-semibold text-white pr-4">
+                        <h3 className="text-lg font-semibold text-[var(--color-foreground)] pr-4">
                           {item.question}
                         </h3>
                       </div>
@@ -89,7 +89,7 @@ export default function FAQPage({ cmsHero, cmsQuestions }: FAQClientProps) {
                         transition={{ duration: 0.2 }}
                         className="flex-shrink-0"
                       >
-                        <ChevronDown className="text-slate-400" size={24} />
+                        <ChevronDown className="text-[var(--color-muted)]" size={24} />
                       </motion.div>
                     </button>
 
@@ -105,7 +105,7 @@ export default function FAQPage({ cmsHero, cmsQuestions }: FAQClientProps) {
                         >
                           <div className="px-8 pb-6 pt-2">
                             <div className="pl-10">
-                              <p className="text-slate-300 leading-relaxed">
+                              <p className="text-[var(--color-muted)] leading-relaxed">
                                 {item.answer}
                               </p>
                             </div>
@@ -121,11 +121,11 @@ export default function FAQPage({ cmsHero, cmsQuestions }: FAQClientProps) {
             {/* Contact CTA */}
             <SectionReveal>
               <div className="mt-12 text-center">
-                <div className="backdrop-blur-sm bg-white/10 border border-white/20 rounded-2xl p-8 shadow-2xl">
-                  <h2 className="text-2xl font-bold text-white mb-4">
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-md">
+                  <h2 className="text-2xl font-bold text-[var(--color-foreground)] mb-4">
                     Still have questions?
                   </h2>
-                  <p className="text-slate-300 mb-6">
+                  <p className="text-[var(--color-muted)] mb-6">
                     We're here to help! Contact us directly for personalized
                     assistance.
                   </p>
@@ -139,7 +139,7 @@ export default function FAQPage({ cmsHero, cmsQuestions }: FAQClientProps) {
                       rel="noopener noreferrer"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold shadow-lg hover:shadow-cyan-500/25 transition-all duration-300"
+                      className="inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-semibold shadow-lg hover:opacity-90 transition-all duration-300"
                     >
                       <HelpCircle size={20} />
                       Ask on WhatsApp
@@ -148,7 +148,7 @@ export default function FAQPage({ cmsHero, cmsQuestions }: FAQClientProps) {
                       href="/visit"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl bg-white/10 border border-white/20 text-white font-semibold hover:bg-white/20 transition-all duration-300"
+                      className="inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)] font-semibold hover:bg-[var(--color-surface)] transition-all duration-300"
                     >
                       Contact Form
                     </motion.a>

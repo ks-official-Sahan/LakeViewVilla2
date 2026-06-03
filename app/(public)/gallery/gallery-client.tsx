@@ -116,8 +116,8 @@ export default function GalleryClient({ images }: { images: Img[] }) {
               }}
               className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all ${
                 isActive
-                  ? "bg-cyan-500 text-white shadow-lg shadow-cyan-500/20"
-                  : "border border-white/15 bg-white/5 text-slate-300 hover:border-white/25 hover:bg-white/10"
+                  ? "bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20"
+                  : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-primary)]"
               }`}
             >
               {cat}
@@ -153,7 +153,7 @@ export default function GalleryClient({ images }: { images: Img[] }) {
             <SectionReveal>
               <motion.div
                 layoutId={selected === i ? `gallery-flip-${image.src}` : undefined}
-                className="relative overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/15 backdrop-blur-md shadow-2xl"
+                className="relative overflow-hidden rounded-xl bg-[var(--color-surface)] ring-1 ring-[var(--color-border)] shadow-2xl"
               >
                 <Image
                   src={image.src || "/placeholder.svg"}
