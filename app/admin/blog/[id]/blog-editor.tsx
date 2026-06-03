@@ -180,6 +180,7 @@ export function BlogEditor({ initialPost, isNew }: BlogEditorProps) {
 
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generatingSeo, setGeneratingSeo] = useState(false);
   const [suggestSeoBusy, setSuggestSeoBusy] = useState(false);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
@@ -313,11 +314,12 @@ export function BlogEditor({ initialPost, isNew }: BlogEditorProps) {
       }
 
       const needsSeo =
-        !formData.excerpt?.trim() ||
-        !formData.seoTitle?.trim() ||
-        !formData.seoDescription?.trim();
+        !formData.seoTitle?.trim() &&
+        formData.title.trim().length > 0 &&
+        formData.content.trim().length > 200;
 
       if (postId && needsSeo) {
+        setGeneratingSeo(true);
         void enrichBlogPostSeo(postId)
           .then((updated) => {
             setFormData((prev) => ({
@@ -336,6 +338,9 @@ export function BlogEditor({ initialPost, isNew }: BlogEditorProps) {
             if (!isAutoSave) {
               toast.error("Could not auto-fill SEO fields. You can edit them manually.");
             }
+          })
+          .finally(() => {
+            setGeneratingSeo(false);
           });
       }
 
@@ -457,6 +462,7 @@ export function BlogEditor({ initialPost, isNew }: BlogEditorProps) {
       length: aiLength,
       imageDescription: aiImageNotes,
       featuredImageUrl: formData.featuredImageUrl,
+      imageIds: formData.featuredImageId ? [formData.featuredImageId] : [],
     });
 
     try {
@@ -892,7 +898,14 @@ export function BlogEditor({ initialPost, isNew }: BlogEditorProps) {
         {/* SEO & Metadata */}
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-semibold text-[var(--color-foreground)]">SEO & Metadata</h3>
+            <h3 className="font-semibold text-[var(--color-foreground)] flex items-center gap-2">
+              SEO & Metadata
+              {generatingSeo && (
+                <span className="inline-flex items-center gap-1 text-xs text-[var(--color-gold)] font-normal animate-pulse">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Generating SEO...
+                </span>
+              )}
+            </h3>
             <Button
               type="button"
               variant="outline"

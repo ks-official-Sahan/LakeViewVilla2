@@ -44,7 +44,7 @@ export async function getDashboardSnapshot(role: Role): Promise<DashboardSnapsho
 
   return {
     counts: { media, blogPublished, blogDraft, contentBlocks },
-    logs: logs.map((l) => ({
+    logs: logs.map((l: any) => ({
       id: l.id,
       action: l.action,
       entityType: l.entityType,

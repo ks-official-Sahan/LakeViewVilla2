@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { mediaLocationsTableExists } from "@/lib/db/media-locations-table";
 import { requireRole } from "@/lib/auth/rbac";
-import { auth } from "@/lib/auth/config";
+import { auth, signOut } from "@/lib/auth/config";
 import { audit } from "@/lib/admin/audit";
 import { cacheInvalidatePattern } from "@/lib/cache";
 import {
@@ -18,6 +18,7 @@ import {
 import type { MediaType, BlogStatus, Prisma } from "@prisma/client";
 import { generateSEOMeta } from "@/lib/ai/seo-generator";
 import { normalizeBlogSlug } from "@/lib/utils/blog-slug";
+import { openRouterChatCompletion } from "@/lib/ai/openrouter-chat";
 
 function optionalStr(v: unknown): string | undefined {
   if (v === undefined || v === null) return undefined;
@@ -75,8 +76,8 @@ export async function getMediaAssets(options?: {
               uploadedBy: { select: { name: true, email: true } },
             },
           })
-          .then((rows) =>
-            rows.map((r) => ({
+          .then((rows: any[]) =>
+            rows.map((r: any) => ({
               ...r,
               locations: [] as const,
             })),
@@ -333,6 +334,78 @@ export async function updateBlogPost(id: string, raw: Record<string, unknown>) {
   return post;
 }
 
+export async function generateFullBlogPost(opts: {
+  description: string;
+  imageIds: string[];
+  userId: string;
+}): Promise<
+  | { success: true; data: { title: string; slug: string; content: string; excerpt: string; seoTitle: string; seoDescription: string; seoKeywords: string[] } }
+  | { success: false; error: string }
+> {
+  const session = await requireAuth();
+  
+  const images = await prisma.mediaAsset.findMany({
+    where: { id: { in: opts.imageIds } },
+    select: { url: true, alt: true, title: true, category: true },
+  });
+
+  const imageContext = images.map(img => 
+    `Image (${img.category}): ${img.title ?? img.alt ?? "unnamed"} — ${img.url}`
+  ).join("\n");
+
+  const prompt = `You are a luxury travel copywriter for Lake View Villa Tangalle, Sri Lanka.
+Write a complete blog post based on this description: "${opts.description}"
+${imageContext ? `Referenced images:\n${imageContext}` : ""}
+
+Return ONLY valid JSON with these exact fields:
+{
+  "title": "Blog post title (max 80 chars, engaging, SEO-optimized)",
+  "slug": "url-slug-from-title (lowercase, hyphens, max 60 chars)",
+  "content": "Full markdown blog post (400-800 words, rich detail, hospitality tone)",
+  "excerpt": "2-3 sentence preview (max 200 chars)",
+  "seoTitle": "SEO title (max 60 chars)",
+  "seoDescription": "Meta description (max 160 chars)",
+  "seoKeywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
+}`;
+
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return { success: false, error: "OpenRouter API key not configured" };
+
+  const result = await openRouterChatCompletion(
+    apiKey,
+    {
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      max_tokens: 1500,
+      response_format: { type: "json_object" },
+    },
+    {
+      model: "meta-llama/llama-3.1-8b-instruct:free"
+    }
+  );
+
+  if (!result.ok) return { success: false, error: result.userMessage };
+  
+  try {
+    const parsed = JSON.parse(result.content);
+    if (!parsed.title || !parsed.content) throw new Error("Incomplete AI response");
+    return {
+      success: true,
+      data: {
+        title: String(parsed.title).slice(0, 80),
+        slug: normalizeBlogSlug(parsed.slug || parsed.title),
+        content: String(parsed.content),
+        excerpt: String(parsed.excerpt ?? "").slice(0, 200),
+        seoTitle: String(parsed.seoTitle ?? parsed.title).slice(0, 60),
+        seoDescription: String(parsed.seoDescription ?? "").slice(0, 160),
+        seoKeywords: Array.isArray(parsed.seoKeywords) ? parsed.seoKeywords.slice(0, 8) : [],
+      },
+    };
+  } catch {
+    return { success: false, error: "AI returned invalid JSON. Please try again." };
+  }
+}
+
 /** Fill excerpt + SEO from title/content via AI with offline fallback. */
 export async function enrichBlogPostSeo(id: string) {
   await requireAuth();
@@ -525,4 +598,17 @@ export async function getUsers() {
     },
     orderBy: { createdAt: "asc" },
   });
+}
+
+export async function logoutAction() {
+  const session = await auth();
+  if (session?.user) {
+    await audit({
+      userId: session.user.id,
+      action: "LOGOUT",
+      entityType: "User",
+      entityId: session.user.id,
+    });
+  }
+  await signOut({ redirectTo: "/admin/login" });
 }

@@ -239,3 +239,17 @@ model Setting {
 
   @@map("settings")
 }
+
+model SyncQueue {
+  id         String   @id @default(cuid())
+  operation  String   // CREATE, UPDATE, DELETE
+  entityType String
+  entityId   String
+  payload    Json
+  attempts   Int      @default(0)
+  lastError  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@map("sync_queue")
+}

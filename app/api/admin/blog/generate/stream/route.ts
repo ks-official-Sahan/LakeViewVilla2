@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth/rbac";
 import { iterateOpenRouterChatStream } from "@/lib/ai/openrouter-stream";
+import { prisma } from "@/lib/db/prisma";
 import {
   blogGenerationSystemPrompt,
   buildBlogGenerationUserMessage,
@@ -41,6 +42,7 @@ export async function POST(req: Request) {
     typeof body.imageDescription === "string" ? body.imageDescription : "";
   const featuredImageUrl =
     typeof body.featuredImageUrl === "string" ? body.featuredImageUrl : "";
+  const imageIds = Array.isArray(body.imageIds) ? body.imageIds : [];
 
   if (!prompt) {
     return new Response(JSON.stringify({ error: "Prompt is required" }), {
@@ -57,8 +59,23 @@ export async function POST(req: Request) {
       };
 
       try {
+        let imageContext = "";
+        if (imageIds.length > 0) {
+          try {
+            const images = await prisma.mediaAsset.findMany({
+              where: { id: { in: imageIds } },
+              select: { url: true, alt: true, title: true, category: true },
+            });
+            imageContext = images.map(img => 
+              `Image (${img.category}): ${img.title ?? img.alt ?? "unnamed"} — ${img.url}`
+            ).join("\n");
+          } catch (err) {
+            console.error("Failed to query images for context:", err);
+          }
+        }
+
         const userContent = buildBlogGenerationUserMessage({
-          prompt,
+          prompt: imageContext ? `${prompt}\n\nReferenced images:\n${imageContext}` : prompt,
           imageDescription,
           featuredImageUrl,
         });

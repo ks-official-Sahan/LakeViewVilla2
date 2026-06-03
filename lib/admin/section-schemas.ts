@@ -6,7 +6,8 @@
 export type SectionField =
   | { key: string; type: "text"; label: string; maxLength?: number }
   | { key: string; type: "textarea"; label: string; maxLength?: number }
-  | { key: string; type: "url"; label: string };
+  | { key: string; type: "url"; label: string }
+  | { key: string; type: "image"; label: string };
 
 export type SectionSchema = {
   label: string;
@@ -21,6 +22,7 @@ export const SECTION_SCHEMAS: Record<string, SectionSchema> = {
       { key: "subheadline", type: "textarea", label: "Subheadline", maxLength: 280 },
       { key: "ctaLabel", type: "text", label: "CTA label", maxLength: 48 },
       { key: "ctaHref", type: "url", label: "CTA URL" },
+      { key: "bgImage", type: "image", label: "Hero Background Image" },
     ],
   },
   "stays/hero": {

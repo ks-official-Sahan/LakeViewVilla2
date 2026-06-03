@@ -90,7 +90,23 @@ const STATS = [
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function ScrollStory() {
+interface ScrollStoryProps {
+  cmsHero?: {
+    headline?: string;
+    subheadline?: string;
+    ctaLabel?: string;
+    ctaHref?: string;
+  };
+}
+
+export function ScrollStory({ cmsHero }: ScrollStoryProps) {
+  const headline = cmsHero?.headline || "Lake View Villa";
+  const subheadline = cmsHero?.subheadline || "Where every morning belongs to the lagoon.";
+
+  const headlineParts = headline.split(" ");
+  const line1 = headlineParts.slice(0, -1).join(" ") || "Lake View";
+  const line2 = headlineParts[headlineParts.length - 1] || "Villa";
+
   // ── Refs ────────────────────────────────────────────────────────────────────
   const wrapperRef   = useRef<HTMLDivElement>(null);
   const heroRef      = useRef<HTMLDivElement>(null);
@@ -389,25 +405,25 @@ export function ScrollStory() {
             ref={h1Ref}
             className="font-serif font-black leading-[1.0] tracking-[-0.025em] text-white overflow-hidden"
             style={{ fontSize: "clamp(3rem, 9vw, 8.5rem)" }}
-            aria-label={HERO_CONTENT.title}
+            aria-label={headline}
           >
             <span
               className="word-line block opacity-0"
               style={{ perspective: "1200px" }}
             >
-              Lake View
+              {line1}
             </span>
             <span
               className="word-line block opacity-0 text-[#c9a55a] italic"
               style={{ perspective: "1200px", fontSize: "clamp(1.6rem, 5.5vw, 5.5rem)" }}
             >
-              Villa
+              {line2}
             </span>
             <span
               className="word-line block opacity-0"
               style={{ perspective: "1200px", fontSize: "clamp(1rem, 2.5vw, 2.5rem)", letterSpacing: "0.05em", fontFamily: "var(--font-dm-sans)" }}
             >
-              Where every morning belongs to the lagoon.
+              {subheadline}
             </span>
           </h1>
 

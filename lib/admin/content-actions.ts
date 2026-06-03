@@ -59,3 +59,21 @@ export async function getContentBlocks(pageSlug: string) {
 
   return Array.from(latestBlocks.values());
 }
+
+export async function getContentBlockVersions(pageSlug: string, sectionSlug: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+  await requireRole("EDITOR");
+
+  return prisma.contentBlock.findMany({
+    where: { pageSlug, sectionSlug },
+    orderBy: { version: "desc" },
+    select: {
+      id: true,
+      version: true,
+      data: true,
+      publishedAt: true,
+      createdAt: true,
+    },
+  });
+}

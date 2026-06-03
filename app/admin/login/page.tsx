@@ -61,9 +61,15 @@ function LoginForm() {
           {error && (
             <div
               role="alert"
-              className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300"
+              className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm backdrop-blur-sm shadow-[0_4px_20px_-4px_rgba(220,38,38,0.1)] transition-all animate-in fade-in duration-300"
             >
-              {error}
+              <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-500/20 text-red-600 dark:text-red-400">
+                <span className="text-xs font-bold font-sans">✕</span>
+              </div>
+              <div className="space-y-0.5">
+                <p className="font-semibold text-red-700 dark:text-red-400">Authentication Failed</p>
+                <p className="text-xs text-[var(--color-muted)]">{error}</p>
+              </div>
             </div>
           )}
 

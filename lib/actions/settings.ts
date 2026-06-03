@@ -46,7 +46,7 @@ export async function getSettings() {
   "use cache";
   try {
     const rows = await prisma.setting.findMany();
-    const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    const map = Object.fromEntries(rows.map((r: any) => [r.key, r.value]));
     return {
       siteName: (map["site.name"] as string) || "Lake View Villa Tangalle",
       siteDescription: (map["seo.defaultDescription"] as string) || "Book Lake View Villa Tangalle. A private vacation rental and lodging business offering panoramic lake views, comfortable A/C bedrooms, fast Wi-Fi, and chef services in Sri Lanka.",

@@ -80,7 +80,7 @@ export async function findManyMediaAssetsForAdmin(): Promise<AdminMediaAssetRow[
     select: selectWithoutLocations,
   });
 
-  return rows.map((a) => ({
+  return rows.map((a: any) => ({
     ...a,
     locations: [],
   }));

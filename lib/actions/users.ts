@@ -165,3 +165,40 @@ export async function deleteUser(id: string) {
     return { success: false, error: "Internal server error" };
   }
 }
+
+const resetPasswordSchema = z.object({
+  id: z.string(),
+  password: z.string().min(8).max(128),
+});
+
+export async function resetUserPassword(data: z.infer<typeof resetPasswordSchema>) {
+  const session = await requireRole("DEVELOPER");
+
+  const parsed = resetPasswordSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, errors: parsed.error.flatten().fieldErrors };
+  }
+
+  try {
+    const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+    const user = await prisma.user.update({
+      where: { id: parsed.data.id },
+      data: { passwordHash },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        userId: session.user.id,
+        action: "UPDATE",
+        entityType: "User",
+        entityId: user.id,
+        newValue: { action: "PASSWORD_RESET" },
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("resetUserPassword:", error);
+    return { success: false, error: "Could not reset password" };
+  }
+}

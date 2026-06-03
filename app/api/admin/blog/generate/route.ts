@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/rbac";
 import { openRouterChatCompletion } from "@/lib/ai/openrouter-chat";
+import { prisma } from "@/lib/db/prisma";
 import {
   blogGenerationSystemPrompt,
   buildBlogGenerationUserMessage,
@@ -19,6 +20,7 @@ export async function POST(req: Request) {
       typeof json.imageDescription === "string" ? json.imageDescription : "";
     const featuredImageUrl =
       typeof json.featuredImageUrl === "string" ? json.featuredImageUrl : "";
+    const imageIds = Array.isArray(json.imageIds) ? json.imageIds : [];
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
@@ -29,9 +31,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "OpenRouter API key not configured" }, { status: 500 });
     }
 
+    let imageContext = "";
+    if (imageIds.length > 0) {
+      try {
+        const images = await prisma.mediaAsset.findMany({
+          where: { id: { in: imageIds } },
+          select: { url: true, alt: true, title: true, category: true },
+        });
+        imageContext = images.map((img: { url: string; alt: string | null; title: string | null; category: string }) => 
+          `Image (${img.category}): ${img.title ?? img.alt ?? "unnamed"} — ${img.url}`
+        ).join("\n");
+      } catch (err) {
+        console.error("Failed to query images for context:", err);
+      }
+    }
+
     const systemPrompt = blogGenerationSystemPrompt(tone, length);
     const userMessage = buildBlogGenerationUserMessage({
-      prompt,
+      prompt: imageContext ? `${prompt}\n\nReferenced images:\n${imageContext}` : prompt,
       imageDescription,
       featuredImageUrl,
     });

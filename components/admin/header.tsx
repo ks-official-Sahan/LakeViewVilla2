@@ -1,6 +1,6 @@
 "use client";
 
-import { signOut } from "next-auth/react";
+import { logoutAction } from "@/lib/admin/actions";
 import type { Role } from "@prisma/client";
 import { LogOut, Menu } from "lucide-react";
 
@@ -67,7 +67,9 @@ export function AdminHeader({ user, onOpenMobileNav }: AdminHeaderProps) {
         </div>
 
         <button
-          onClick={() => signOut({ callbackUrl: "/admin/login" })}
+          onClick={async () => {
+            await logoutAction();
+          }}
           className="cursor-pointer rounded-lg p-2 text-[var(--color-muted)] transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
           aria-label="Sign out"
         >

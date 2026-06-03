@@ -107,6 +107,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id as string;
         token.role = user.role;
+        // Background login audit log
+        prisma.auditLog.create({
+          data: {
+            userId: user.id as string,
+            action: "LOGIN",
+            entityType: "User",
+            entityId: user.id as string,
+            newValue: { email: user.email },
+          },
+        }).catch((err: any) => {
+          console.error("[Auth] Failed to write login audit log:", err);
+        });
       }
       return token;
     },

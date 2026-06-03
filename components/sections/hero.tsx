@@ -237,7 +237,6 @@ export function PinnedHero({ nextSectionId, heroImages, heroText }: Props) {
             <div>
               <h1 className="font-[var(--font-display)] font-black leading-[1.06] tracking-tight sm:leading-[1.03]">
                 <span
-                  ref={useRef<HTMLSpanElement>(null)}
                   className="block text-white"
                   style={{
                     fontSize: "var(--fluid-hero-title)",
@@ -253,7 +252,6 @@ export function PinnedHero({ nextSectionId, heroImages, heroText }: Props) {
                 </span>
                 {line2Words.length > 0 && (
                   <span
-                    ref={useRef<HTMLSpanElement>(null)}
                     className="block bg-gradient-to-r from-[#7ee8fa] via-[#22d3ee] to-[#34d399] bg-clip-text text-transparent"
                     style={{ fontSize: "var(--fluid-hero-title)" }}
                   >

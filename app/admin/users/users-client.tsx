@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Role } from "@prisma/client";
-import { updateUserRole, deleteUser, createUser, updateUserProfile } from "@/lib/actions/users";
-import { Trash2, UserPlus, Download, Search } from "lucide-react";
+import { updateUserRole, deleteUser, createUser, updateUserProfile, resetUserPassword } from "@/lib/actions/users";
+import { Trash2, UserPlus, Download, Search, Key } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
@@ -48,6 +48,10 @@ export function UsersClient({
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<Role>("EDITOR");
   const [creating, setCreating] = useState(false);
+
+  const [resetPasswordUserId, setResetPasswordUserId] = useState<string | null>(null);
+  const [resetPasswordVal, setResetPasswordVal] = useState("");
+  const [resetting, setResetting] = useState(false);
 
   const handleRoleChange = async (id: string, newRole: Role) => {
     setLoading(id);
@@ -295,8 +299,22 @@ export function UsersClient({
                     <Button
                       variant="ghost"
                       size="icon"
+                      disabled={loading === user.id}
+                      onClick={() => {
+                        setResetPasswordUserId(user.id);
+                        setResetPasswordVal("");
+                      }}
+                      title="Reset Password"
+                      className="text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)]"
+                    >
+                      <Key className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       disabled={user.id === currentUserId || loading === user.id}
                       onClick={() => handleDelete(user.id)}
+                      title="Delete User"
                       className="text-red-500 hover:bg-red-500/10 hover:text-red-600"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -325,6 +343,58 @@ export function UsersClient({
         onConfirm={confirmDelete}
         onCancel={() => { setConfirmOpen(false); setDeletingId(null); }}
       />
+
+      {resetPasswordUserId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xl animate-in fade-in duration-200">
+            <h3 className="text-lg font-semibold text-[var(--color-foreground)] mb-2">Reset Password</h3>
+            <p className="text-sm text-[var(--color-muted)] mb-4">
+              Enter a new password for this user (minimum 8 characters).
+            </p>
+            <input
+              type="password"
+              placeholder="New password"
+              value={resetPasswordVal}
+              onChange={(e) => setResetPasswordVal(e.target.value)}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm mb-4 text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:outline-none"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setResetPasswordUserId(null);
+                  setResetPasswordVal("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={resetPasswordVal.length < 8 || resetting}
+                onClick={async () => {
+                  setResetting(true);
+                  try {
+                    const res = await resetUserPassword({
+                      id: resetPasswordUserId,
+                      password: resetPasswordVal,
+                    });
+                    if (res.success) {
+                      toast.success("Password reset successful");
+                      setResetPasswordUserId(null);
+                      setResetPasswordVal("");
+                    } else {
+                      toast.error("Failed to reset password");
+                    }
+                  } finally {
+                    setResetting(false);
+                  }
+                }}
+              >
+                {resetting ? "Resetting..." : "Reset"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </div>
   );

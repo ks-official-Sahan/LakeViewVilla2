@@ -2,8 +2,8 @@
 import type { Metadata } from "next";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import StaysPage from "./client";
-import { RATES, OFFERS } from "@/data/content";
-import { getContentBlocks } from "@/lib/admin/content-actions";
+import { RATES, OFFERS, BOOKING_FACTS } from "@/data/content";
+import { getContentBlock } from "@/lib/cms/get-content-block";
 import { getMediaAssetsByLocation } from "@/lib/media/queries";
 
 export const metadata: Metadata = {
@@ -44,24 +44,25 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  let dbBlocks: any[] = [];
   let room1Images: string[] = [];
   let room2Images: string[] = [];
 
   try {
-    dbBlocks = await getContentBlocks("stays");
     const r1Assets = await getMediaAssetsByLocation("stays", "room-1");
     const r2Assets = await getMediaAssetsByLocation("stays", "room-2");
     room1Images = r1Assets.map(a => a.url);
     room2Images = r2Assets.map(a => a.url);
   } catch (error) {
-    console.error("Failed to load stays CMS elements:", error);
+    console.error("Failed to load stays images:", error);
   }
 
-  const heroBlock = dbBlocks.find(b => b.sectionSlug === "hero")?.data;
-  const roomsBlock = dbBlocks.find(b => b.sectionSlug === "rooms")?.data;
-  const pricingBlock = dbBlocks.find(b => b.sectionSlug === "pricing")?.data;
-  const amenitiesBlock = dbBlocks.find(b => b.sectionSlug === "amenities")?.data;
+  const heroBlock = await getContentBlock("stays", "hero", {
+    headline: "Stays & Rates",
+    subheadline: "Experience tranquility on a serene lagoon—best rates via direct WhatsApp.",
+  });
+  const roomsBlock = await getContentBlock("stays", "rooms", BOOKING_FACTS.rooms);
+  const pricingBlock = await getContentBlock("stays", "pricing", RATES as any);
+  const amenitiesBlock = await getContentBlock("stays", "amenities", BOOKING_FACTS.amenities);
 
   return (
     <>
