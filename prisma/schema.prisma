@@ -19,6 +19,11 @@ enum Role {
   EDITOR
 }
 
+enum MediaStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -108,6 +113,8 @@ model MediaAsset {
   // Page/section assignment
   pageSlug    String?
   sectionSlug String?
+  status      MediaStatus @default(ACTIVE)
+  locations   MediaLocation[]
 
   // SEO metadata
   seoTitle    String?
@@ -118,7 +125,6 @@ model MediaAsset {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  locations MediaLocation[]
   blogPosts BlogPost[] @relation("FeaturedImage")
 
   @@index([category])
