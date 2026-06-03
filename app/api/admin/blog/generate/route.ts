@@ -32,15 +32,26 @@ export async function POST(req: Request) {
     }
 
     let imageContext = "";
-    if (imageIds.length > 0) {
+    const targetImageIds = imageIds.length > 0
+      ? imageIds
+      : (await prisma.mediaAsset.findMany({
+          take: 12,
+          select: { id: true },
+          orderBy: { createdAt: "desc" },
+        })).map((img) => img.id);
+
+    if (targetImageIds.length > 0) {
       try {
         const images = await prisma.mediaAsset.findMany({
-          where: { id: { in: imageIds } },
-          select: { url: true, alt: true, title: true, category: true },
+          where: { id: { in: targetImageIds } },
+          select: { id: true, url: true, alt: true, title: true, category: true },
         });
-        imageContext = images.map((img: { url: string; alt: string | null; title: string | null; category: string }) => 
-          `Image (${img.category}): ${img.title ?? img.alt ?? "unnamed"} — ${img.url}`
-        ).join("\n");
+        imageContext = images
+          .map(
+            (img) =>
+              `Image ID: ${img.id} (${img.category}): ${img.title ?? img.alt ?? "unnamed"} — ${img.url}`,
+          )
+          .join("\n");
       } catch (err) {
         console.error("Failed to query images for context:", err);
       }
@@ -82,7 +93,26 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ ...parsed, model: result.model });
+    // Resolve featured image URL if AI suggested one
+    let aiFeaturedImageId = null;
+    let aiFeaturedImageUrl = null;
+    if (parsed.featuredImageId) {
+      const asset = await prisma.mediaAsset.findUnique({
+        where: { id: parsed.featuredImageId },
+        select: { url: true },
+      });
+      if (asset) {
+        aiFeaturedImageId = parsed.featuredImageId;
+        aiFeaturedImageUrl = asset.url;
+      }
+    }
+
+    return NextResponse.json({
+      ...parsed,
+      featuredImageId: aiFeaturedImageId,
+      featuredImageUrl: aiFeaturedImageUrl,
+      model: result.model,
+    });
   } catch (error) {
     console.error("AI Generation error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
