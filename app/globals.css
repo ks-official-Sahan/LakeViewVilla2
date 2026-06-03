@@ -25,8 +25,9 @@
   --fluid-cta-text: clamp(0.8125rem, 0.76rem + 0.12vmin, 0.9375rem);
 
   /* font families injected by next/font (layout.tsx) */
-  --font-sans: var(--font-dm-sans);
+  --font-sans:    var(--font-dm-sans);
   --font-display: var(--font-montserrat);
+  --font-serif:   var(--font-playfair, "Playfair Display", Georgia, serif);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* 8pt rhythm helpers (optional) */
@@ -41,13 +42,85 @@
   --evision-gd-bro: linear-gradient(to right, #0085ff 0%, #ff3370 52%, #ffaa33 100%);
   --text-secondary: #9c9c9c;
   --ct-shadow: inset 0 -6px 8px rgba(0, 0, 0, 0.112);
+
+  /* ── Brand & Design extension tokens (PUBLIC-01) ── */
+  --color-gold:         #c9a55a;
+  --color-gold-light:   #d4b56e;
+  --color-gold-dark:    #a88840;
+  --color-gold-muted:   #9a7c35;
+  --color-teal-dark:    #0a1f24;
+  --color-charcoal:     #0f1011;
+  --color-ivory:        #f5f2e8;
+
+  /* Glass system */
+  --glass-bg:      rgba(255, 255, 255, 0.08);
+  --glass-border:  rgba(255, 255, 255, 0.18);
+  --glass-blur:    blur(20px) saturate(180%);
+  --glass-shadow:  0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.2);
+
+  /* Fluid type scaling */
+  --text-display: clamp(3.5rem, 8vw, 7rem);
+  --text-h1:      clamp(2.5rem, 5vw, 4.5rem);
+  --text-h2:      clamp(2rem, 3.5vw, 3rem);
+  --text-h3:      clamp(1.5rem, 2.5vw, 2rem);
+  --text-body:    clamp(1rem, 1.2vw, 1.125rem);
+
+  /* Easing library */
+  --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-silk:     cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  /* Durations */
+  --dur-fast:   200ms;
+  --dur-base:   400ms;
+  --dur-slow:   700ms;
+  --dur-crawl: 1200ms;
 }
+
 
 /* Text selection */
 ::selection {
-  background: rgba(14, 165, 233, .24);
-  color: #0a0e12;
+  background: rgba(201,165,90, 0.28);
+  color: #0f1011;
 }
+
+/* ── ScrollStory: scroll indicator keyframe ─────────────────────────────── */
+@keyframes scrollLine {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  30%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(200%); opacity: 0; }
+}
+
+/* ── Button micro-interactions ──────────────────────────────────────────── */
+
+/* Gold shimmer sweep on hover for outlined CTA */
+.shimmer-sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.25) 50%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform 0.55s cubic-bezier(0.22,1,0.36,1);
+}
+.shimmer-sweep:hover::after {
+  transform: translateX(100%);
+}
+
+/* Ripple on solid gold button */
+.btn-ripple {
+  position: relative;
+  isolation: isolate;
+}
+.btn-ripple::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--x,50%) var(--y,50%), rgba(255,255,255,.25) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+.btn-ripple:hover::before { opacity: 1; }
 
 /* Rendering baseline */
 html {
@@ -848,3 +921,23 @@ img[data-nimg] {
     animation: none !important;
   }
 }
+
+/* Glass utility classes */
+.glass-1 {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+.glass-2 {
+  background: rgba(10, 31, 36, 0.55);
+  backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.glass-3 {
+  background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.06) 70%);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 9999px;
+}
+

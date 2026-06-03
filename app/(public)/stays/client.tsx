@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { Check, Star } from "lucide-react";
+import Image from "next/image";
+import { Check, Star, Users, Phone, ArrowRight } from "lucide-react";
 import { SectionReveal } from "@/components/motion/section-reveal";
 import { RATES, OFFERS, SITE_CONFIG, BOOKING_FACTS } from "@/data/content";
 import { buildWhatsAppUrl } from "@/lib/utils";
@@ -48,23 +49,27 @@ const WhatsappIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export default function StaysPage() {
+interface StaysPageProps {
+  cmsHero?: { headline?: string; subheadline?: string };
+  cmsRooms?: { name: string; sleeps: number; features: string[] }[];
+  cmsPricing?: { season: string; period: string; nightly: string; minNights: number; notes?: string }[];
+  cmsAmenities?: string[];
+  room1Images?: string[];
+  room2Images?: string[];
+}
+
+export default function StaysPage({
+  cmsHero,
+  cmsRooms,
+  cmsPricing,
+  cmsAmenities,
+  room1Images = [],
+  room2Images = [],
+}: StaysPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
-
-  // const {
-  //   register,
-  //   handleSubmit,
-  //   formState: { errors },
-  //   watch,
-  //   reset,
-  // } = useForm<EnquiryForm>({
-  //   resolver: zodResolver(enquirySchema),
-  //   defaultValues: { guests: 2 },
-  //   mode: "onTouched",
-  // });
 
   const {
     register,
@@ -72,7 +77,7 @@ export default function StaysPage() {
     formState: { errors },
     watch,
     reset,
-    control, // ⬅️ make sure this is here
+    control,
   } = useForm<EnquiryForm>({
     resolver: zodResolver(enquirySchema),
     defaultValues: { guests: 2 },
@@ -109,7 +114,6 @@ export default function StaysPage() {
 
       const wa = buildWhatsAppUrl(SITE_CONFIG.whatsappNumber, composed);
 
-      //window.open(wa, "_blank", "noopener");
       trackContact("whatsapp", wa, "Chat on WhatsApp");
       setTimeout(() => window.open(wa, "_blank", "noopener"), 120);
 
@@ -124,6 +128,13 @@ export default function StaysPage() {
 
   const rating = BOOKING_FACTS?.reviewMetrics?.average ?? null;
   const ratingCount = BOOKING_FACTS?.reviewMetrics?.count ?? null;
+
+  // Resolve fallbacks for CMS data elements
+  const headline = cmsHero?.headline || "Stays & Rates";
+  const subheadline = cmsHero?.subheadline || "Experience tranquility on a serene lagoon—best rates via direct WhatsApp.";
+  const pricingList = cmsPricing || RATES;
+  const roomsList = cmsRooms || BOOKING_FACTS.rooms || [];
+  const amenitiesList = cmsAmenities || BOOKING_FACTS.amenities || [];
 
   return (
     <div className="min-h-screen relative overflow-hidden text-white">
@@ -151,12 +162,11 @@ export default function StaysPage() {
             <div className="text-center">
               <h1 className="text-4xl md:text-6xl font-bold mb-4">
                 <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-emerald-300 bg-clip-text text-transparent">
-                  Stays & Rates
+                  {headline}
                 </span>
               </h1>
               <p className="text-lg md:text-xl text-slate-300/95 max-w-2xl mx-auto">
-                Experience tranquility on a serene lagoon—best rates via direct
-                WhatsApp.
+                {subheadline}
               </p>
               {(rating || ratingCount) && (
                 <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 ring-1 ring-white/15 backdrop-blur-md">
@@ -174,7 +184,7 @@ export default function StaysPage() {
 
       <div className="relative z-10 container mx-auto px-4 pb-20">
         <div className="grid lg:grid-cols-2 gap-12">
-          {/* Rates + Offers */}
+          {/* Rates + Room listings */}
           <div className="space-y-8">
             <SectionReveal>
               <div className="rounded-2xl p-8 shadow-2xl ring-1 ring-white/10 bg-white/10 backdrop-blur-xl">
@@ -202,7 +212,7 @@ export default function StaysPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {RATES.map((r, i) => (
+                      {pricingList.map((r, i) => (
                         <tr key={i} className="border-t border-white/10">
                           <td className="py-4 px-3 font-medium text-white">
                             {r.season}
@@ -224,38 +234,68 @@ export default function StaysPage() {
                   </table>
                 </div>
 
-                {RATES[0]?.notes ? (
+                {pricingList[0]?.notes ? (
                   <p className="text-xs md:text-sm text-slate-400 mt-4">
-                    {RATES[0].notes}
+                    {pricingList[0].notes}
                   </p>
                 ) : null}
               </div>
             </SectionReveal>
 
-            <SectionReveal>
-              <div className="rounded-2xl p-8 shadow-2xl ring-1 ring-white/10 bg-white/10 backdrop-blur-xl">
-                <h2 className="text-2xl font-bold mb-6">Special Offers</h2>
-                <div className="space-y-4">
-                  {OFFERS.map((offer, i) => (
-                    <div
-                      key={i}
-                      className="flex items-start gap-3 p-4 rounded-xl bg-white/6 ring-1 ring-white/10 hover:bg-white/10 transition"
-                    >
-                      <Check
-                        className="text-emerald-400 mt-1 flex-shrink-0"
-                        size={20}
-                      />
-                      <div>
-                        <h3 className="font-semibold">{offer.title}</h3>
-                        <p className="text-slate-300 text-sm">
-                          {offer.description}
-                        </p>
+            {/* Dynamic Room Cards with Images (PUBLIC-05) */}
+            <div className="grid gap-6">
+              {roomsList.map((room, i) => {
+                const roomImg =
+                  i === 0
+                    ? room1Images[0] || "/villa/optimized/room_01_img_01.webp"
+                    : i === 1
+                    ? room2Images[0] || "/villa/optimized/room_02_img_01.webp"
+                    : null;
+
+                return (
+                  <SectionReveal key={room.name}>
+                    <article className="group overflow-hidden rounded-2xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-xl transition-all duration-300 hover:border-cyan-500/30 hover:shadow-[0_8px_32px_rgba(14,165,233,.12)]">
+                      {/* Room dynamic image */}
+                      {roomImg && (
+                        <div className="relative -mx-6 -mt-6 mb-5 aspect-[16/10] overflow-hidden rounded-t-2xl">
+                          <Image
+                            src={roomImg}
+                            alt={room.name}
+                            fill
+                            priority={i === 0}
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                          />
+                        </div>
+                      )}
+
+                      {/* Room properties */}
+                      <div className="mb-4 flex items-start justify-between">
+                        <div>
+                          <h3 className="text-xl font-bold text-white">{room.name}</h3>
+                          <div className="mt-1 flex items-center gap-1.5 text-sm text-slate-300">
+                            <Users className="h-4 w-4" />
+                            <span>Sleeps {room.sleeps}</span>
+                          </div>
+                        </div>
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#22d3ee] text-xs font-bold text-white shadow-md">
+                          0{i + 1}
+                        </span>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </SectionReveal>
+
+                      <ul className="space-y-2">
+                        {room.features.slice(0, 5).map((f, fi) => (
+                          <li key={fi} className="flex items-center gap-2.5 text-sm text-slate-300">
+                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                    </article>
+                  </SectionReveal>
+                );
+              })}
+            </div>
           </div>
 
           {/* WhatsApp enquiry form */}

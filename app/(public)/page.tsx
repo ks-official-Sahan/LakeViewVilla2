@@ -1,5 +1,5 @@
 import SeoJsonLd from "@/components/SeoJsonLd";
-import { PinnedHero } from "@/components/sections/hero";
+import { ScrollStory } from "@/components/sections/ScrollStory";
 import { Highlights } from "@/components/sections/highlights";
 import { Footer } from "@/components/layout/footer";
 import { BelowFold } from "@/components/layout/below-fold";
@@ -12,17 +12,22 @@ export default function HomePage() {
   }));
 
   return (
-    <main>
+    <>
       <SeoJsonLd
         breadcrumb={[{ name: "Home", url: "https://lakeviewvillatangalle.com" }]}
         faq={homepageFaq}
       />
-      <PinnedHero nextSectionId="highlights" />
-      <section id="highlights">
+      {/* Phase 1–3: WebGL hero + magazine reveal + booking CTA */}
+      <ScrollStory />
+
+      {/* Amenity highlights grid */}
+      <section id="highlights" aria-label="Villa highlights">
         <Highlights />
       </section>
+
+      {/* Below-fold sections: experiences, gallery teaser, stays, map, values, FAQ */}
       <BelowFold />
       <Footer />
-    </main>
+    </>
   );
 }

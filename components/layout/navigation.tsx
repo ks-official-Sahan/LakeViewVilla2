@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { gsap } from "@/lib/gsap";
+import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import { Menu, X, Phone } from "lucide-react";
 import ThemeSwitch from "../theme/theme-switch";
 import { SITE_CONFIG } from "@/data/content";
@@ -36,25 +36,51 @@ export function Navigation() {
     );
   }, []);
 
-  // Scroll state
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 32);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  // GSAP scroll direction hide/show + transparent-to-glass (PUBLIC-02)
+  useGSAP(() => {
+    if (!headerRef.current) return;
+
+    const trigger = ScrollTrigger.create({
+      start: "top -80px",
+      onUpdate: (self) => {
+        const isScrolledPast = self.scroll() > 80;
+        setScrolled(isScrolledPast);
+
+        if (isOpen) {
+          gsap.to(headerRef.current, { y: 0, duration: 0.3, ease: "power2.out" });
+          return;
+        }
+
+        // Hide on scroll down > 100px, reveal on scroll up
+        gsap.to(headerRef.current, {
+          y: self.direction === 1 && self.scroll() > 100 ? -100 : 0,
+          duration: 0.4,
+          ease: "power3.out",
+        });
+      },
+    });
+
+    return () => trigger.kill();
+  }, [isOpen]);
 
   // Close mobile drawer on route change
   useEffect(() => setIsOpen(false), [pathname]);
 
-  // Animate drawer open/close
+  // Animate drawer open/close with staggered link reveal
   useEffect(() => {
     if (!drawerRef.current) return;
     if (isOpen) {
       gsap.fromTo(
         drawerRef.current,
         { opacity: 0, y: -16 },
-        { opacity: 1, y: 0, duration: 0.28, ease: "power2.out" }
+        { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }
+      );
+      
+      const links = drawerRef.current.querySelectorAll("[data-mobile-nav-link]");
+      gsap.fromTo(
+        links,
+        { opacity: 0, x: -16 },
+        { opacity: 1, x: 0, duration: 0.28, stagger: 0.04, ease: "power2.out", delay: 0.08 }
       );
     }
   }, [isOpen]);
@@ -72,8 +98,8 @@ export function Navigation() {
         role="banner"
         className={`fixed inset-x-0 top-0 z-50 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-300 ease-out ${
           scrolled || isOpen
-            ? "border-b border-white/10 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,.08)] backdrop-blur-2xl dark:bg-black/25 dark:shadow-[0_8px_32px_rgba(0,0,0,.35)]"
-            : "bg-transparent shadow-none"
+            ? "glass-1"
+            : "bg-transparent shadow-none border-b border-transparent"
         }`}
       >
         <div className="lv-container flex h-[var(--header-h)] items-center justify-between">
@@ -122,11 +148,11 @@ export function Navigation() {
                   }`}
                 >
                   {label}
-                  {/* Active underline */}
+                  {/* Active gold underline indicator */}
                   {active && (
                     <span
                       aria-hidden
-                      className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[var(--color-primary)]"
+                      className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[var(--color-gold)]"
                     />
                   )}
                 </Link>
@@ -189,6 +215,7 @@ export function Navigation() {
                 <Link
                   key={href}
                   href={href}
+                  data-mobile-nav-link
                   transitionTypes={["spa-page"]}
                   aria-current={active ? "page" : undefined}
                   className={`flex items-center rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
@@ -201,7 +228,7 @@ export function Navigation() {
                 </Link>
               );
             })}
-            <div className="pt-2">
+            <div className="pt-2" data-mobile-nav-link>
               <a
                 href={whatsappUrl}
                 target="_blank"
@@ -218,3 +245,4 @@ export function Navigation() {
     </>
   );
 }
+

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import FAQClient from "./client";
 import { FAQ_ITEMS } from "@/data/content";
+import { getContentBlocks } from "@/lib/admin/content-actions";
 
 export const metadata: Metadata = {
   title: "Tangalle Villa FAQ — Bookings & Directions | Lake View Villa",
@@ -29,7 +30,28 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Page() {
+export default async function Page() {
+  let dbBlocks: any[] = [];
+  try {
+    dbBlocks = await getContentBlocks("faq");
+  } catch (error) {
+    console.error("Failed to load FAQ CMS blocks:", error);
+  }
+
+  const heroBlock = dbBlocks.find(b => b.sectionSlug === "hero")?.data;
+  const questionsBlock = dbBlocks.find(b => b.sectionSlug === "questions")?.data;
+
+  // Map to format required by SeoJsonLd
+  const faqList = Array.isArray(questionsBlock)
+    ? questionsBlock.map((item: any) => ({
+        q: item.question || item.q,
+        a: item.answer || item.a,
+      }))
+    : FAQ_ITEMS.map((item) => ({
+        q: item.question,
+        a: item.answer,
+      }));
+
   return (
     <>
       <SeoJsonLd
@@ -37,12 +59,9 @@ export default function Page() {
           { name: "Home", url: "https://lakeviewvillatangalle.com/" },
           { name: "FAQ", url: "https://lakeviewvillatangalle.com/faq" },
         ]}
-        faq={FAQ_ITEMS.map((item) => ({
-          q: item.question,
-          a: item.answer,
-        }))}
+        faq={faqList}
       />
-      <FAQClient />
+      <FAQClient cmsHero={heroBlock} cmsQuestions={questionsBlock} />
     </>
   );
 }

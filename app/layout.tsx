@@ -1,6 +1,6 @@
 import type React from "react";
 import type { Metadata, Viewport } from "next";
-import { Montserrat, DM_Sans } from "next/font/google";
+import { Montserrat, DM_Sans, Playfair_Display } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import "./globals.css";
@@ -45,149 +45,95 @@ const dmSans = DM_Sans({
   weight: ["400", "500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Private Villa Tangalle — Lagoon Stay | Lake View Villa Tangalle",
-    template: "%s | Lake View Villa Tangalle",
-  },
-  description: "Book Lake View Villa Tangalle. A private vacation rental and lodging business offering panoramic lake views, comfortable A/C bedrooms, fast Wi-Fi, and chef services in Sri Lanka.",
-  keywords: [
-  // Original Merged & Deduplicated Keywords
-  "Lake View Villa Tangalle",
-  "Lake View",
-  "Lake View Tangalle",
-  "Lake Tangalle",
-  "Tangalle villa",
-  "lake view villa",
-  "Sri Lanka lagoon stay",
-  "private villa Tangalle",
-  "Tangalle accommodation",
-  "Booking Tangalle",
-  "Tangalle Rental",
-  "Tangalle",
-  "Sri Lanka vacation rental",
-  "Booking",
-  "Rental",
-  "Villa",
-  "Lake",
-  "Vacation",
-  "Coastal Line Tangalle",
-  "low budget villas in sri lanka",
-  "low budget villas in tangalle",
-  "Villas in Tangalle",
-  "Tangalle beachfront villa",
-  "Luxury villa Tangalle",
-  "Tangalle holiday villa",
-  "Beach villa Tangalle Sri Lanka",
-  "Tangalle villa with pool",
-  "Ocean view villa Tangalle",
-  "Tangalle boutique villa",
-  "Family villa Tangalle",
-  "vacation rental Tangalle",
-  "vacation rental",
-  "Tangalle resort villa",
-  "Tangalle luxury villa",
-  "Tangalle beach villa",
-  "Tangalle resorts",
-  "Romantic villa Tangalle",
-  "Tangalle honeymoon villa",
-  "Best villas in Tangalle Sri Lanka",
-  "Where to stay in Tangalle",
-  "Tangalle luxury stays",
-  "Tangalle resort vs villa",
-  "Tangalle Airbnb alternative",
-  "Near Tangalle beach",
-  "Near Tangalle lagoon",
-  "Near Hiriketiya / Goyambokka / Rekawa",
-  "Goyambokka villa",
-  "Villas near Goyambokka beach",
-  "Goyambokka beach hotels",
-  "Goyambokka accommodation",
-  "Goyambokka luxury villas",
-  "Beachfront villa Goyambokka",
-  "Private villa near Goyambokka Tangalle",
-  "Goyambokka boutique villa",
-  "Luxury Goyambokka beach villa",
-  "Goyambokka romantic villa for couples",
-  "Family villa near Goyambokka beach",
-  "Best villas in Goyambokka Tangalle",
-  "Where to stay near Goyambokka beach Sri Lanka",
-  "Goyambokka beach villas with pool",
-  "Goyambokka Sri Lanka accommodation guide",
-  "Things to do near Goyambokka beach",
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-playfair",
+  weight: ["400", "700", "900"],
+  style: ["normal", "italic"],
+});
 
-  // Keywords from the Secondary Array
-  "Lake View Villa Tangalle 2026",
-  "panoramic lagoon views",
-  "fast Wi-Fi villa",
-  "chef service villa Tangalle",
-  "vacationers",
-  "Tangalle accommodation alternative",
-  "Lake View Villa vs hotels",
-  "Lake View Villa Tangalle pricing",
-  "best places to stay in Tangalle",
-  "lagoon stay Sri Lanka",
-  "beachfront alternative Tangalle",
-  "Tangalle Airbnb",
+export async function generateMetadata(): Promise<Metadata> {
+  let settings = {
+    siteName: "Private Villa Tangalle — Lagoon Stay | Lake View Villa Tangalle",
+    siteDescription: "Book Lake View Villa Tangalle. A private vacation rental and lodging business offering panoramic lake views, comfortable A/C bedrooms, fast Wi-Fi, and chef services in Sri Lanka.",
+    defaultKeywords: [
+      "Lake View Villa Tangalle",
+      "Lake View",
+      "Lake View Tangalle",
+      "Tangalle villa",
+      "lake view villa",
+      "Sri Lanka lagoon stay",
+      "private villa Tangalle",
+      "Tangalle accommodation",
+    ],
+  };
 
-  // Newly Added Optimised Keywords
-  "Southern province villa stays",
-  "affordable luxury villa Tangalle",
-  "Tangalle nature retreat",
-  "South Coast Sri Lanka holiday rental",
-  "Lake View Villa Tangalle reviews",
-  "long term villa rental Tangalle",
-  "self-catering accommodation Tangalle",
-  "villas near Deep South Sri Lanka"
-],
-  metadataBase: new URL(siteConfig.url),
-  alternates: { canonical: "/" },
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any", type: "image/x-icon" },
-      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
-      { url: "/favicon-64.png", sizes: "64x64", type: "image/png" },
-      { url: "/favicon-96.png", sizes: "96x96", type: "image/png" },
-      { url: "/favicon.png", sizes: "any", type: "image/png" },
-    ],
-    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
-  },
-  manifest: "/site.webmanifest",
-  openGraph: {
-    title: "Private Villa Tangalle | Lake View Villa Tangalle",
-    description: "Lake View Villa Tangalle is a private vacation rental in Sri Lanka. It helps travelers relax with A/C rooms, fast Wi-Fi, and scenic lagoon views.",
-    type: "website",
-    locale: "en_US",
-    url: siteConfig.url,
-    siteName: siteConfig.name,
-    images: [
-      { url: "/og", width: 1200, height: 630, alt: "Lake View Villa Tangalle — Lagoon view" },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: SEO_CONFIG.title,
-    description:
-      "Private villa on a serene lagoon in Tangalle with panoramic views.",
-    images: ["/og"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+  try {
+    const { getSettings } = await import("@/lib/actions/settings");
+    const dbSettings = await getSettings();
+    if (dbSettings) {
+      settings = dbSettings;
+    }
+  } catch (error) {
+    console.error("Failed to load settings in metadata generation:", error);
+  }
+
+  return {
+    title: {
+      default: settings.siteName,
+      template: "%s | Lake View Villa Tangalle",
+    },
+    description: settings.siteDescription,
+    keywords: settings.defaultKeywords,
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://lakeviewvillatangalle.com"),
+    alternates: { canonical: "/" },
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "any", type: "image/x-icon" },
+        { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+        { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+        { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
+        { url: "/favicon-64.png", sizes: "64x64", type: "image/png" },
+        { url: "/favicon-96.png", sizes: "96x96", type: "image/png" },
+        { url: "/favicon.png", sizes: "any", type: "image/png" },
+      ],
+      apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+    },
+    manifest: "/site.webmanifest",
+    openGraph: {
+      title: settings.siteName,
+      description: settings.siteDescription,
+      type: "website",
+      locale: "en_US",
+      url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://lakeviewvillatangalle.com",
+      siteName: "Lake View Villa Tangalle",
+      images: [
+        { url: "/api/og", width: 1200, height: 630, alt: "Lake View Villa Tangalle — Lagoon view" },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: settings.siteName,
+      description: settings.siteDescription,
+      images: ["/api/og"],
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
-  },
-};
+    verification: {
+      google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
+    },
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -214,7 +160,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${montserrat.variable} ${dmSans.variable}`}
+      className={`${montserrat.variable} ${dmSans.variable} ${playfair.variable}`}
       data-scroll-behavior="smooth"
       style={{ scrollBehavior: "smooth" }}
     >

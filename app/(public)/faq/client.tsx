@@ -6,7 +6,12 @@ import { ChevronDown, HelpCircle } from "lucide-react";
 import { SectionReveal } from "@/components/motion/section-reveal";
 import { FAQ_ITEMS } from "@/data/content";
 
-export default function FAQPage() {
+interface FAQClientProps {
+  cmsHero?: { headline?: string; subheadline?: string };
+  cmsQuestions?: { question?: string; q?: string; answer?: string; a?: string }[];
+}
+
+export default function FAQPage({ cmsHero, cmsQuestions }: FAQClientProps) {
   const [openItems, setOpenItems] = useState<number[]>([]);
 
   const toggleItem = (index: number) => {
@@ -14,6 +19,19 @@ export default function FAQPage() {
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
     );
   };
+
+  const headline = cmsHero?.headline || "Frequently Asked Questions";
+  const subheadline = cmsHero?.subheadline || "Find answers to common questions about Lake View Villa Tangalle";
+  
+  const questionsList = Array.isArray(cmsQuestions) && cmsQuestions.length > 0
+    ? cmsQuestions.map((item: any) => ({
+        question: item.question || item.q || "",
+        answer: item.answer || item.a || "",
+      }))
+    : FAQ_ITEMS.map((item) => ({
+        question: item.question,
+        answer: item.answer,
+      }));
 
   return (
     <>
@@ -23,14 +41,9 @@ export default function FAQPage() {
           <div className="container mx-auto px-4">
             <SectionReveal>
               <div className="text-center">
-                <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-                  <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    Frequently Asked Questions
-                  </span>
-                </h1>
+
                 <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-                  Find answers to common questions about Lake View Villa
-                  Tangalle
+                  {subheadline}
                 </p>
               </div>
             </SectionReveal>
@@ -42,7 +55,7 @@ export default function FAQPage() {
           <div className="max-w-4xl mx-auto">
             <SectionReveal>
               <div className="space-y-4">
-                {FAQ_ITEMS.map((item, index) => (
+                {questionsList.map((item, index) => (
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, y: 20 }}

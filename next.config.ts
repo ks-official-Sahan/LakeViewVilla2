@@ -124,6 +124,9 @@ const nextConfig: NextConfig = {
   // Packages that must run in Node.js (not bundled by webpack)
   serverExternalPackages: ["@prisma/client", "bcryptjs"],
 
+  // R3F / Three.js — require browser APIs, must be excluded from SSR
+  transpilePackages: ["three", "@react-three/fiber", "@react-three/drei"],
+
   // Next.js 16 — Cache Components + named profiles for cacheLife() in cached data helpers
   cacheComponents: true,
   cacheLife: {
@@ -249,6 +252,8 @@ const nextConfig: NextConfig = {
       "@tiptap/react",
       "marked",
       "lucide-react",
+      "@react-three/fiber",
+      "@react-three/drei",
     ],
     useLightningcss: !isWebpackCssBuild,
     viewTransition: true,

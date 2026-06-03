@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import StaysPage from "./client";
 import { RATES, OFFERS } from "@/data/content";
+import { getContentBlocks } from "@/lib/admin/content-actions";
+import { getMediaAssetsByLocation } from "@/lib/media/queries";
 
 export const metadata: Metadata = {
   title: "Tangalle Accommodation — Stays & Rates | Lake View Villa",
@@ -41,7 +43,26 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Page() {
+export default async function Page() {
+  let dbBlocks: any[] = [];
+  let room1Images: string[] = [];
+  let room2Images: string[] = [];
+
+  try {
+    dbBlocks = await getContentBlocks("stays");
+    const r1Assets = await getMediaAssetsByLocation("stays", "room-1");
+    const r2Assets = await getMediaAssetsByLocation("stays", "room-2");
+    room1Images = r1Assets.map(a => a.url);
+    room2Images = r2Assets.map(a => a.url);
+  } catch (error) {
+    console.error("Failed to load stays CMS elements:", error);
+  }
+
+  const heroBlock = dbBlocks.find(b => b.sectionSlug === "hero")?.data;
+  const roomsBlock = dbBlocks.find(b => b.sectionSlug === "rooms")?.data;
+  const pricingBlock = dbBlocks.find(b => b.sectionSlug === "pricing")?.data;
+  const amenitiesBlock = dbBlocks.find(b => b.sectionSlug === "amenities")?.data;
+
   return (
     <>
       <SeoJsonLd
@@ -62,7 +83,14 @@ export default function Page() {
           })),
         ]}
       />
-      <StaysPage />
+      <StaysPage
+        cmsHero={heroBlock}
+        cmsRooms={roomsBlock}
+        cmsPricing={pricingBlock}
+        cmsAmenities={amenitiesBlock}
+        room1Images={room1Images}
+        room2Images={room2Images}
+      />
     </>
   );
 }

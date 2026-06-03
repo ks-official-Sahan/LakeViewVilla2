@@ -15,8 +15,9 @@ const config = {
     container: { center: true, padding: "1rem", screens: { "2xl": "1400px" } },
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans:    ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
         display: ["var(--font-display)", "var(--font-sans)", "sans-serif"],
+        serif:   ["var(--font-serif)", "var(--font-playfair)", "Playfair Display", "Georgia", "serif"],
       },
       screens: {
         xs: "480px",
