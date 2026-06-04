@@ -16,6 +16,9 @@
     "analyze": "cross-env ANALYZE=true next build --turbopack",
     "lighthouse:ci": "lhci autorun --config=./lighthouserc.json",
     "db:seed": "npx prisma db seed",
+    "db:seed:cms": "dotenv -e .env.local -- tsx prisma/seed-cms.ts",
+
+
     "opt:images": "node scripts/optimize-images.mjs",
     "gen:icons": "node scripts/gen-icons.mjs",
     "test:e2e": "playwright test",
