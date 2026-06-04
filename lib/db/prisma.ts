@@ -1,6 +1,8 @@
+import "./env-fallback";
+console.log("[Prisma Runtime Debug] process.env.DATABASE_URL =", process.env.DATABASE_URL);
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { neonConfig, Pool } from "@neondatabase/serverless";
+import { neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import {
   readFallbackData,
@@ -96,29 +98,17 @@ async function updateFallbackCache(client: PrismaClient, modelName: string) {
 }
 
 function createResilientPrismaClient(): any {
-  const connectionString = process.env.DATABASE_URL;
+  const fallbackUrl = "postgresql://dummy:dummy@localhost:5432/dummy";
+  const connectionString = process.env.DATABASE_URL === fallbackUrl ? undefined : process.env.DATABASE_URL;
   let isDbOffline = !connectionString;
 
   if (isDbOffline) {
     console.warn("[Fallback DB] DATABASE_URL not set — PrismaClient initialized in offline fallback mode.");
   }
 
-  const pool = connectionString
-    ? new Pool({
-        connectionString,
-        max: 10,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000, // 2s connection timeout for faster fallback
-      })
-    : null;
-
-  if (pool) {
-    pool.on("error", (err: any) => {
-      console.error("[Fallback DB] Neon Pool connection error:", err.message);
-    });
-  }
-
-  const adapter = pool ? new PrismaNeon(pool as any) : undefined;
+  const adapter = new PrismaNeon({
+    connectionString: connectionString || fallbackUrl,
+  });
   const rawClient = new PrismaClient({
     adapter: adapter as any,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],

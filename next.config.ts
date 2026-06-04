@@ -1,3 +1,15 @@
+// Define default database fallback URLs for Prisma Client in environments without a configured database
+const fallbackDbUrl = "postgresql://dummy:dummy@localhost:5432/dummy";
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = fallbackDbUrl;
+}
+if (!process.env.DIRECT_DATABASE_URL) {
+  process.env.DIRECT_DATABASE_URL = fallbackDbUrl;
+}
+
+// Disable native bufferutil in 'ws' to prevent "b.mask is not a function" errors during static pre-rendering
+process.env.WS_NO_BUFFER_UTIL = "1";
+
 import type { NextConfig } from "next";
 import bundleAnalyzer from "@next/bundle-analyzer";
 
@@ -75,6 +87,9 @@ const CONNECT_SRC = [
   // Cloudinary for media management
   "https://res.cloudinary.com",
   "https://api.cloudinary.com",
+  // CartoCDN for MapLibre styles and tiles
+  "https://basemaps.cartocdn.com",
+  "https://*.cartocdn.com",
 ].join(" ");
 
 const FRAME_SRC = [
@@ -161,7 +176,7 @@ const nextConfig: NextConfig = {
     deviceSizes: [360, 414, 640, 768, 1024, 1280, 1440, 1536, 1920],
     imageSizes: [16, 24, 32, 48, 64, 96, 128, 256],
     minimumCacheTTL: 31536000,
-    qualities: [75, 80, 82, 90],
+    qualities: [75, 80, 82, 85, 90],
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "**" },
