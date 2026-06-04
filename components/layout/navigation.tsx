@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
-import { Menu, X, Phone } from "lucide-react";
+import { Menu, X, Phone, Compass, Sun, Moon } from "lucide-react";
 import ThemeSwitch from "../theme/theme-switch";
 import { SITE_CONFIG } from "@/data/content";
 import { buildWhatsAppUrl } from "@/lib/utils";
@@ -31,19 +31,19 @@ export function Navigation() {
     if (!headerRef.current) return;
     gsap.fromTo(
       headerRef.current,
-      { y: -80, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.7, ease: "power3.out", delay: 0.1 }
+      { y: -100, opacity: 0 },
+      { y: 0, opacity: 1, duration: 1.0, ease: "power4.out", delay: 0.2 }
     );
   }, []);
 
-  // GSAP scroll direction hide/show + transparent-to-glass (PUBLIC-02)
+  // GSAP scroll behavior
   useGSAP(() => {
     if (!headerRef.current) return;
 
     const trigger = ScrollTrigger.create({
-      start: "top -80px",
+      start: "top -40px",
       onUpdate: (self) => {
-        const isScrolledPast = self.scroll() > 80;
+        const isScrolledPast = self.scroll() > 40;
         setScrolled(isScrolledPast);
 
         if (isOpen) {
@@ -51,9 +51,9 @@ export function Navigation() {
           return;
         }
 
-        // Hide on scroll down > 100px, reveal on scroll up
+        // Hide navigation on scroll down, show on scroll up
         gsap.to(headerRef.current, {
-          y: self.direction === 1 && self.scroll() > 100 ? -100 : 0,
+          y: self.direction === 1 && self.scroll() > 120 ? -120 : 0,
           duration: 0.4,
           ease: "power3.out",
         });
@@ -63,24 +63,23 @@ export function Navigation() {
     return () => trigger.kill();
   }, [isOpen]);
 
-  // Close mobile drawer on route change
   useEffect(() => setIsOpen(false), [pathname]);
 
-  // Animate drawer open/close with staggered link reveal
+  // Stagger reveal mobile navigation links
   useEffect(() => {
     if (!drawerRef.current) return;
     if (isOpen) {
       gsap.fromTo(
         drawerRef.current,
-        { opacity: 0, y: -16 },
-        { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }
+        { opacity: 0, y: -20, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power4.out" }
       );
       
       const links = drawerRef.current.querySelectorAll("[data-mobile-nav-link]");
       gsap.fromTo(
         links,
-        { opacity: 0, x: -16 },
-        { opacity: 1, x: 0, duration: 0.28, stagger: 0.04, ease: "power2.out", delay: 0.08 }
+        { opacity: 0, x: -20 },
+        { opacity: 1, x: 0, duration: 0.35, stagger: 0.05, ease: "power3.out", delay: 0.1 }
       );
     }
   }, [isOpen]);
@@ -96,41 +95,49 @@ export function Navigation() {
       <header
         ref={headerRef}
         role="banner"
-        className={`fixed inset-x-0 top-0 z-50 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-300 ease-out ${
-          scrolled || isOpen
-            ? "glass-1"
-            : "bg-transparent shadow-none border-b border-transparent"
-        }`}
+        className="fixed inset-x-0 top-0 z-50 transition-all duration-500 ease-out py-3"
       >
-        <div className="lv-container flex h-[var(--header-h)] items-center justify-between">
+        <div 
+          className={`mx-auto flex h-[70px] max-w-6xl items-center justify-between px-6 transition-all duration-500 ease-out ${
+            scrolled || isOpen
+              ? "rounded-full border border-[var(--color-border)]/50 bg-[var(--color-surface)]/80 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] md:max-w-5xl"
+              : "border border-transparent bg-transparent shadow-none"
+          }`}
+        >
           {/* Logo */}
           <Link
             href="/"
             transitionTypes={["spa-page"]}
-            className="group flex items-center gap-2.5"
+            className="group flex items-center gap-3"
             aria-label="Lake View Villa — Home"
           >
-            <Image
-              src="/logo.png"
-              alt="Lake View Villa"
-              width={36}
-              height={36}
-              className="h-[clamp(2rem,4vw,2.35rem)] w-[clamp(2rem,4vw,2.35rem)] rounded-lg transition-transform duration-300 group-hover:scale-105"
-              priority
-            />
+            <div className="relative overflow-hidden rounded-full border border-[var(--color-gold)]/20 p-0.5 transition-transform duration-500 group-hover:rotate-12">
+              <Image
+                src="/logo.png"
+                alt="Lake View Villa"
+                width={36}
+                height={36}
+                className="h-[34px] w-[34px] rounded-full object-cover"
+                priority
+              />
+            </div>
             <span
-              className={`hidden font-semibold tracking-tight sm:block transition-colors duration-300 [font-size:clamp(0.8125rem,calc(0.65rem+0.45vw),1rem)] ${
+              className={`font-serif font-bold tracking-tight sm:block transition-colors duration-300 text-base ${
                 isHero ? "text-white drop-shadow-md" : "text-[var(--color-foreground)]"
               }`}
             >
-              Lake View Villa
+              Lake View <span className="italic text-[var(--color-gold)] font-medium">Villa</span>
             </span>
           </Link>
 
           {/* Desktop nav */}
           <nav
             aria-label="Primary navigation"
-            className="hidden items-center gap-[clamp(0.1rem,0.5vw,0.35rem)] lg:gap-1 md:flex"
+            className={`hidden items-center gap-1 rounded-full border px-2 py-1.5 transition-all duration-500 md:flex ${
+              isHero 
+                ? "border-white/10 bg-white/5 backdrop-blur-md" 
+                : "border-[var(--color-border)]/40 bg-[var(--color-background)]/50"
+            }`}
           >
             {NAV_LINKS.map(({ href, label }) => {
               const active =
@@ -141,18 +148,19 @@ export function Navigation() {
                   href={href}
                   transitionTypes={["spa-page"]}
                   aria-current={active ? "page" : undefined}
-                  className={`relative rounded-lg px-[clamp(0.45rem,1vw,0.95rem)] py-2 font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/60 [font-size:clamp(0.75rem,calc(0.65rem+0.35vw),0.875rem)] ${
-                    isHero
-                      ? "text-white/90 hover:text-white hover:bg-white/10"
-                      : "text-[var(--color-foreground)] hover:bg-[var(--color-primary)]/8 hover:text-[var(--color-primary)]"
+                  className={`relative rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-widest transition-all duration-300 ${
+                    active
+                      ? "text-[var(--color-gold)]"
+                      : isHero
+                        ? "text-white/80 hover:text-white hover:bg-white/10"
+                        : "text-[var(--color-foreground)] hover:bg-[var(--color-primary)]/8 hover:text-[var(--color-primary)]"
                   }`}
                 >
                   {label}
-                  {/* Active gold underline indicator */}
                   {active && (
                     <span
                       aria-hidden
-                      className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[var(--color-gold)]"
+                      className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[var(--color-gold)]"
                     />
                   )}
                 </Link>
@@ -161,23 +169,22 @@ export function Navigation() {
           </nav>
 
           {/* Desktop right actions */}
-          <div className="hidden items-center gap-[clamp(0.35rem,1vw,0.65rem)] md:flex">
-            <div className="rounded-lg p-1">
+          <div className="hidden items-center gap-4 md:flex">
+            <div className={`rounded-full p-1 border transition-all duration-500 ${
+              isHero ? "border-white/10 bg-white/5" : "border-[var(--color-border)] bg-[var(--color-surface)]"
+            }`}>
               <ThemeSwitch />
             </div>
+            
             <a
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Book via WhatsApp"
-              className={`inline-flex items-center gap-[clamp(0.25rem,0.8vw,0.45rem)] rounded-xl px-[clamp(0.65rem,2vw,1.1rem)] py-[clamp(0.4rem,1.2vw,0.55rem)] font-semibold transition-all duration-200 [font-size:clamp(0.75rem,calc(0.68rem+0.25vw),0.875rem)] ${
-                isHero
-                  ? "bg-white/15 text-white backdrop-blur-sm hover:bg-white/25 border border-white/30"
-                  : "bg-[var(--color-primary)] text-white hover:opacity-90"
-              }`}
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-gold)] px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-white shadow-md transition-all duration-300 hover:shadow-[0_4px_20px_rgba(var(--color-gold-rgb),0.35)] hover:scale-102"
             >
-              <Phone className="h-[clamp(0.85rem,2vw,1rem)] w-[clamp(0.85rem,2vw,1rem)] shrink-0" />
-              Book Now
+              <Phone className="h-3.5 w-3.5 shrink-0 transition-transform duration-300 group-hover:rotate-12" />
+              <span>Book Now</span>
             </a>
           </div>
 
@@ -186,8 +193,10 @@ export function Navigation() {
             onClick={() => setIsOpen((v) => !v)}
             aria-label={isOpen ? "Close menu" : "Open menu"}
             aria-expanded={isOpen}
-            className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl md:hidden transition-colors ${
-              isHero ? "text-white hover:bg-white/10" : "text-[var(--color-foreground)] hover:bg-[var(--color-primary)]/10"
+            className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border transition-all duration-300 md:hidden ${
+              isHero 
+                ? "border-white/10 bg-white/5 text-white hover:bg-white/15" 
+                : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)] hover:bg-[var(--color-primary)]/10"
             }`}
           >
             {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -199,12 +208,11 @@ export function Navigation() {
       {isOpen && (
         <div
           ref={drawerRef}
-          className="fixed inset-x-0 z-40 max-h-[min(72dvh,calc(100dvh-var(--header-h)))] overflow-y-auto overscroll-y-contain border-b border-white/10 bg-white/92 backdrop-blur-2xl dark:bg-[#0a0f10]/94 md:hidden"
-          style={{ top: "var(--header-h)" }}
+          className="fixed inset-x-4 top-[96px] z-50 rounded-3xl border border-[var(--color-border)]/50 bg-[var(--color-surface)]/90 p-6 shadow-2xl backdrop-blur-2xl md:hidden"
         >
           <nav
             aria-label="Mobile navigation"
-            className="lv-container space-y-1 py-4"
+            className="flex flex-col gap-2"
           >
             {NAV_LINKS.map(({ href, label }) => {
               const active =
@@ -216,25 +224,32 @@ export function Navigation() {
                   data-mobile-nav-link
                   transitionTypes={["spa-page"]}
                   aria-current={active ? "page" : undefined}
-                  className={`flex items-center rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                  className={`flex items-center justify-between rounded-2xl px-5 py-3 text-sm font-semibold uppercase tracking-widest transition-all ${
                     active
                       ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
                       : "text-[var(--color-foreground)] hover:bg-[var(--color-primary)]/8"
                   }`}
                 >
-                  {label}
+                  <span>{label}</span>
+                  <Compass className={`h-4 w-4 opacity-40 transition-transform duration-500 ${active ? "rotate-45 opacity-100 text-[var(--color-gold)]" : ""}`} />
                 </Link>
               );
             })}
-            <div className="pt-2" data-mobile-nav-link>
+            
+            <div className="h-px w-full bg-[var(--color-border)]/50 my-2" data-mobile-nav-link />
+            
+            <div className="flex items-center justify-between gap-4" data-mobile-nav-link>
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2">
+                <ThemeSwitch />
+              </div>
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-gold)] py-3.5 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-[var(--color-primary)]/20"
               >
                 <Phone className="h-4 w-4" />
-                Book via WhatsApp
+                <span>WhatsApp Enquiry</span>
               </a>
             </div>
           </nav>
@@ -243,4 +258,3 @@ export function Navigation() {
     </>
   );
 }
-

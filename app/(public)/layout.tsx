@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { Navigation } from "@/components/layout/navigation";
 import { ExpandableCTA } from "@/components/ui2/expandable-cta";
+import { InteractiveBackdrop } from "@/components/webgl/InteractiveBackdrop";
 
 /** Marketing shell only — `/admin` stays outside this group so builds skip pathname/chrome here (Next Cache Components). */
 export default function PublicLayout({ children }: { children: ReactNode }) {
@@ -14,6 +15,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
       <Suspense fallback={null}>
         <Navigation />
       </Suspense>
+      <InteractiveBackdrop />
       {children}
       <ExpandableCTA />
     </>

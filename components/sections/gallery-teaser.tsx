@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useGSAP } from "@/lib/gsap";
 import { gsap, EASE, DURATION } from "@/lib/gsap";
 import { X, ChevronLeft, ChevronRight, ArrowRight, Maximize2 } from "lucide-react";
@@ -35,14 +35,13 @@ export function GalleryTeaser({ cmsData }: { cmsData?: { eyebrow?: string; title
       const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (prefersReduced) return;
 
-      // Heading reveal
+      // Heading Reveal
       gsap.fromTo(
         headingRef.current,
-        { opacity: 0, y: 40, filter: "blur(8px)" },
+        { opacity: 0, y: 50 },
         {
           opacity: 1,
           y: 0,
-          filter: "blur(0px)",
           duration: DURATION.reveal,
           ease: EASE.premium,
           scrollTrigger: { trigger: headingRef.current, start: "top 85%", once: true },
@@ -51,20 +50,19 @@ export function GalleryTeaser({ cmsData }: { cmsData?: { eyebrow?: string; title
 
       let revertParallax: (() => void) | undefined;
 
-      // Staggered grid reveal + tiered scrub parallax
       const cells = gridRef.current?.querySelectorAll<HTMLElement>("[data-cell]");
       if (cells?.length) {
+        // Stagger reveal cells
         gsap.fromTo(
           cells,
-          { opacity: 0, y: 60, scale: 0.94, filter: "blur(4px)" },
+          { opacity: 0, y: 70, scale: 0.95 },
           {
             opacity: 1,
             y: 0,
             scale: 1,
-            filter: "blur(0px)",
-            duration: 0.9,
+            duration: 1.1,
             ease: EASE.premium,
-            stagger: { each: 0.1, from: "start" },
+            stagger: 0.1,
             scrollTrigger: { trigger: gridRef.current, start: "top 80%", once: true },
           }
         );
@@ -72,14 +70,15 @@ export function GalleryTeaser({ cmsData }: { cmsData?: { eyebrow?: string; title
         const mm = gsap.matchMedia();
         revertParallax = () => mm.revert();
 
+        // Parallax image scrolling rate
         mm.add("(min-width: 768px)", () => {
           cells.forEach((cell, idx) => {
             const inner = cell.querySelector<HTMLElement>("[data-parallax]");
             if (!inner) return;
 
-            let rate = 15;
-            if (idx === 0 || idx === 3) rate = 25;
-            else if (idx === 1 || idx === 5) rate = 10;
+            let rate = 12;
+            if (idx === 0 || idx === 3) rate = 20;
+            else if (idx === 1 || idx === 5) rate = 8;
 
             gsap.fromTo(
               inner,
@@ -99,14 +98,13 @@ export function GalleryTeaser({ cmsData }: { cmsData?: { eyebrow?: string; title
         });
       }
 
-      // CTA reveal
+      // CTA Reveal
       gsap.fromTo(
         ctaRef.current,
-        { opacity: 0, y: 30, filter: "blur(4px)" },
+        { opacity: 0, y: 30 },
         {
           opacity: 1,
           y: 0,
-          filter: "blur(0px)",
           duration: 0.8,
           ease: EASE.out,
           scrollTrigger: { trigger: ctaRef.current, start: "top 88%", once: true },
@@ -120,7 +118,7 @@ export function GalleryTeaser({ cmsData }: { cmsData?: { eyebrow?: string; title
     { scope: sectionRef }
   );
 
-  // Lightbox keyboard controls
+  // Keyboard controls lightbox
   useEffect(() => {
     if (lightbox === null) return;
     const onKey = (e: KeyboardEvent) => {
@@ -147,45 +145,45 @@ export function GalleryTeaser({ cmsData }: { cmsData?: { eyebrow?: string; title
       ref={sectionRef}
       id="gallery"
       aria-labelledby="gallery-heading"
-      className="relative overflow-hidden py-24 md:py-36 bg-[var(--color-background)] border-t border-[var(--color-border)]"
+      className="relative overflow-hidden py-24 md:py-36 bg-[var(--color-background)] border-t border-[var(--color-border)]/50"
     >
-      {/* Cinematic gradient ambient overlay */}
+      {/* Background overlay */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
-          background: "radial-gradient(ellipse at center, rgba(var(--color-gold-rgb, 212,168,83), 0.04) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse at 50% 50%, rgba(var(--color-gold-rgb), 0.04) 0%, transparent 70%)",
         }}
       />
 
-      <div className="relative mx-auto max-w-[1400px] px-4 md:px-8">
-        {/* Heading */}
-        <div ref={headingRef} className="mb-16 flex flex-col items-center text-center md:mb-24">
-          <p className="mb-4 text-[10px] sm:text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-gold)]">
+      <div className="relative mx-auto max-w-[1400px] px-6 md:px-8">
+        {/* Title Heading */}
+        <div ref={headingRef} className="mb-20 flex flex-col items-center text-center">
+          <p className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-gold)]">
             {eyebrow}
           </p>
           <h2
             id="gallery-heading"
-            className="font-[var(--font-display)] text-[clamp(2.5rem,5vw,4.5rem)] font-black tracking-tighter text-[var(--color-foreground)] leading-[1.1]"
+            className="font-serif text-[clamp(2.5rem,5.5vw,4.5rem)] font-black tracking-tight text-[var(--color-foreground)] leading-[1.05]"
           >
             {title}
           </h2>
-          <p className="mt-6 max-w-2xl text-base md:text-lg text-[var(--color-muted)] font-medium">
+          <p className="mt-6 max-w-2xl text-base text-[var(--color-muted)] leading-relaxed">
             {descriptionText}
           </p>
         </div>
 
-        {/* Premium Bento Grid */}
+        {/* Asymmetrical Bento Grid */}
         <div
           ref={gridRef}
-          className="grid grid-cols-2 gap-2 md:grid-cols-4 md:grid-rows-2 md:gap-4 lg:gap-6 perspective-container"
+          className="grid grid-cols-2 gap-4 md:grid-cols-4 md:grid-rows-2 md:gap-6"
         >
           {preview.map((img, i) => {
-            // Bento sizing logic
             let colSpan = "col-span-1";
             let rowSpan = "row-span-1";
             let aspect = "aspect-[4/5]";
 
+            // Asymmetrical grid column/row ratios
             if (i === 0) {
               colSpan = "col-span-2 md:col-span-2";
               rowSpan = "row-span-2";
@@ -200,8 +198,7 @@ export function GalleryTeaser({ cmsData }: { cmsData?: { eyebrow?: string; title
               <div
                 key={i}
                 data-cell
-                className={`group relative overflow-hidden rounded-xl md:rounded-3xl bg-[var(--color-surface)] shadow-lg ${colSpan} ${rowSpan} card-tilt cursor-pointer border border-[var(--color-border)]`}
-                style={{ transformStyle: "preserve-3d" }}
+                className={`group relative overflow-hidden rounded-3xl bg-[var(--color-surface)] border border-[var(--color-border)]/50 shadow-md cursor-pointer ${colSpan} ${rowSpan}`}
                 onClick={() => openLightbox(i)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -211,130 +208,130 @@ export function GalleryTeaser({ cmsData }: { cmsData?: { eyebrow?: string; title
                 }}
                 tabIndex={0}
                 role="button"
-                aria-label={`View full image: ${img.alt}`}
+                aria-label={`Open photo size: ${img.alt}`}
               >
-                <motion.div
-                  layoutId={lightbox === i ? "gallery-teaser-flip" : undefined}
-                  transition={{ type: "spring", stiffness: 320, damping: 28 }}
-                  className={`relative w-full overflow-hidden ${aspect}`}
-                >
-                  <Image
-                    src={img.src}
-                    alt={img.alt}
-                    fill
-                    className="object-cover transition-all duration-[1.2s] cubic-bezier(0.23, 1, 0.32, 1) group-hover:scale-110 group-hover:brightness-[0.85]"
-                    sizes={i === 0 ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 50vw, 25vw"}
-                  />
+                <div className={`relative w-full overflow-hidden ${aspect}`}>
+                  <div data-parallax className="relative w-full h-[120%]">
+                    <Image
+                      src={img.src}
+                      alt={img.alt}
+                      fill
+                      className="object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105 group-hover:brightness-[0.9]"
+                      sizes={i === 0 ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 50vw, 25vw"}
+                    />
+                  </div>
 
-                  {/* Cinematic grain overlay on images */}
-                  <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
+                  <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-15 mix-blend-overlay pointer-events-none" />
 
-                  {/* Dark vignette gradient for contrast */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-60 transition-opacity duration-500 group-hover:opacity-80" />
+                  {/* Dark scrim overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-60 transition-opacity duration-500 group-hover:opacity-90" />
 
-                  {/* Image info overlay */}
-                  <div className="absolute bottom-0 left-0 p-4 md:p-6 translate-y-4 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                    <p className="text-white text-sm font-semibold tracking-wide drop-shadow-md">
-                      {img.alt || "Villa details"}
+                  {/* Text details */}
+                  <div className="absolute bottom-0 left-0 w-full p-6 text-white z-10 flex items-end justify-between translate-y-4 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+                    <p className="text-sm font-semibold tracking-wide text-white/95">
+                      {img.alt || "Villa detail"}
                     </p>
                   </div>
 
-                  {/* Expand Icon */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-500 group-hover:opacity-100 scale-75 group-hover:scale-100">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl">
-                      <Maximize2 className="h-6 w-6 text-white drop-shadow-md" />
+                  {/* Hover indicator icon */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 scale-75 transition-all duration-500 group-hover:opacity-100 group-hover:scale-100">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 border border-white/20 backdrop-blur-md shadow-2xl">
+                      <Maximize2 className="h-6 w-6 text-white" />
                     </div>
                   </div>
-                </motion.div>
+                </div>
               </div>
             );
           })}
         </div>
 
-        {/* CTA */}
-        <div ref={ctaRef} className="mt-16 flex justify-center">
+        {/* CTA link */}
+        <div ref={ctaRef} className="mt-20 flex justify-center">
           <Link
             href="/gallery"
             transitionTypes={["spa-page"]}
-            className="group inline-flex items-center gap-3 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 text-sm font-bold text-[var(--color-foreground)] shadow-sm transition-all duration-300 hover:border-[var(--color-gold)] hover:shadow-[0_8px_30px_rgba(212,168,83,0.15)] btn-ripple"
+            className="group relative inline-flex items-center gap-3 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-10 py-4.5 text-xs font-bold uppercase tracking-widest text-[var(--color-foreground)] shadow-md transition-all duration-300 hover:border-[var(--color-gold)] hover:shadow-[0_12px_40px_rgba(201,165,90,0.15)] hover:scale-102"
           >
-            Explore Full Gallery
-            <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-background)] transition-transform duration-300 group-hover:translate-x-1">
+            <span>Explore Full Gallery</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-background)] transition-transform duration-300 group-hover:translate-x-1">
               <ArrowRight className="h-4 w-4 text-[var(--color-gold)]" />
             </span>
           </Link>
         </div>
       </div>
 
-      {/* ── Cinematic Lightbox ──────────────────────────────────────── */}
-      {lightbox !== null && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Image lightbox"
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 md:p-8 backdrop-blur-xl"
-          onClick={closeLightbox}
-        >
+      {/* Lightbox Modal */}
+      <AnimatePresence>
+        {lightbox !== null && (
           <div
-            className="relative flex h-full w-full max-w-[90vw] md:max-w-[80vw] flex-col items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Image details"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-6 backdrop-blur-xl"
+            onClick={closeLightbox}
           >
-            {/* Image — shared layout id with grid thumb for FLIP */}
-            <div className="relative flex h-[80vh] w-full items-center justify-center">
-              <motion.div
-                layoutId="gallery-teaser-flip"
-                transition={{ type: "spring", stiffness: 320, damping: 28 }}
-                className="relative max-h-full max-w-full"
+            <div
+              className="relative flex h-full w-full max-w-[90vw] md:max-w-[80vw] flex-col items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative flex h-[78vh] w-full items-center justify-center">
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 320, damping: 28 }}
+                  className="relative max-h-full max-w-full"
+                >
+                  <Image
+                    src={images[lightbox].src}
+                    alt={images[lightbox].alt}
+                    width={images[lightbox].w}
+                    height={images[lightbox].h}
+                    className="max-h-full max-w-full w-auto h-auto object-contain rounded-xl shadow-[0_24px_80px_rgba(0,0,0,0.5)] border border-white/10"
+                    quality={90}
+                    priority
+                  />
+                </motion.div>
+              </div>
+
+              {/* Lightbox details bar */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center gap-3 rounded-full bg-white/5 border border-white/10 px-6 py-2.5 backdrop-blur-md">
+                <span className="text-xs font-bold text-white tracking-widest">
+                  {lightbox + 1} <span className="text-white/30">/</span> {images.length}
+                </span>
+                <div className="h-1 w-1 rounded-full bg-white/20" />
+                <span className="text-xs text-white/80 font-medium tracking-wide">{images[lightbox].alt}</span>
+              </div>
+
+              {/* Lightbox controls */}
+              <button
+                ref={closeRef}
+                onClick={closeLightbox}
+                aria-label="Close"
+                className="absolute right-0 top-0 md:-right-8 md:-top-8 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-white/5 text-white border border-white/10 hover:bg-white/15 hover:scale-105"
               >
-                <Image
-                  src={images[lightbox].src}
-                  alt={images[lightbox].alt}
-                  width={images[lightbox].w}
-                  height={images[lightbox].h}
-                  className="max-h-full max-w-full w-auto h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-                  quality={90}
-                  priority
-                />
-              </motion.div>
+                <X className="h-5 w-5" />
+              </button>
+
+              <button
+                onClick={() => setLightbox((i) => (i === null ? 0 : (i - 1 + images.length) % images.length))}
+                aria-label="Prev photo"
+                className="absolute left-0 top-1/2 flex h-14 w-14 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/5 text-white border border-white/10 hover:bg-white/15 hover:-translate-x-1 md:-left-12"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+
+              <button
+                onClick={() => setLightbox((i) => (i === null ? 0 : (i + 1) % images.length))}
+                aria-label="Next photo"
+                className="absolute right-0 top-1/2 flex h-14 w-14 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/5 text-white border border-white/10 hover:bg-white/15 hover:translate-x-1 md:-right-12"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
             </div>
-
-            {/* Caption */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 rounded-full bg-white/10 px-6 py-2 backdrop-blur-md border border-white/10">
-              <span className="text-sm font-medium text-white">
-                {lightbox + 1} <span className="text-white/40">/</span> {images.length}
-              </span>
-              <div className="h-1 w-1 rounded-full bg-white/30" />
-              <span className="text-sm text-white/80">{images[lightbox].alt}</span>
-            </div>
-
-            {/* Controls */}
-            <button
-              ref={closeRef}
-              onClick={closeLightbox}
-              aria-label="Close lightbox"
-              className="absolute right-0 top-0 md:-right-8 md:-top-8 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-all hover:bg-white/20 hover:scale-105 border border-white/10"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <button
-              onClick={() => setLightbox((i) => ((i ?? 0) - 1 + images.length) % images.length)}
-              aria-label="Previous image"
-              className="absolute left-0 top-1/2 flex h-14 w-14 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/5 text-white backdrop-blur-md transition-all hover:bg-white/20 hover:-translate-x-1 md:-left-12 border border-white/10"
-            >
-              <ChevronLeft className="h-7 w-7" />
-            </button>
-
-            <button
-              onClick={() => setLightbox((i) => ((i ?? 0) + 1) % images.length)}
-              aria-label="Next image"
-              className="absolute right-0 top-1/2 flex h-14 w-14 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/5 text-white backdrop-blur-md transition-all hover:bg-white/20 hover:translate-x-1 md:-right-12 border border-white/10"
-            >
-              <ChevronRight className="h-7 w-7" />
-            </button>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </section>
   );
 }

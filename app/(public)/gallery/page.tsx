@@ -3,16 +3,16 @@ import dynamic from "next/dynamic";
 import { connection } from "next/server";
 import { SectionReveal } from "@/components/motion/section-reveal";
 import { PROPERTY } from "@/data/content";
-// import { generateBreadcrumbSchema } from "@/lib/seo/structured-data";
 import { breadcrumbSchema } from "@/lib/seo";
 import { serializeJsonLd } from "@/lib/utils";
 import { getGalleryGridAssets } from "@/lib/media/queries";
 import { getContentBlock } from "@/lib/cms/get-content-block";
+import { Compass } from "lucide-react";
 
 const GalleryClient = dynamic(() => import("./gallery-client"), {
   loading: () => (
     <div
-      className="min-h-[45vh] animate-pulse rounded-2xl bg-slate-800/30"
+      className="min-h-[45vh] animate-pulse rounded-3xl bg-[var(--color-surface)]/50 border border-[var(--color-border)]/50"
       aria-hidden
     />
   ),
@@ -76,7 +76,6 @@ function getGalleryImages() {
     },
   ];
 
-  // de-dupe on src and keep order stable
   const seen = new Set<string>();
   const images = [...fromBooking, ...fallbacks].filter((x) => {
     if (seen.has(x.src)) return false;
@@ -117,7 +116,7 @@ export default async function Page() {
 
   return (
     <>
-      {/* JSON-LD (Breadcrumbs) */}
+      {/* JSON-LD Structured Data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -134,36 +133,42 @@ export default async function Page() {
       />
 
       <div className="min-h-screen relative overflow-hidden bg-[var(--color-background)]">
-        {/* Ambient background using design tokens */}
+        {/* Ambient overlays */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
           style={{
-            background: "radial-gradient(60% 40% at 20% 10%, rgba(14,165,233,0.08), transparent 70%), radial-gradient(50% 30% at 80% 20%, rgba(201,165,90,0.06), transparent 70%)"
+            background: "radial-gradient(60% 40% at 20% 10%, rgba(var(--color-gold-rgb),0.05), transparent 70%), radial-gradient(50% 30% at 80% 20%, rgba(var(--color-gold-rgb),0.05), transparent 70%)"
           }}
         />
-        <div className="relative z-10 pt-24 pb-12">
-          <div className="container mx-auto px-4">
+        
+        {/* Header Block */}
+        <div className="relative z-10 pt-36 pb-12">
+          <div className="container mx-auto px-6">
             <SectionReveal>
-              <div className="text-center">
-                <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                  <span className="bg-gradient-to-r from-[#0ea5e9] to-[#22d3ee] bg-clip-text text-transparent">
+              <div className="text-center flex flex-col items-center">
+                <p className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-gold)]">
+                  <Compass className="h-4 w-4" />
+                  <span>Visual Showcase</span>
+                </p>
+                <h1 className="font-serif text-[clamp(3rem,7vw,5.5rem)] font-black tracking-tight text-[var(--color-foreground)] leading-tight mb-4">
+                  <span className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-gold)] bg-clip-text text-transparent">
                     {heroBlock.headline}
                   </span>
                 </h1>
-                <p className="text-lg md:text-xl text-[var(--color-muted)] max-w-2xl mx-auto">
+                <p className="text-base md:text-lg text-[var(--color-muted)] max-w-2xl mx-auto leading-relaxed">
                   {heroBlock.subheadline}
                 </p>
-                <p className="text-sm text-[var(--color-muted)]/70 mt-2">
-                  {images.length} photos
-                </p>
+                <div className="mt-6 rounded-full border border-[var(--color-border)]/50 bg-[var(--color-surface)] px-5 py-2 text-xs font-bold uppercase tracking-widest text-[var(--color-gold)] shadow-sm">
+                  {images.length} Premium Photos
+                </div>
               </div>
             </SectionReveal>
           </div>
         </div>
 
-        <div className="relative z-10 container mx-auto px-4 pb-20">
-          {/* Client-only masonry + lightbox */}
+        {/* Client Gallery */}
+        <div className="relative z-10 container mx-auto px-6 pb-32">
           <GalleryClient images={images} />
         </div>
       </div>

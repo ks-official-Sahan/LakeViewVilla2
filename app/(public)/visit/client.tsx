@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { MapPin, Navigation, Phone, Mail, Clock, Car } from "lucide-react";
 import { SectionReveal } from "@/components/motion/section-reveal";
 import { SITE_CONFIG, DIRECTIONS, PROPERTY } from "@/data/content";
+import { Map, MapMarker, MarkerContent, MapControls } from "@/components/ui/map";
 import { buildWhatsAppUrl } from "@/lib/utils";
 import { Controller } from "react-hook-form";
 import { GuestsSelect } from "@/components/ui2/guests-select";
@@ -133,12 +134,7 @@ export default function VisitPage({
     }
   };
 
-  // Stable, keyless embed
-  const mapsEmbedSrc = useMemo(() => {
-    // const { lat, lng } = SITE_CONFIG.coordinates;
-    // return `https://www.google.com/maps?q=${lat},${lng}&z=14&output=embed`;
-    return SITE_CONFIG.googleMapsUrl;
-  }, []);
+
 
   return (
     <div className="min-h-screen relative overflow-hidden text-[var(--color-foreground)] bg-[var(--color-background)]">
@@ -196,18 +192,40 @@ export default function VisitPage({
                 )}
 
                 <motion.div
-                  className="relative mx-auto aspect-square max-w-lg overflow-hidden rounded-[2rem] shadow-[0_24px_80px_rgba(14,165,233,.08)] ring-1 ring-[var(--color-border)] md:max-w-none md:rounded-[2.5rem] md:[clip-path:circle(48%_at_50%_50%)]"
+                  className="relative mx-auto aspect-square max-w-lg overflow-hidden rounded-[2rem] shadow-[0_24px_80px_rgba(14,165,233,.08)] ring-1 ring-[var(--color-border)] md:max-w-none md:rounded-full h-full min-h-[300px]"
                   whileHover={{ scale: 1.01 }}
                   transition={{ type: "spring", stiffness: 180, damping: 18 }}
                 >
-                  <div className="pointer-events-none absolute -inset-px rounded-[inherit] bg-gradient-to-br from-[var(--color-primary)]/20 to-[var(--color-gold)]/20 blur-[6px]" />
-                  <iframe
-                    src={mapsEmbedSrc}
-                    title="Lake View Villa Tangalle Location"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    className="relative z-10 h-full min-h-[280px] w-full"
-                  />
+                  <Map
+                    viewport={{ center: [80.7811559, 6.0173643], zoom: 15 }}
+                    className="w-full h-full relative z-10"
+                  >
+                    <MapMarker longitude={80.7811559} latitude={6.0173643}>
+                      <MarkerContent className="!w-5 !h-5 overflow-visible">
+                        <div className="relative w-5 h-5 flex items-center justify-center">
+                          <div className="w-5 h-5 rounded-full bg-[var(--color-gold)] border-2 border-white shadow-lg relative z-10 animate-pulse" />
+                          <div className="absolute w-5 h-5 rounded-full bg-[var(--color-gold)]/50 animate-ping" />
+
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 flex flex-col items-center gap-1.5 bg-[var(--color-surface)]/95 border border-[var(--color-border)] rounded-2xl px-4 py-3 shadow-2xl pointer-events-auto w-max z-50">
+                            <span className="text-[12px] font-semibold text-[var(--color-foreground)] tracking-wide whitespace-nowrap">
+                              Lake View Villa
+                            </span>
+                            <a
+                              href={SITE_CONFIG.googleMapsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest text-[var(--color-gold)] hover:opacity-80 transition-opacity"
+                            >
+                              Open in Google Maps
+                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            </a>
+                          </div>
+                        </div>
+                      </MarkerContent>
+                    </MapMarker>
+                    <MapControls position="bottom-right" />
+                  </Map>
                 </motion.div>
 
                 <div className="mt-6 flex flex-col sm:flex-row gap-4">

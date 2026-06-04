@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
+import { useTheme } from "next-themes";
 
 const RippleBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isSupported, setIsSupported] = useState(false);
   const prefersReducedMotion = useReducedMotion();
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     // If user prefers reduced motion, do not load WebGL
@@ -35,11 +37,15 @@ const RippleBackground = () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
+        const isDark = resolvedTheme === "dark";
+        const themeColor = new THREE.Color(isDark ? 0xc9a55a : 0xaa823a);
+
         // Define luxury wave geometry & shader materials
         geometry = new THREE.PlaneGeometry(20, 20, 80, 80);
         material = new THREE.ShaderMaterial({
           uniforms: {
             time: { value: 0 },
+            uColor: { value: themeColor },
             resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
           },
           vertexShader: `
@@ -55,12 +61,13 @@ const RippleBackground = () => {
           `,
           fragmentShader: `
             uniform float time;
+            uniform vec3 uColor;
             varying vec2 vUv;
             void main() {
               vec2 center = vec2(0.5, 0.5);
               float dist = distance(vUv, center);
               float ripple = sin(dist * 18.0 - time * 1.5) * 0.5 + 0.5;
-              gl_FragColor = vec4(0.04, 0.18, 0.22, ripple * 0.08);
+              gl_FragColor = vec4(uColor, ripple * 0.08);
             }
           `,
           transparent: true,
@@ -112,7 +119,7 @@ const RippleBackground = () => {
     };
 
     loadThree();
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, resolvedTheme]);
 
   if (prefersReducedMotion || !isSupported) {
     // Elegant fallback style for accessibility compliance (PUBLIC-04)

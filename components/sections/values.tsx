@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useGSAP } from "@/lib/gsap";
 import { gsap, ScrollTrigger, EASE, DURATION } from "@/lib/gsap";
 import {
-  Car, Waves, Utensils, Wind, Trees, ShowerHead, CheckCircle2,
+  Car, Waves, Utensils, Wind, Trees, ShowerHead, CheckCircle2, Star, ShieldAlert, Award
 } from "lucide-react";
 import { VALUES_ITEMS } from "@/data/content";
 import { CounterReveal } from "@/components/scroll/CounterReveal";
@@ -58,65 +58,35 @@ export function ValuesSection({ cmsData }: { cmsData?: { eyebrow?: string; title
       const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (prefersReduced) return;
 
-      // Image slides in from left
       gsap.fromTo(
         imageRef.current,
-        { opacity: 0, x: -60 },
+        { opacity: 0, x: -50 },
         {
           opacity: 1, x: 0, duration: DURATION.reveal, ease: EASE.premium,
           scrollTrigger: { trigger: sectionRef.current, start: "top 78%", once: true },
         }
       );
 
-      // Copy fades up
       gsap.fromTo(
         copyRef.current,
         { opacity: 0, y: 40 },
         {
-          opacity: 1, y: 0, duration: DURATION.reveal, ease: EASE.premium, delay: 0.15,
+          opacity: 1, y: 0, duration: DURATION.reveal, ease: EASE.premium, delay: 0.1,
           scrollTrigger: { trigger: sectionRef.current, start: "top 78%", once: true },
         }
       );
 
-      let revertList: (() => void) | undefined;
       const items = listRef.current?.querySelectorAll<HTMLElement>("[data-value-item]");
       if (items?.length) {
-        const mm = gsap.matchMedia();
-        revertList = () => mm.revert();
-        mm.add("(max-width: 767px)", () => {
-          ScrollTrigger.batch(items, {
-            batchMax: 2,
-            interval: 0.05,
-            once: true,
-            start: "top 88%",
-            onEnter: (batch) => {
-              gsap.fromTo(
-                batch,
-                { opacity: 0, y: 20 },
-                { opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: EASE.out }
-              );
-            },
-          });
-        });
-
-        mm.add("(min-width: 768px)", () => {
-          ScrollTrigger.batch(items, {
-            batchMax: 3,
-            interval: 0.06,
-            once: true,
-            start: "top 82%",
-            onEnter: (batch) => {
-              gsap.fromTo(
-                batch,
-                { opacity: 0, y: 35, rotateX: 5, transformOrigin: "top center" },
-                { opacity: 1, y: 0, rotateX: 0, duration: 0.65, stagger: 0.08, ease: EASE.out }
-              );
-            },
-          });
-        });
+        gsap.fromTo(
+          items,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1, y: 0, duration: 0.8, stagger: 0.08, ease: EASE.premium,
+            scrollTrigger: { trigger: listRef.current, start: "top 82%", once: true },
+          }
+        );
       }
-
-      return () => revertList?.();
     },
     { scope: sectionRef }
   );
@@ -125,112 +95,106 @@ export function ValuesSection({ cmsData }: { cmsData?: { eyebrow?: string; title
     <section
       ref={sectionRef}
       aria-labelledby="values-heading"
-      className="relative overflow-hidden py-24 md:py-32 bg-[var(--color-background)] border-t border-[var(--color-border)]"
+      className="relative overflow-hidden py-24 md:py-36 bg-[var(--color-background)] border-t border-[var(--color-border)]/50"
     >
-      {/* Ambient */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(55% 40% at 0% 60%, rgba(14,165,233,.07), transparent 70%)",
+            "radial-gradient(55% 40% at 0% 50%, rgba(var(--color-gold-rgb), 0.04) 0%, transparent 65%)",
         }}
       />
 
-      <div className="relative mx-auto max-w-7xl px-4 md:px-6">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          {/* Left — hero image with floating badge */}
+      <div className="relative mx-auto max-w-7xl px-6 md:px-8">
+        <div className="grid items-center gap-16 lg:grid-cols-2 lg:gap-20">
+          
+          {/* Left Column Image with floating badges */}
           <div ref={imageRef} className="relative">
-            <div className="relative overflow-hidden rounded-[2rem] shadow-2xl">
-              {/* Arch-style image */}
-              <div className="relative aspect-[4/5] w-full">
+            <div className="relative overflow-hidden rounded-[3rem] border border-[var(--color-border)]/50 shadow-2xl">
+              {/* Arch structure image crop */}
+              <div className="relative aspect-[4/5] w-full [clip-path:ellipse(90%_100%_at_50%_100%)]">
                 <Image
                   src="/villa/optimized/with_guests_02.webp"
-                  alt="Guests relaxing in the garden with lake view"
+                  alt="Guests relaxing in the gardens"
                   fill
                   className="object-cover"
                   sizes="(max-width: 1024px) 100vw, 50vw"
                 />
-                {/* Gradient overlay at bottom */}
                 <div
-                  className="absolute inset-x-0 bottom-0 h-1/3"
-                  style={{
-                    background:
-                      "linear-gradient(to top, rgba(4,12,18,.65), transparent)",
-                  }}
+                  className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/55 to-transparent"
                 />
               </div>
             </div>
 
-            {/* Floating stat badge */}
-            <div className="absolute -right-4 -top-4 flex h-20 w-20 flex-col items-center justify-center gap-0.5 rounded-full border-4 border-[var(--color-surface)] bg-gradient-to-br from-[#0ea5e9] to-[#22d3ee] px-1 text-white shadow-xl md:-right-6 md:-top-6 md:h-24 md:w-24">
-              <CounterReveal
-                value={4.9}
-                format={(n) => n.toFixed(1)}
-                duration={1.6}
-                className="text-lg font-black leading-none text-white md:text-xl"
-              />
-              <span className="text-[9px] font-semibold uppercase tracking-wide opacity-90">
+            {/* Glowing gold rating counter pill */}
+            <div className="absolute -right-4 -top-4 flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-full border-4 border-[var(--color-surface)] bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-gold)] text-white shadow-2xl md:h-28 md:w-28">
+              <div className="flex items-center gap-0.5">
+                <CounterReveal
+                  value={4.9}
+                  format={(n) => n.toFixed(1)}
+                  duration={1.5}
+                  className="font-serif text-xl font-black leading-none text-white md:text-2xl"
+                />
+                <Star className="h-4.5 w-4.5 fill-white text-white" />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white/90">
                 Rating
               </span>
             </div>
 
-            {/* Floating badge bottom */}
-            <div className="absolute -bottom-4 left-6 flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-lg md:-bottom-5 md:left-8">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#34d399] to-[#22d3ee]">
-                <CheckCircle2 className="h-4.5 w-4.5 text-white" />
+            {/* Floating verification badge */}
+            <div className="absolute -bottom-5 left-8 flex items-center gap-3.5 rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface)]/90 px-5 py-4 shadow-xl backdrop-blur-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#10b981] to-[var(--color-gold)] shadow-md">
+                <Award className="h-5 w-5 text-white" />
               </div>
               <div className="text-xs">
-                <p className="font-bold text-[var(--color-foreground)]">Verified Host</p>
-                <p className="text-[var(--color-muted)]">Airbnb &amp; Booking.com</p>
+                <p className="font-bold text-[var(--color-foreground)]">Superhost Status</p>
+                <p className="text-[var(--color-muted)] font-medium">99% Positive Feedback</p>
               </div>
             </div>
           </div>
 
-          {/* Right — copy */}
+          {/* Right Column copy */}
           <div ref={copyRef}>
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-primary)]">
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-gold)]">
               {eyebrow}
             </p>
             <h2
               id="values-heading"
-              className="relative font-[var(--font-display)] text-[clamp(1.9rem,4vw,3rem)] font-extrabold leading-tight tracking-tight text-[var(--color-foreground)]"
+              className="relative font-serif text-[clamp(2.5rem,5vw,3.75rem)] font-black leading-tight tracking-tight text-[var(--color-foreground)]"
             >
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -left-1 top-1/2 hidden h-[72%] w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-[#0ea5e9] to-[#22d3ee] md:block"
-              />
               {title}
             </h2>
 
-            {/* Highlights */}
-            <ul className="mt-5 space-y-2">
+            {/* Sublines checkmarks */}
+            <ul className="mt-8 space-y-3.5">
               {sublines.map((item: any, i: number) => (
-                <li key={i} className="flex items-center gap-2.5 text-sm text-[var(--color-muted)]">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-primary)]" />
-                  {item}
+                <li key={i} className="flex items-center gap-3 text-sm text-[var(--color-muted)] font-medium">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-[var(--color-gold)] shrink-0" />
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
 
-            {/* Value list */}
-            <ul ref={listRef} className="mt-8 space-y-3">
+            {/* Value list detail grids */}
+            <ul ref={listRef} className="mt-12 space-y-4">
               {itemsList.map((item: any) => {
                 const Icon = iconMap[item.icon as keyof typeof iconMap] ?? Car;
                 return (
                   <li
                     key={item.id}
                     data-value-item
-                    className="group flex items-start gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition-all duration-200 hover:border-[var(--color-primary)]/30 hover:shadow-[0_4px_20px_rgba(14,165,233,.08)]"
+                    className="group flex items-start gap-5 rounded-3xl border border-[var(--color-border)]/50 bg-[var(--color-surface)] p-6 transition-all duration-500 hover:border-[var(--color-gold)]/40 hover:shadow-[0_12px_32px_rgba(201,165,90,0.08)]"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-100 to-cyan-100 text-[var(--color-primary)] ring-1 ring-sky-200 dark:from-sky-900/30 dark:to-cyan-900/30 dark:ring-sky-800/50">
-                      <Icon className="h-4.5 w-4.5" />
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-gold)]/10 text-[var(--color-gold)] border border-[var(--color-gold)]/20 transition-colors duration-500 group-hover:bg-[var(--color-gold)] group-hover:text-white group-hover:border-transparent">
+                      <Icon className="h-5 w-5" />
                     </span>
                     <div>
-                      <h3 className="text-[15px] font-semibold text-[var(--color-foreground)]">
+                      <h3 className="font-serif text-lg font-bold text-[var(--color-foreground)] transition-colors duration-300 group-hover:text-[var(--color-gold)]">
                         {item.title}
                       </h3>
-                      <p className="mt-0.5 text-sm text-[var(--color-muted)]">{item.body}</p>
+                      <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">{item.body}</p>
                     </div>
                   </li>
                 );

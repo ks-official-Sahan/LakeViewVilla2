@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Compass } from "lucide-react";
 import { SectionReveal } from "@/components/motion/section-reveal";
 
 type Img = { src: string; alt: string; w: number; h: number };
@@ -55,7 +55,7 @@ export default function GalleryClient({ images }: { images: Img[] }) {
       ? enriched
       : enriched.filter((i) => i.category === activeCategory);
 
-  // Lightbox keyboard controls + body scroll lock
+  // Keyboard controls & body scroll lock
   useEffect(() => {
     if (selected == null) return;
 
@@ -83,7 +83,6 @@ export default function GalleryClient({ images }: { images: Img[] }) {
     };
   }, [selected, filtered.length]);
 
-  // Drag threshold so clicks don’t open after scroll
   const onMouseDown = (e: React.MouseEvent) => {
     dragStart.current = { x: e.clientX, y: e.clientY };
     setDragging(false);
@@ -103,7 +102,8 @@ export default function GalleryClient({ images }: { images: Img[] }) {
 
   return (
     <>
-      <div className="mb-8 flex flex-wrap justify-center gap-2">
+      {/* Category segmented pills */}
+      <div className="mb-12 flex flex-wrap justify-center gap-3">
         {categories.map((cat) => {
           const isActive = activeCategory === cat;
           return (
@@ -114,83 +114,89 @@ export default function GalleryClient({ images }: { images: Img[] }) {
                 setActiveCategory(cat);
                 setSelected(null);
               }}
-              className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all ${
+              className={`rounded-full px-6 py-2.5 text-xs font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer ${
                 isActive
-                  ? "bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20"
-                  : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-primary)]"
+                  ? "bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-gold)] text-white shadow-md shadow-[var(--color-primary)]/10 scale-102"
+                  : "border border-[var(--color-border)]/50 bg-[var(--color-surface)] text-[var(--color-muted)] hover:border-[var(--color-gold)]/40 hover:text-[var(--color-gold)]"
               }`}
             >
-              {cat}
-              {cat !== "All" ? (
-                <span className="ml-1.5 font-normal opacity-70">
-                  ({enriched.filter((x) => x.category === cat).length})
-                </span>
-              ) : (
-                <span className="ml-1.5 font-normal opacity-70">
-                  ({enriched.length})
-                </span>
-              )}
+              <span>{cat}</span>
+              <span className="ml-1.5 opacity-60 font-semibold font-mono">
+                ({cat !== "All" ? enriched.filter((x) => x.category === cat).length : enriched.length})
+              </span>
             </button>
           );
         })}
       </div>
 
-      {/* Masonry (pure CSS columns) */}
+      {/* Masonry Layout */}
       <div
-        className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4"
+        className="columns-1 gap-6 space-y-6 sm:columns-2 lg:columns-3"
         style={{ cursor: dragging ? "grabbing" : "grab" }}
       >
         {filtered.map((image, i) => (
           <motion.div
             key={image.src + i}
             className="break-inside-avoid group cursor-pointer"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
+            whileHover={{ scale: 1.02, y: -4 }}
+            transition={{ duration: 0.3 }}
             onMouseDown={onMouseDown}
             onMouseMove={onMouseMove}
             onMouseUp={() => onMouseUp(i)}
           >
             <SectionReveal>
-              <motion.div
-                layoutId={selected === i ? `gallery-flip-${image.src}` : undefined}
-                className="relative overflow-hidden rounded-xl bg-[var(--color-surface)] ring-1 ring-[var(--color-border)] shadow-2xl"
+              <div
+                className="relative overflow-hidden rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)]/50 shadow-md transition-all duration-500 hover:border-[var(--color-gold)]/30"
               >
                 <Image
                   src={image.src || "/placeholder.svg"}
                   alt={image.alt || "Lake View Villa photo"}
                   width={image.w}
                   height={image.h}
-                  className="h-auto w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-103"
                   placeholder="blur"
                   blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              </motion.div>
+                
+                {/* Visual Image Info overlays */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-90" />
+                <div className="absolute bottom-4 left-5 right-5 text-white z-10 opacity-0 transform translate-y-3 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-gold)] mb-0.5">
+                    {image.category}
+                  </p>
+                  <p className="text-xs text-white/90 font-medium tracking-wide">
+                    {image.alt}
+                  </p>
+                </div>
+              </div>
             </SectionReveal>
           </motion.div>
         ))}
       </div>
 
-      {/* Lightbox */}
+      {/* Lightbox Modal */}
       <AnimatePresence>
         {selected !== null && filtered[selected] != null && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-6"
             onClick={() => setSelected(null)}
           >
-            <div className="relative max-w-7xl max-h-[90vh] mx-4">
+            <div className="relative max-w-6xl max-h-[85vh] mx-4" onClick={(e) => e.stopPropagation()}>
+              
+              {/* Close Button */}
               <button
                 onClick={() => setSelected(null)}
-                className="absolute -top-12 right-0 text-white hover:text-cyan-400 transition-colors z-10"
+                className="absolute -top-14 right-0 text-white/60 hover:text-[var(--color-gold)] transition-colors z-10 cursor-pointer"
                 aria-label="Close"
               >
                 <X size={32} />
               </button>
 
+              {/* Prev Button */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -199,12 +205,13 @@ export default function GalleryClient({ images }: { images: Img[] }) {
                     p == null ? null : p > 0 ? p - 1 : len - 1
                   );
                 }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-cyan-400 transition-colors z-10"
-                aria-label="Previous image"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-[var(--color-gold)] transition-colors z-10 cursor-pointer"
+                aria-label="Previous photo"
               >
-                <ChevronLeft size={48} />
+                <ChevronLeft size={44} />
               </button>
 
+              {/* Next Button */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -213,37 +220,35 @@ export default function GalleryClient({ images }: { images: Img[] }) {
                     p == null ? null : p < len - 1 ? p + 1 : 0
                   );
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-cyan-400 transition-colors z-10"
-                aria-label="Next image"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-[var(--color-gold)] transition-colors z-10 cursor-pointer"
+                aria-label="Next photo"
               >
-                <ChevronRight size={48} />
+                <ChevronRight size={44} />
               </button>
 
+              {/* Image Frame */}
               <motion.div
-                layoutId={
-                  selected !== null && filtered[selected]
-                    ? `gallery-flip-${filtered[selected].src}`
-                    : undefined
-                }
-                initial={{ scale: 0.98, opacity: 0 }}
+                initial={{ scale: 0.96, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.98, opacity: 0 }}
+                exit={{ scale: 0.96, opacity: 0 }}
                 transition={{ type: "spring", stiffness: 320, damping: 28 }}
-                onClick={(e) => e.stopPropagation()}
-                className="relative overflow-hidden rounded-xl"
+                className="relative overflow-hidden rounded-2xl border border-white/10 shadow-2xl bg-black"
               >
                 <Image
                   src={filtered[selected].src}
                   alt={filtered[selected].alt}
                   width={filtered[selected].w}
                   height={filtered[selected].h}
-                  className="max-h-[90vh] w-auto max-w-full object-contain"
+                  className="max-h-[80vh] w-auto max-w-full object-contain"
                   priority
                 />
               </motion.div>
 
-              <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-white text-sm">
-                {selected + 1} / {filtered.length}
+              {/* Label details bar */}
+              <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 text-white text-xs font-bold uppercase tracking-widest flex items-center gap-3 bg-white/5 border border-white/10 px-5 py-2.5 rounded-full backdrop-blur-md">
+                <span>{selected + 1} / {filtered.length}</span>
+                <span className="h-1 w-1 rounded-full bg-white/30" />
+                <span className="text-white/80 font-medium tracking-wide normal-case">{filtered[selected].alt}</span>
               </div>
             </div>
           </motion.div>
