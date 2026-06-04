@@ -1,8 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Role } from "@prisma/client";
 import { updateUserRole, deleteUser, createUser, updateUserProfile, resetUserPassword } from "@/lib/actions/users";
+
+// Keep Prisma off the client bundle — define Role locally as a union type
+type Role = "DEVELOPER" | "MANAGER" | "EDITOR";
+const ROLES: Role[] = ["DEVELOPER", "MANAGER", "EDITOR"];
 import { Trash2, UserPlus, Download, Search, Key } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -218,7 +221,7 @@ export function UsersClient({
               onChange={(e) => setNewRole(e.target.value as Role)}
               className="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
             >
-              {Object.values(Role).map((r) => (
+              {ROLES.map((r) => (
                 <option key={r} value={r}>
                   {r}
                 </option>
@@ -285,7 +288,7 @@ export function UsersClient({
                       disabled={user.id === currentUserId || loading === user.id}
                       className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] disabled:opacity-50"
                     >
-                      {Object.values(Role).map((r) => (
+                      {ROLES.map((r) => (
                         <option key={r} value={r}>{r}</option>
                       ))}
                     </select>
