@@ -1,0 +1,264 @@
+{
+  "auditLog": [
+    {
+      "id": "cmpy0m50d00006wb8edqx0yth",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-03T12:00:51.421Z"
+    },
+    {
+      "id": "cmpy0nvq400036wb8jxpdzw7k",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "UPLOAD",
+      "entityType": "MediaAsset",
+      "entityId": "cmpy0nui500016wb87lfm1dwd",
+      "oldValue": null,
+      "newValue": {
+        "url": "https://res.cloudinary.com/dbme0nn1m/image/upload/v1780488126/lakeviewvilla/all/1780488123415_0_house.png",
+        "category": "all"
+      },
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+      "timestamp": "2026-06-03T12:02:12.700Z"
+    },
+    {
+      "id": "cmpy0oriw00046wb8lp7l54cc",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "UPDATE",
+      "entityType": "MediaAsset",
+      "entityId": "cmpy0nui500016wb87lfm1dwd",
+      "oldValue": null,
+      "newValue": null,
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-03T12:02:53.912Z"
+    },
+    {
+      "id": "cmpy0ovyb00076wb8ygbbc01m",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "UPDATE_LOCATIONS",
+      "entityType": "MediaAsset",
+      "entityId": "cmpy0nui500016wb87lfm1dwd",
+      "oldValue": null,
+      "newValue": {
+        "locations": [
+          {
+            "order": 0,
+            "pageSlug": "gallery",
+            "isPrimary": true,
+            "sectionSlug": "grid"
+          },
+          {
+            "order": 1,
+            "pageSlug": "home",
+            "isPrimary": false,
+            "sectionSlug": "gallery-teaser"
+          }
+        ]
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-03T12:02:59.651Z"
+    },
+    {
+      "id": "cmpy16trw00096wb868qvi5iq",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "CREATE",
+      "entityType": "BlogPost",
+      "entityId": "cmpy16t5m00086wb8hau2xisy",
+      "oldValue": null,
+      "newValue": {
+        "slug": "celebrating-5-years-of-magic-at-lakeviewvilla-tangalle",
+        "title": "Celebrating 5 Years of Magic at LakeViewVilla Tangalle!"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-03T12:16:56.636Z"
+    },
+    {
+      "id": "cmpy16vb0000a6wb8z6nqs3zx",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "PUBLISH",
+      "entityType": "BlogPost",
+      "entityId": "cmpy16t5m00086wb8hau2xisy",
+      "oldValue": null,
+      "newValue": null,
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-03T12:16:58.620Z"
+    },
+    {
+      "id": "cmpzsq7q80000fkb82jz20g72",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-04T17:55:36.992Z"
+    },
+    {
+      "id": "cmq3m90wb000004jj1p6kjwqy",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-07T10:05:21.995Z"
+    },
+    {
+      "id": "cmq3ukizt000004l5nnrkkkz1",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-07T13:58:15.593Z"
+    },
+    {
+      "id": "cmq3ukqr0000104l5q8ujw929",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-07T13:58:25.644Z"
+    },
+    {
+      "id": "cmq52uqv3000084b860zlgkrx",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-08T10:37:55.455Z"
+    },
+    {
+      "id": "cmq52xxcm000384b8lgap619j",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "UPLOAD",
+      "entityType": "MediaAsset",
+      "entityId": "cmq52xv93000184b8o1c2gx8a",
+      "oldValue": null,
+      "newValue": {
+        "url": "https://res.cloudinary.com/dbme0nn1m/image/upload/v1780915216/lakeviewvilla/all/1780915159717_0_dark.png",
+        "category": "all"
+      },
+      "ipAddress": "::1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+      "timestamp": "2026-06-08T10:40:23.830Z"
+    },
+    {
+      "id": "cmq6mhasu000004jpey6du2n9",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-09T12:35:06.606Z"
+    },
+    {
+      "id": "cmq7rvpux0000a0b8rq81aevx",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-10T07:54:03.561Z"
+    }
+  ],
+  "mediaAsset": [
+    {
+      "id": "cmpy0nui500016wb87lfm1dwd",
+      "url": "https://res.cloudinary.com/dbme0nn1m/image/upload/v1780488126/lakeviewvilla/all/1780488123415_0_house.png",
+      "publicId": "lakeviewvilla/all/1780488123415_0_house",
+      "type": "IMAGE",
+      "category": "all",
+      "tags": [],
+      "title": "house.webp",
+      "alt": null,
+      "description": null,
+      "width": 1400,
+      "height": 1245,
+      "sizeBytes": 4170693,
+      "mimeType": "image/webp",
+      "order": 0,
+      "featured": false,
+      "pageSlug": "gallery",
+      "sectionSlug": "grid",
+      "status": "ACTIVE",
+      "seoTitle": null,
+      "seoAlt": null,
+      "uploadedById": "cmpy0lqk000008cb8gsskhoo4",
+      "createdAt": "2026-06-03T12:02:11.117Z",
+      "updatedAt": "2026-06-03T12:02:58.767Z"
+    },
+    {
+      "id": "cmq52xv93000184b8o1c2gx8a",
+      "url": "https://res.cloudinary.com/dbme0nn1m/image/upload/v1780915216/lakeviewvilla/all/1780915159717_0_dark.png",
+      "publicId": "lakeviewvilla/all/1780915159717_0_dark",
+      "type": "IMAGE",
+      "category": "all",
+      "tags": [],
+      "title": "dark.png",
+      "alt": null,
+      "description": null,
+      "width": 1918,
+      "height": 949,
+      "sizeBytes": 85018,
+      "mimeType": "image/png",
+      "order": 0,
+      "featured": false,
+      "pageSlug": "gallery",
+      "sectionSlug": "grid",
+      "status": "ACTIVE",
+      "seoTitle": null,
+      "seoAlt": null,
+      "uploadedById": "cmpy0lqk000008cb8gsskhoo4",
+      "createdAt": "2026-06-08T10:40:21.111Z",
+      "updatedAt": "2026-06-08T10:40:21.111Z"
+    }
+  ]
+}

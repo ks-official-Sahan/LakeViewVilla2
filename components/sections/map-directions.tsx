@@ -61,17 +61,17 @@ export function MapDirections() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
+          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
             {/* Map Canvas Circle */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-              className="relative"
+              className="relative flex items-center justify-center w-full"
             >
               <div
-                className="relative mx-auto aspect-square max-w-lg overflow-hidden rounded-[2.5rem] shadow-[0_24px_60px_rgba(201,165,90,0.08)] border border-[var(--color-border)]/50 md:max-w-none md:rounded-full h-full min-h-[300px]"
+                className="relative mx-auto aspect-square w-full max-w-[500px] lg:max-w-[550px] overflow-hidden rounded-[2.5rem] shadow-[0_24px_60px_rgba(201,165,90,0.08)] border border-[var(--color-border)]/50 md:rounded-full min-h-[300px]"
               >
                 <Map
                   viewport={{ center: [80.7811559, 6.0173643], zoom: 15 }}

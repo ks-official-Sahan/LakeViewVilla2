@@ -11,6 +11,13 @@
 
 @plugin "@tailwindcss/typography";
 
+/* ── Tailwind v4 @theme — custom animations (Phase 1) ─────────────────────── */
+@theme {
+  --animate-fade-in-up: fade-in-up var(--dur-glide, 1s) var(--ease-editorial, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+  --animate-scale-in: scale-in var(--dur-slow, 0.7s) var(--ease-editorial, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+  --animate-clip-reveal: clip-reveal 1.2s var(--ease-editorial, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+
 /* ----------------------- Root defaults & motion guard ----------------------- */
 :root {
   --hero-progress: 1;
@@ -75,6 +82,42 @@
   --dur-base:   400ms;
   --dur-slow:   700ms;
   --dur-crawl: 1200ms;
+
+  /* ── Phase 1 — Refined Liquid Luxury tokens ─────────────────────────── */
+
+  /* Refined gold palette (expanded) */
+  --color-gold-50:  #faf6ed;
+  --color-gold-100: #f0e6cc;
+  --color-gold-200: #e0cc99;
+  --color-gold-900: #7a5f2a;
+
+  /* Refined glass system (3 tiers) */
+  --glass-1-bg:    rgba(255, 255, 255, 0.06);
+  --glass-1-border: rgba(255, 255, 255, 0.12);
+  --glass-1-blur:  blur(24px) saturate(180%);
+  --glass-2-bg:    rgba(10, 31, 36, 0.45);
+  --glass-2-border: rgba(255, 255, 255, 0.08);
+  --glass-2-blur:  blur(40px) saturate(200%);
+  --glass-3-bg:    radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 70%);
+  --glass-3-border: rgba(255, 255, 255, 0.20);
+  --glass-3-blur:  blur(20px);
+
+  /* Editorial typography scale */
+  --text-editorial-display: clamp(4rem, 10vw, 9rem);
+  --text-editorial-h1:      clamp(3rem, 6vw, 5.5rem);
+  --text-editorial-h2:      clamp(2.25rem, 4vw, 3.5rem);
+  --text-editorial-h3:      clamp(1.75rem, 3vw, 2.25rem);
+  --text-editorial-body:    clamp(1rem, 1.1vw, 1.125rem);
+  --text-editorial-caption: clamp(0.75rem, 0.8vw, 0.875rem);
+
+  /* Refined easing */
+  --ease-editorial:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-liquid:       cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-bounce:       cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Refined durations */
+  --dur-instant:  100ms;
+  --dur-glide:    1000ms;
 }
 
 
@@ -82,6 +125,20 @@
 ::selection {
   background: rgba(201,165,90, 0.28);
   color: #0f1011;
+}
+
+/* ── Phase 1 — Refined animation keyframes ──────────────────────────────── */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(1.25rem); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes clip-reveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0% 0 0); }
 }
 
 /* ── ScrollStory: scroll indicator keyframe ─────────────────────────────── */
@@ -279,6 +336,12 @@ html.dark {
   /* portfolio compat */
   --evision-br: #ffffff1f;
   --ct-shadow: inset 0 -12px 14px rgba(0, 0, 0, .3);
+
+  /* Dark mode refined glass */
+  --glass-1-bg:    rgba(16, 21, 24, 0.38);
+  --glass-1-border: rgba(255, 255, 255, 0.10);
+  --glass-2-bg:    rgba(10, 15, 20, 0.55);
+  --glass-2-border: rgba(255, 255, 255, 0.06);
 }
 
 /* ------------------------------ Base & helpers ----------------------------- */
@@ -940,4 +1003,57 @@ img[data-nimg] {
   border: 1px solid rgba(255,255,255,0.25);
   border-radius: 9999px;
 }
+
+/* Custom component keyframes for ScrollStory and Highlights to prevent styled-jsx hydration issues */
+@keyframes marqueeScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-33.33%); }
+}
+.marquee-track {
+  animation: marqueeScroll 40s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+}
+
+@keyframes scrollLine {
+  0% { transform: translateY(-100%); }
+  50% { transform: translateY(100%); }
+  100% { transform: translateY(-100%); }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   View Transitions (Next.js 16 native)
+   ───────────────────────────────────────────────────────────────── */
+::view-transition-old(main-content),
+::view-transition-new(main-content) {
+  animation-duration: 400ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(main-content) {
+  animation-name: vt-fade-out;
+}
+
+::view-transition-new(main-content) {
+  animation-name: vt-fade-in;
+}
+
+@keyframes vt-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes vt-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(main-content),
+  ::view-transition-new(main-content) {
+    animation-duration: 0.01ms;
+  }
+}
+
 

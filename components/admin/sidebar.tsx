@@ -49,7 +49,7 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
 
   return (
     <aside
-      className={`relative hidden shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-[width] duration-300 md:flex md:flex-col ${widthClass}`}
+      className={`relative hidden shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-[width] duration-[var(--dur-normal,400ms)] [transition-timing-function:var(--ease-editorial,cubic-bezier(0.16,1,0.3,1))] md:flex md:flex-col ${widthClass}`}
     >
       <div className="flex h-16 items-center gap-3 border-b border-[var(--color-border)] px-4">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary)] text-xs font-bold text-[var(--color-primary-foreground)]">

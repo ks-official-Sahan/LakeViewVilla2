@@ -2,8 +2,9 @@
 # Lake View Villa Tangalle
 
 ## AI Crawler Policy
-- Allowed: GPTBot, ChatGPT-User, Google-Extended, PerplexityBot, ClaudeBot, Applebot, Bytespider, cohere-ai, OAI-SearchBot, CCBot
+- Allowed: GPTBot, ChatGPT-User, Google-Extended, PerplexityBot, ClaudeBot, Claude-SearchBot, Claude-User, anthropic-ai, Applebot, Bytespider, cohere-ai, OAI-SearchBot, CCBot, MistralAI-User, Manus Bot, Timpibot, Terracotta Bot, Novellum AI Crawl, ProRataInc, DuckAssistBot, FacebookBot, Meta-ExternalAgent, Meta-ExternalFetcher, Amazonbot, PetalBot, Cloudflare Crawler, Anchor Browser
 - Disallowed: None (all AI crawlers are welcome with proper attribution)
+- Full crawler policy: https://lakeviewvillatangalle.com/robots.txt
 
 ## Content Usage Rights
 All content on lakeviewvillatangalle.com is © Lake View Villa Tangalle.

@@ -18,15 +18,15 @@ interface AdminHeaderProps {
 const ROLE_BADGE: Record<Role, { label: string; className: string }> = {
   DEVELOPER: {
     label: "Developer",
-    className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    className: "bg-[var(--color-gold)]/10 text-[var(--color-gold-dark)] dark:bg-[var(--color-gold)]/20 dark:text-[var(--color-gold-light)]",
   },
   MANAGER: {
     label: "Manager",
-    className: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300",
+    className: "bg-[var(--color-primary)]/10 text-[var(--color-primary)] dark:bg-[var(--color-primary)]/20 dark:text-[var(--color-primary)]",
   },
   EDITOR: {
     label: "Editor",
-    className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+    className: "bg-[var(--color-muted)]/10 text-[var(--color-muted)] dark:bg-[var(--color-muted)]/20 dark:text-[var(--color-muted)]",
   },
 };
 

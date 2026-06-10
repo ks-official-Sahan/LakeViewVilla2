@@ -1,5 +1,6 @@
 // app/stays/page.tsx (server component)
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import StaysPage from "./client";
 import { RATES, OFFERS, BOOKING_FACTS } from "@/data/content";
@@ -44,6 +45,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
+  await connection();
   let room1Images: string[] = [];
   let room2Images: string[] = [];
 

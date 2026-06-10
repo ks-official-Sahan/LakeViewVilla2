@@ -137,6 +137,18 @@ const config = {
             backgroundPosition: "calc(100% + var(--shiny-width)) 0",
           },
         },
+        "fade-in-up": {
+          "0%": { opacity: "0", transform: "translateY(1.25rem)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "scale-in": {
+          "0%": { opacity: "0", transform: "scale(0.94)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+        "clip-reveal": {
+          "0%": { clipPath: "inset(0 100% 0 0)" },
+          "100%": { clipPath: "inset(0 0% 0 0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -150,6 +162,8 @@ const config = {
         float: "float 3s ease-in-out infinite",
         kenburns: "kenburns 18s ease-in-out infinite",
         "shiny-text": "shiny-text 8s infinite",
+        "fade-in-up": "fade-in-up var(--dur-glide, 1s) var(--ease-editorial, cubic-bezier(0.16, 1, 0.3, 1)) forwards",
+        "scale-in": "scale-in var(--dur-slow, 0.7s) var(--ease-editorial, cubic-bezier(0.16, 1, 0.3, 1)) forwards",
       },
     },
   },

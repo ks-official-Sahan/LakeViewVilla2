@@ -33,10 +33,61 @@ const EXPERIENCES: Experience[] = [
   { name: "Sigiriya Rock Fortress", image: "/images/optimized/sigiriya.webp", description: "A UNESCO World Heritage Site — an ancient palace city perched atop a towering volcanic rock.", ctaHref: sendMsg("Sigiriya Rock Fortress") },
 ];
 
+function normalize(items: any[]): Experience[] {
+  return items.map((it, i) => {
+    const name = it.name || it.label || `Excursion ${i + 1}`;
+    const description = it.description || "";
+    
+    // Find matching fallback properties based on the name keywords
+    const lowerName = name.toLowerCase();
+    let image = "";
+    let ctaHref = "";
+
+    if (lowerName.includes("rekawa")) {
+      image = "/images/optimized/rekawa.webp";
+      ctaHref = sendMsg("Rekawa Turtle Beach");
+    } else if (lowerName.includes("hiriketiya")) {
+      image = "/images/optimized/hiriketiya.webp";
+      ctaHref = sendMsg("Hiriketiya Beach");
+    } else if (lowerName.includes("kayak") || lowerName.includes("lagoon")) {
+      image = "/images/optimized/kayaking.webp";
+      ctaHref = sendMsg("Tangalle Lagoon Kayaking");
+    } else if (lowerName.includes("kalamatiya")) {
+      image = "/images/optimized/kalamatiya.webp";
+      ctaHref = sendMsg("Kalamatiya Bird Sanctuary");
+    } else if (lowerName.includes("mulkirigala")) {
+      image = "/images/optimized/mulkirigala.webp";
+      ctaHref = sendMsg("Mulkirigala Rock Temple");
+    } else if (lowerName.includes("yala")) {
+      image = "/images/optimized/yala.webp";
+      ctaHref = sendMsg("Yala National Park");
+    } else if (lowerName.includes("hummanaya") || lowerName.includes("blowhole")) {
+      image = "/images/optimized/blowhole.webp";
+      ctaHref = sendMsg("Hummanaya Blowhole");
+    } else if (lowerName.includes("sigiriya")) {
+      image = "/images/optimized/sigiriya.webp";
+      ctaHref = sendMsg("Sigiriya Rock Fortress");
+    } else {
+      // Find a safe fallback from our static EXPERIENCES array
+      const fallbackIndex = i % EXPERIENCES.length;
+      const fallback = EXPERIENCES[fallbackIndex];
+      image = fallback.image;
+      ctaHref = fallback.ctaHref;
+    }
+
+    return {
+      name,
+      image: it.image || image || "/images/placeholder.jpg",
+      description,
+      ctaHref: it.ctaHref || ctaHref || sendMsg(name),
+    };
+  });
+}
+
 export function ExperiencesReel({ cmsData }: { cmsData?: { eyebrow?: string; title?: string; description?: string; items?: any[] } }) {
   const itemsList = useMemo(() => {
     return Array.isArray(cmsData?.items) && cmsData.items.length > 0
-      ? cmsData.items
+      ? normalize(cmsData.items)
       : EXPERIENCES;
   }, [cmsData]);
 
@@ -181,14 +232,14 @@ export function ExperiencesReel({ cmsData }: { cmsData?: { eyebrow?: string; tit
             className="group absolute left-0 top-0 bottom-0 z-20 hidden md:block w-[14%] overflow-hidden rounded-l-3xl border-r border-white/5 transition-all hover:w-[16%] cursor-pointer"
           >
             <div className="absolute inset-0">
-              <Image src={itemsList[prev]?.image || "/images/placeholder.jpg"} alt="" aria-hidden fill className="object-cover transition-transform duration-[1.5s] group-hover:scale-108 saturate-50 brightness-[0.4]" sizes="15vw" />
+              <Image src={itemsList[prev]?.image || "/images/placeholder.jpg"} alt={`Previous excursion: ${itemsList[prev]?.name || ""}`} aria-hidden fill className="object-cover transition-transform duration-[1.5s] group-hover:scale-108 saturate-50 brightness-[0.4]" sizes="15vw" />
               <div className="absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:bg-black/30" />
             </div>
             <div className="absolute inset-y-0 right-6 flex items-center text-white/40 group-hover:text-white transition-all group-hover:-translate-x-2">
               <ChevronLeft className="h-10 w-10 border border-white/10 rounded-full p-2 bg-white/5 backdrop-blur-md" />
             </div>
           </button>
-
+ 
           {/* Right arrow background preview button */}
           <button
             type="button"
@@ -198,14 +249,14 @@ export function ExperiencesReel({ cmsData }: { cmsData?: { eyebrow?: string; tit
             className="group absolute right-0 top-0 bottom-0 z-20 hidden md:block w-[14%] overflow-hidden rounded-r-3xl border-l border-white/5 transition-all hover:w-[16%] cursor-pointer"
           >
             <div className="absolute inset-0">
-              <Image src={itemsList[next]?.image || "/images/placeholder.jpg"} alt="" aria-hidden fill className="object-cover transition-transform duration-[1.5s] group-hover:scale-108 saturate-50 brightness-[0.4]" sizes="15vw" />
+              <Image src={itemsList[next]?.image || "/images/placeholder.jpg"} alt={`Next excursion: ${itemsList[next]?.name || ""}`} aria-hidden fill className="object-cover transition-transform duration-[1.5s] group-hover:scale-108 saturate-50 brightness-[0.4]" sizes="15vw" />
               <div className="absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:bg-black/30" />
             </div>
             <div className="absolute inset-y-0 left-6 flex items-center text-white/40 group-hover:text-white transition-all group-hover:translate-x-2">
               <ChevronRight className="h-10 w-10 border border-white/10 rounded-full p-2 bg-white/5 backdrop-blur-md" />
             </div>
           </button>
-
+ 
           {/* Core frame */}
           <div
             aria-label={cur.name}
@@ -215,8 +266,8 @@ export function ExperiencesReel({ cmsData }: { cmsData?: { eyebrow?: string; tit
             <div ref={slideRef} className="absolute inset-0">
               <Image
                 key={index}
-                src={cur.image}
-                alt={cur.name}
+                src={cur.image || "/images/placeholder.jpg"}
+                alt={cur.name || "Excursion Detail"}
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 75vw"

@@ -10,13 +10,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticPages: MetadataRoute.Sitemap = [
-    { url: `${BASE_URL}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
-    { url: `${BASE_URL}/stays`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${BASE_URL}/gallery`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${BASE_URL}/blog`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
-    { url: `${BASE_URL}/faq`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
-    { url: `${BASE_URL}/visit`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${BASE_URL}/developer`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${BASE_URL}/`, lastModified: now, changeFrequency: "weekly" as const, priority: 1.0 },
+    { url: `${BASE_URL}/stays`, lastModified: now, changeFrequency: "weekly" as const, priority: 0.9 },
+    { url: `${BASE_URL}/gallery`, lastModified: now, changeFrequency: "weekly" as const, priority: 0.9 },
+    { url: `${BASE_URL}/visit`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.8 },
+    { url: `${BASE_URL}/blog`, lastModified: now, changeFrequency: "daily" as const, priority: 0.8 },
+    { url: `${BASE_URL}/faq`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.6 },
+    { url: `${BASE_URL}/developer`, lastModified: now, changeFrequency: "yearly" as const, priority: 0.2 },
   ];
 
   let blogPages: MetadataRoute.Sitemap = [];

@@ -104,7 +104,7 @@ export function AdminNavList({
                     onClick={onNavigate}
                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                       isActive
-                        ? "border-l-2 border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                        ? "border-l-2 border-[var(--color-gold)] bg-[var(--color-gold)]/10 text-[var(--color-gold-dark)]"
                         : "border-l-2 border-transparent text-[var(--color-muted)] hover:bg-[var(--color-background)] hover:text-[var(--color-foreground)]"
                     } ${showLabels ? "" : "justify-center px-2"}`}
                   >

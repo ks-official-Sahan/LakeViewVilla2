@@ -46,24 +46,24 @@ export function DashboardPanel({ initial, userLabel, showAuditFeed }: DashboardP
   }, []);
 
   const stats = [
-    { label: "Media Assets", value: data.counts.media, icon: Image, color: "text-sky-500" },
+    { label: "Media Assets", value: data.counts.media, icon: Image, color: "text-[var(--color-primary)]" },
     {
       label: "Blog — Published",
       value: data.counts.blogPublished,
       icon: PenLine,
-      color: "text-emerald-500",
+      color: "text-[var(--color-success)]",
     },
     {
       label: "Blog — Drafts",
       value: data.counts.blogDraft,
       icon: PenLine,
-      color: "text-amber-500",
+      color: "text-[var(--color-warning)]",
     },
     {
       label: "Content Blocks",
       value: data.counts.contentBlocks,
       icon: FileText,
-      color: "text-violet-500",
+      color: "text-[var(--color-gold)]",
     },
   ];
 

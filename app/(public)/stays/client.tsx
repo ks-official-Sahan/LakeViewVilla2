@@ -132,9 +132,9 @@ export default function StaysPage({
   // Resolve fallbacks for CMS data elements
   const headline = cmsHero?.headline || "Stays & Rates";
   const subheadline = cmsHero?.subheadline || "Experience tranquility on a serene lagoon—best rates via direct WhatsApp.";
-  const pricingList = cmsPricing || RATES;
-  const roomsList = cmsRooms || BOOKING_FACTS.rooms || [];
-  const amenitiesList = cmsAmenities || BOOKING_FACTS.amenities || [];
+  const pricingList = Array.isArray(cmsPricing) ? cmsPricing : (Array.isArray(RATES) ? RATES : []);
+  const roomsList = Array.isArray(cmsRooms) ? cmsRooms : (Array.isArray(BOOKING_FACTS.rooms) ? BOOKING_FACTS.rooms : []);
+  const amenitiesList = Array.isArray(cmsAmenities) ? cmsAmenities : (Array.isArray(BOOKING_FACTS.amenities) ? BOOKING_FACTS.amenities : []);
 
   return (
     <div className="min-h-screen relative overflow-hidden text-[var(--color-foreground)] bg-[var(--color-background)]">

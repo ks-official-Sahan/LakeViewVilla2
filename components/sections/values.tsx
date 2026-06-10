@@ -145,7 +145,7 @@ export function ValuesSection({ cmsData }: { cmsData?: { eyebrow?: string; title
 
             {/* Floating verification badge */}
             <div className="absolute -bottom-5 left-8 flex items-center gap-3.5 rounded-2xl border border-[var(--color-border)]/50 bg-[var(--color-surface)]/90 px-5 py-4 shadow-xl backdrop-blur-md">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#10b981] to-[var(--color-gold)] shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-[var(--color-gold)] shadow-md">
                 <Award className="h-5 w-5 text-white" />
               </div>
               <div className="text-xs">

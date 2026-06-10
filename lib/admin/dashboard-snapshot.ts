@@ -48,8 +48,8 @@ export async function getDashboardSnapshot(role: Role): Promise<DashboardSnapsho
       id: l.id,
       action: l.action,
       entityType: l.entityType,
-      timestamp: l.timestamp.toISOString(),
-      user: { name: l.user.name, email: l.user.email },
+      timestamp: l.timestamp instanceof Date ? l.timestamp.toISOString() : new Date(l.timestamp).toISOString(),
+      user: { name: l.user?.name ?? null, email: l.user?.email ?? "" },
     })),
     health: {
       database: true,
