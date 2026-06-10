@@ -123,7 +123,7 @@ export function Navigation() {
             </div>
             <span
               className={`font-serif font-bold tracking-tight sm:block transition-colors duration-300 text-base ${
-                isHero ? "text-white drop-shadow-md" : "text-[var(--color-foreground)]"
+                isHero ? "dark:text-white drop-shadow-md" : "dark:text-[var(--color-foreground)]"
               }`}
             >
               Lake View <span className="italic text-[var(--color-gold)] font-medium">Villa</span>
@@ -135,7 +135,7 @@ export function Navigation() {
             aria-label="Primary navigation"
             className={`hidden items-center gap-1 rounded-full border px-2 py-1.5 transition-all duration-500 md:flex ${
               isHero 
-                ? "border-white/10 bg-white/5 backdrop-blur-md" 
+                ? "border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 backdrop-blur-md" 
                 : "border-[var(--color-border)]/40 bg-[var(--color-background)]/50"
             }`}
           >
@@ -152,7 +152,7 @@ export function Navigation() {
                     active
                       ? "text-[var(--color-gold)]"
                       : isHero
-                        ? "text-white/80 hover:text-white hover:bg-white/10"
+                        ? "dark:text-white/80 hover:text-white hover:bg-white/10"
                         : "text-[var(--color-foreground)] hover:bg-[var(--color-primary)]/8 hover:text-[var(--color-primary)]"
                   }`}
                 >
