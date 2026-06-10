@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import { useTheme } from "next-themes";
 
 // ─── Shader sources ──────────────────────────────────────────────────────────
 
@@ -90,6 +91,7 @@ const VERTEX_SHADER = /* glsl */ `
 const FRAGMENT_SHADER = /* glsl */ `
   uniform float uTime;
   uniform float uScrollProgress;
+  uniform float uDarkMode;
 
   varying vec2  vUv;
   varying float vElevation;
@@ -97,19 +99,26 @@ const FRAGMENT_SHADER = /* glsl */ `
   void main() {
     // Luxury ivory-to-charcoal palette — no cyan/blue/purple
     vec3 deepCharcoal = vec3(0.059, 0.063, 0.067);   // #0F1011
-    vec3 warmGold     = vec3(0.788, 0.647, 0.353);   // #C9A55A
+    vec3 warmGoldDark = vec3(0.788, 0.647, 0.353);   // #C9A55A
+    vec3 warmGoldLight = vec3(0.722, 0.576, 0.247);  // #B8933F
     vec3 softIvory    = vec3(0.965, 0.949, 0.910);   // #F5F2E8
+    vec3 pureWhite    = vec3(1.0, 1.0, 1.0);
 
     float t = uTime * 0.18;
 
+    // Interpolate theme colors based on uDarkMode
+    vec3 baseColor = mix(softIvory, deepCharcoal, uDarkMode);
+    vec3 midColor  = mix(warmGoldLight, warmGoldDark, uDarkMode);
+    vec3 peakColor = mix(pureWhite, softIvory, uDarkMode);
+
     // Elevation-based color interpolation
     float ev = (vElevation + 0.65) * 0.77;
-    vec3 col = mix(deepCharcoal, warmGold, smoothstep(0.2, 0.65, ev));
-    col      = mix(col, softIvory,  smoothstep(0.65, 1.0, ev) * 0.35);
+    vec3 col = mix(baseColor, midColor, smoothstep(0.2, 0.65, ev));
+    col      = mix(col, peakColor,  smoothstep(0.65, 1.0, ev) * 0.35);
 
     // Edge vignette for depth
     float vignette = smoothstep(0.0, 0.45, distance(vUv, vec2(0.5)));
-    col = mix(col, deepCharcoal, vignette * 0.55);
+    col = mix(col, baseColor, vignette * 0.55);
 
     // Scroll fade
     float alpha = (1.0 - uScrollProgress * 0.85) * 0.92;
@@ -127,6 +136,11 @@ interface HeroCanvasProps {
 
 export default function HeroCanvas({ scrollProgress }: HeroCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  const isDarkRef = useRef(isDark);
+  isDarkRef.current = isDark;
+
   // Mutable refs so closures inside animate() stay sync without re-renders
   const scrollRef   = useRef(scrollProgress);
   const mouseRef    = useRef({ x: 0.5, y: 0.5 });
@@ -187,6 +201,7 @@ export default function HeroCanvas({ scrollProgress }: HeroCanvasProps) {
         uTime:           { value: 0 },
         uScrollProgress: { value: 0 },
         uMouse:          { value: new THREE.Vector2(0.5, 0.5) },
+        uDarkMode:       { value: isDarkRef.current ? 1.0 : 0.0 },
       };
 
       const material = new THREE.ShaderMaterial({
@@ -240,9 +255,18 @@ export default function HeroCanvas({ scrollProgress }: HeroCanvasProps) {
         raf = requestAnimationFrame(animate);
         const elapsed = clock.getElapsedTime();
 
+        const targetDarkMode = isDarkRef.current ? 1.0 : 0.0;
+        uniforms.uDarkMode.value += (targetDarkMode - uniforms.uDarkMode.value) * 0.08;
+
         uniforms.uTime.value           = elapsed;
         uniforms.uScrollProgress.value = scrollRef.current;
         uniforms.uMouse.value.set(mouseRef.current.x, mouseRef.current.y);
+
+        // Lerp wireframe color & opacity based on theme
+        const goldDark = new THREE.Color(0xc9a55a);
+        const goldLight = new THREE.Color(0xb8933f);
+        wireMat.color.lerpColors(goldLight, goldDark, uniforms.uDarkMode.value);
+        wireMat.opacity = 0.05 + (1.0 - uniforms.uDarkMode.value) * 0.03; // 0.08 in light mode, 0.05 in dark mode
 
         // Subtle camera drift tracking mouse
         camera.position.x += (mouseRef.current.x * 0.3 - camera.position.x) * 0.04;

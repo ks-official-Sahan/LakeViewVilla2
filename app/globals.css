@@ -59,6 +59,13 @@
   --color-charcoal:     #0f1011;
   --color-ivory:        #f5f2e8;
 
+  /* Hero section — light theme */
+  --hero-bg: var(--color-ivory);
+  --hero-overlay-from: rgba(245, 242, 232, 0.85);
+  --hero-overlay-via: rgba(245, 242, 232, 0.20);
+  --hero-overlay-to: rgba(245, 242, 232, 0.90);
+  --hero-text: var(--color-charcoal);
+
   /* Glass system */
   --glass-bg:      rgba(255, 255, 255, 0.08);
   --glass-border:  rgba(255, 255, 255, 0.18);
@@ -342,6 +349,13 @@ html.dark {
   --glass-1-border: rgba(255, 255, 255, 0.10);
   --glass-2-bg:    rgba(10, 15, 20, 0.55);
   --glass-2-border: rgba(255, 255, 255, 0.06);
+
+  /* Hero section — dark theme */
+  --hero-bg: #0f1011;
+  --hero-overlay-from: rgba(15, 16, 17, 0.85);
+  --hero-overlay-via: rgba(15, 16, 17, 0.20);
+  --hero-overlay-to: rgba(15, 16, 17, 0.90);
+  --hero-text: #ffffff;
 }
 
 /* ------------------------------ Base & helpers ----------------------------- */

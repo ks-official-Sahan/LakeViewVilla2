@@ -63,10 +63,10 @@ export function HeroText({ headline, subheadline, onBook }: HeroTextProps) {
       {/* Location Pill / Eyebrow */}
       <div
         ref={eyebrowRef}
-        className="mb-6 sm:mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-md"
+        className="mb-6 sm:mb-8 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/5 px-4 py-2 backdrop-blur-md transition-colors duration-300"
       >
         <div className="h-1.5 w-1.5 rounded-full bg-[var(--color-gold)] flex-shrink-0" />
-        <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/80">
+        <p className="text-xs font-bold uppercase tracking-[0.25em] text-foreground/80 transition-colors duration-300">
           Tangalle Lagoon
         </p>
       </div>
@@ -74,7 +74,7 @@ export function HeroText({ headline, subheadline, onBook }: HeroTextProps) {
       {/* Heading */}
       <h1
         ref={h1Ref}
-        className="font-[var(--font-serif)] font-black tracking-tight text-white"
+        className="font-[var(--font-serif)] font-black tracking-tight text-foreground transition-colors duration-300"
         style={{ fontSize: "clamp(2.75rem, 8vw, 7rem)", lineHeight: 0.95 }}
       >
         <span className="word-line block">{line1}</span>
@@ -82,7 +82,7 @@ export function HeroText({ headline, subheadline, onBook }: HeroTextProps) {
           {line2}
         </span>
         <span
-          className="word-line mt-4 sm:mt-6 block font-[var(--font-sans)] font-medium text-white/60"
+          className="word-line mt-4 sm:mt-6 block font-[var(--font-sans)] font-medium text-foreground/60 transition-colors duration-300"
           style={{ fontSize: "clamp(0.875rem, 2vw, 1.25rem)", letterSpacing: "0.05em" }}
         >
           {subheadline}
@@ -96,7 +96,7 @@ export function HeroText({ headline, subheadline, onBook }: HeroTextProps) {
       >
         <button
           onClick={onBook}
-          className="group relative flex h-12 sm:h-14 items-center justify-center overflow-hidden rounded-full bg-[var(--color-gold)] px-8 sm:px-10 text-xs font-bold uppercase tracking-widest text-[var(--color-charcoal)] shadow-[0_4px_20px_rgba(201,165,90,0.2)] transition-all duration-500 hover:bg-white hover:scale-[1.03] hover:shadow-[0_12px_40px_rgba(255,255,255,0.3)] active:scale-95"
+          className="group relative flex h-12 sm:h-14 items-center justify-center overflow-hidden rounded-full bg-[var(--color-gold)] px-8 sm:px-10 text-xs font-bold uppercase tracking-widest text-[var(--color-charcoal)] shadow-[0_4px_20px_rgba(201,165,90,0.2)] transition-all duration-500 hover:scale-[1.03] hover:bg-foreground hover:text-background dark:hover:bg-white dark:hover:text-[var(--color-charcoal)] active:scale-95"
         >
           <span className="relative z-10 flex items-center gap-1.5">
             <span>Reserve Your Stay</span>
@@ -105,7 +105,7 @@ export function HeroText({ headline, subheadline, onBook }: HeroTextProps) {
         </button>
         <Link
           href="/gallery"
-          className="group relative h-12 sm:h-14 px-8 sm:px-10 flex items-center justify-center text-xs font-bold uppercase tracking-widest text-white/70 border border-white/10 rounded-full transition-all duration-300 hover:text-white hover:border-white/30 hover:bg-white/5"
+          className="group relative h-12 sm:h-14 px-8 sm:px-10 flex items-center justify-center text-xs font-bold uppercase tracking-widest text-foreground/70 border border-foreground/10 rounded-full transition-all duration-300 hover:text-foreground hover:border-foreground/30 hover:bg-foreground/5"
         >
           <span className="flex items-center gap-1.5">
             Explore Gallery
@@ -119,10 +119,10 @@ export function HeroText({ headline, subheadline, onBook }: HeroTextProps) {
         ref={scrollHintRef}
         className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2.5"
       >
-        <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.25em] text-white/30 font-semibold">
+        <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.25em] text-foreground/35 font-semibold transition-colors duration-300">
           Scroll Down
         </span>
-        <div className="relative h-8 w-[1.5px] overflow-hidden rounded-full bg-white/10">
+        <div className="relative h-8 w-[1.5px] overflow-hidden rounded-full bg-foreground/15 transition-colors duration-300">
           <div
             className="absolute inset-x-0 top-0 h-1/2 w-full bg-[var(--color-gold)]"
             style={{ animation: "scrollLine 2.0s cubic-bezier(0.76, 0, 0.24, 1) infinite" }}

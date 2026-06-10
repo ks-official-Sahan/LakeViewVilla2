@@ -8,7 +8,7 @@ export function BookingCallout({ onBook }: BookingCalloutProps) {
   return (
     <section
       aria-label="Reservations info"
-      className="relative overflow-hidden py-24 bg-[var(--color-charcoal)] border-t border-white/5"
+      className="relative overflow-hidden py-24 bg-[var(--color-background)] border-t border-[var(--color-border)]/50 transition-colors duration-300"
     >
       <div
         aria-hidden
@@ -28,7 +28,7 @@ export function BookingCallout({ onBook }: BookingCalloutProps) {
         </p>
 
         <h2
-          className="font-[var(--font-serif)] font-black text-white leading-tight tracking-tight mb-8"
+          className="font-[var(--font-serif)] font-black text-[var(--color-foreground)] leading-tight tracking-tight mb-8 transition-colors duration-300"
           style={{ fontSize: "clamp(2.5rem, 5vw, 4.5rem)" }}
         >
           Your lagoon.
@@ -40,7 +40,7 @@ export function BookingCallout({ onBook }: BookingCalloutProps) {
           <button
             onClick={onBook}
             aria-label="Connect via WhatsApp"
-            className="group relative flex h-14 items-center justify-center overflow-hidden rounded-full bg-[var(--color-gold)] px-10 text-xs font-bold uppercase tracking-widest text-[var(--color-charcoal)] shadow-[0_8px_30px_rgba(201,165,90,0.2)] transition-all duration-300 hover:scale-[1.02] hover:bg-white hover:shadow-[0_12px_40px_rgba(255,255,255,0.25)]"
+            className="group relative flex h-14 items-center justify-center overflow-hidden rounded-full bg-[var(--color-gold)] px-10 text-xs font-bold uppercase tracking-widest text-[var(--color-charcoal)] shadow-[0_8px_30px_rgba(201,165,90,0.2)] transition-all duration-300 hover:scale-[1.02] hover:bg-foreground hover:text-background dark:hover:bg-white dark:hover:text-[var(--color-charcoal)]"
           >
             <span>Check Availability on WhatsApp</span>
           </button>

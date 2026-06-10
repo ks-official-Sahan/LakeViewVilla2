@@ -109,7 +109,7 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
         ref={heroRef}
         id="home"
         aria-label="Lake View Villa — hero"
-        className="relative flex flex-col items-center justify-center h-svh w-full bg-[var(--color-charcoal)]"
+        className="relative flex flex-col items-center justify-center h-svh w-full bg-[var(--hero-bg)] transition-colors duration-300"
       >
         <div ref={canvasWrapRef} className="absolute inset-0">
           <Suspense fallback={null}>
@@ -118,7 +118,7 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
           {/* Premium luxury vignette */}
           <div
             aria-hidden
-            className="absolute inset-0 bg-gradient-to-b from-[var(--color-charcoal)]/85 via-[var(--color-charcoal)]/20 to-[var(--color-charcoal)]/90"
+            className="absolute inset-0 bg-gradient-to-b from-[var(--hero-overlay-from)] via-[var(--hero-overlay-via)] to-[var(--hero-overlay-to)] transition-colors duration-300"
           />
           <div
             aria-hidden
