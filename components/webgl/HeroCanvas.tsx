@@ -19,17 +19,17 @@ interface EnvConfig {
   waterSpecular: THREE.Color;
   waveSpeed: number;
   waveAmplitude: number;
-  lanternIntensity: number; // warm light strength
+  lanternIntensity: number;
 }
 
 const ENV_PRESETS = [
   {
-    time: 0, // Midnight
+    time: 0,
     skyTop: "#010508",
     skyBottom: "#030c10",
     ambient: "#010405",
     ambientIntensity: 0.12,
-    sun: "#769bb0", // Moon
+    sun: "#769bb0",
     sunIntensity: 0.35,
     sunPos: [-8, 11, -6],
     fogColor: "#010508",
@@ -41,7 +41,7 @@ const ENV_PRESETS = [
     lanternIntensity: 1.6,
   },
   {
-    time: 5.5, // Dawn — sun rises behind right of villa
+    time: 5.5,
     skyTop: "#3A6A8A",
     skyBottom: "#F0C8A0",
     ambient: "#4A6A7A",
@@ -53,12 +53,12 @@ const ENV_PRESETS = [
     fogDensity: 0.035,
     water: "#30A0A4",
     waterSpecular: "#E8A87C",
-    waveSpeed: 0.20,
+    waveSpeed: 0.2,
     waveAmplitude: 0.04,
     lanternIntensity: 0.8,
   },
   {
-    time: 10, // Morning
+    time: 10,
     skyTop: "#2E9B9E",
     skyBottom: "#FFF5E8",
     ambient: "#E8F6F8",
@@ -75,7 +75,7 @@ const ENV_PRESETS = [
     lanternIntensity: 0.0,
   },
   {
-    time: 14.5, // Afternoon
+    time: 14.5,
     skyTop: "#28A0A4",
     skyBottom: "#FFFBF4",
     ambient: "#ECF8FA",
@@ -92,7 +92,7 @@ const ENV_PRESETS = [
     lanternIntensity: 0.0,
   },
   {
-    time: 18.5, // Sunset
+    time: 18.5,
     skyTop: "#230A03",
     skyBottom: "#C9A55A",
     ambient: "#3D241E",
@@ -109,7 +109,7 @@ const ENV_PRESETS = [
     lanternIntensity: 1.1,
   },
   {
-    time: 21, // Night
+    time: 21,
     skyTop: "#02070a",
     skyBottom: "#0b2027",
     ambient: "#051318",
@@ -126,7 +126,7 @@ const ENV_PRESETS = [
     lanternIntensity: 1.6,
   },
   {
-    time: 24, // Midnight Wrap
+    time: 24,
     skyTop: "#010508",
     skyBottom: "#030c10",
     ambient: "#010405",
@@ -144,7 +144,6 @@ const ENV_PRESETS = [
   },
 ];
 
-/** Coastal breeze: day = sea→villa (+X), night = land→coast (−X). */
 function computeWindX(time: number): number {
   return time >= 6 && time < 20 ? 1.0 : -1.0;
 }
@@ -157,7 +156,7 @@ const ENV_KEYFRAMES = ENV_PRESETS.map((p) => ({
   ambientIntensity: p.ambientIntensity,
   sun: new THREE.Color(p.sun),
   sunIntensity: p.sunIntensity,
-  sunPos: new THREE.Vector3(...p.sunPos),
+  sunPos: new THREE.Vector3(...(p.sunPos as [number, number, number])),
   fogColor: new THREE.Color(p.fogColor),
   fogDensity: p.fogDensity,
   water: new THREE.Color(p.water),
@@ -198,7 +197,6 @@ function interpolateEnv(time: number, target: EnvConfig) {
   target.lanternIntensity = THREE.MathUtils.lerp(kf1.lanternIntensity, kf2.lanternIntensity, factor);
 }
 
-/** Tangalle golden-hour intensity for horizon glow and god rays (dawn ~6h, dusk ~19h). */
 function computeGoldenHourBoost(time: number): number {
   const dawn = Math.max(0, 1 - Math.abs(time - 6.25) / 1.5);
   const dusk = Math.max(0, 1 - Math.abs(time - 18.75) / 1.5);
@@ -209,7 +207,15 @@ function computeIsNight(time: number): number {
   return time >= 20 || time < 5.5 ? 1 : 0;
 }
 
-/** Egrets/herons are most visible at lagoon dawn and dusk. */
+/** Smooth night transition for celestial body cross-fade. */
+function computeNightSmooth(time: number): number {
+  if (time >= 21) return 1;
+  if (time >= 19) return (time - 19) / 2;
+  if (time < 5) return 1;
+  if (time < 6.5) return 1 - (time - 5) / 1.5;
+  return 0;
+}
+
 function computeBirdVisibility(time: number): number {
   const dawnPeak = Math.max(0, 1 - Math.abs(time - 6.5) / 2);
   const duskPeak = Math.max(0, 1 - Math.abs(time - 18) / 2);
@@ -217,12 +223,16 @@ function computeBirdVisibility(time: number): number {
   return Math.max(midday, Math.max(dawnPeak, duskPeak));
 }
 
-// Far shore of lake (toward mountains) in water-plane local Y
+// ─── Scene Layout Constants ─────────────────────────────────────────────────
+
+const ROAD_Y = -0.85;
+const WATER_Y = -1.28;
+const GROUND_Y = -0.88;
 const SHORE_PLANE_Y = 10.5;
 const LAKE_CENTER = new THREE.Vector2(0.5, 1.5);
 const LAKE_RADIUS = 9.5;
 
-// ─── Shaders (FBM Sky Clouds + Wave Proximity Foam + Gerstner Waves) ───────────
+// ─── Enhanced Sky Shader ─────────────────────────────────────────────────────
 
 const SKY_VERTEX = /* glsl */ `
   varying vec3 vWorldPosition;
@@ -245,7 +255,7 @@ const SKY_FRAGMENT = /* glsl */ `
   uniform float uWindX;
   varying vec3 vWorldPosition;
 
-  float noise(vec2 p) {
+  float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
 
@@ -253,17 +263,17 @@ const SKY_FRAGMENT = /* glsl */ `
     vec2 i = floor(p);
     vec2 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
-    float a = noise(i);
-    float b = noise(i + vec2(1.0, 0.0));
-    float c = noise(i + vec2(0.0, 1.0));
-    float d = noise(i + vec2(1.0, 1.0));
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
   }
 
   float fbm(vec2 p) {
     float v = 0.0;
     float a = 0.5;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 5; i++) {
       v += a * smoothNoise(p);
       p *= 2.0;
       a *= 0.5;
@@ -279,24 +289,42 @@ const SKY_FRAGMENT = /* glsl */ `
     vec3 sunDir = normalize(uSunDirection);
     float sunDot = dot(direction, sunDir);
 
-    // Sun / moon disk with warm corona (Tangalle golden hour)
+    // Sun / moon disk with warm corona
     float diskSize = mix(uSunSize, uSunSize * 0.5, uIsNight);
     float sunCore = smoothstep(1.0 - diskSize * 0.75, 1.0 - diskSize * 0.15, sunDot);
     float sunCorona = smoothstep(1.0 - diskSize * 2.8, 1.0 - diskSize * 0.55, sunDot);
     vec3 sunDisk = uSunColor * (sunCore * 4.2 + sunCorona * 1.4 * (1.0 - uIsNight * 0.55));
 
-    // Volumetric horizon glow — strongest at sunrise / sunset
+    // Volumetric horizon glow — strongest at sunrise/sunset
     float horizon = exp(-abs(direction.y) * 6.5);
     vec3 scatter = uSunColor * horizon * uGoldenHourBoost * 0.9;
     skyColor += scatter;
 
-    // Crepuscular god rays from the sun direction
+    // Mie scattering approximation (warm atmosphere near horizon)
+    float mie = pow(max(sunDot, 0.0), 8.0) * horizon * 0.35 * (1.0 - uIsNight);
+    skyColor += uSunColor * mie;
+
+    // Crepuscular god rays
     float rayAngle = atan(direction.x, direction.z);
     float rayNoise = fbm(vec2(rayAngle * 4.0 + uTime * 0.018, direction.y * 3.5 + uTime * 0.01));
     float rayMask = smoothstep(0.91, 1.0, sunDot) * (1.0 - uIsNight) * uGoldenHourBoost;
     skyColor += uSunColor * rayNoise * rayMask * horizon * 0.42;
 
-    // Three-layer tropical sky clouds (cirrus, cumulus, low haze)
+    // Star field (visible at night)
+    float stars = 0.0;
+    if (uIsNight > 0.3 && direction.y > 0.05) {
+      vec2 starUV = direction.xz / (direction.y + 0.02) * 180.0;
+      float starCell = hash(floor(starUV));
+      float starBright = step(0.988, starCell);
+      float twinkle = sin(uTime * 2.5 + starCell * 120.0) * 0.25 + 0.75;
+      stars = starBright * twinkle * uIsNight * smoothstep(0.05, 0.35, direction.y);
+      // Milky way band
+      float milky = smoothstep(0.6, 0.8, fbm(direction.xz * 3.0 + vec2(0.0, uTime * 0.002)));
+      stars += milky * 0.08 * uIsNight * smoothstep(0.1, 0.5, direction.y);
+    }
+    skyColor += vec3(1.0, 0.98, 0.93) * stars;
+
+    // Five-layer tropical sky clouds
     float cloudMix = 0.0;
     if (direction.y > -0.08) {
       vec2 baseUv = vec2(direction.x, direction.z) / (direction.y + 0.1);
@@ -315,21 +343,34 @@ const SKY_FRAGMENT = /* glsl */ `
       hazeUv.x += uTime * 0.0045 * uWindX;
       float lowHaze = smoothstep(0.35, 0.65, fbm(hazeUv)) * smoothstep(-0.05, 0.18, direction.y);
 
-      cloudMix = cirrus * 0.12 + cumulus * 0.24 + lowHaze * 0.16;
+      vec2 altUv = baseUv * 3.5;
+      altUv.x += uTime * 0.005 * uWindX;
+      float alto = smoothstep(0.50, 0.75, fbm(altUv)) * smoothstep(0.08, 0.45, direction.y);
+
+      vec2 wispsUv = baseUv * 5.0;
+      wispsUv.x += uTime * 0.009 * uWindX;
+      float wisps = smoothstep(0.58, 0.82, fbm(wispsUv)) * smoothstep(0.20, 0.60, direction.y);
+
+      cloudMix = cirrus * 0.12 + cumulus * 0.26 + lowHaze * 0.16 + alto * 0.10 + wisps * 0.06;
     }
 
     vec3 cloudTint = mix(
-      vec3(0.9, 0.95, 1.0) * (uSunColor * 0.5 + 0.5),
+      vec3(0.92, 0.95, 1.0) * (uSunColor * 0.5 + 0.5),
       vec3(0.06, 0.12, 0.18),
       uIsNight * 0.75
     );
-    vec3 finalColor = mix(skyColor + sunDisk, cloudTint, cloudMix * 0.85);
+    // Golden-hour lit cloud undersides
+    vec3 goldenCloudTint = mix(cloudTint, uSunColor * 1.2, uGoldenHourBoost * 0.4);
+    vec3 finalColor = mix(skyColor + sunDisk, goldenCloudTint, cloudMix * 0.85);
+
     float skyLuma = dot(finalColor, vec3(0.299, 0.587, 0.114));
     finalColor = mix(vec3(skyLuma), finalColor, 1.18);
 
     gl_FragColor = vec4(finalColor, 1.0);
   }
 `;
+
+// ─── Water Shader ────────────────────────────────────────────────────────────
 
 const WATER_VERTEX = /* glsl */ `
   uniform float uTime;
@@ -353,23 +394,23 @@ const WATER_VERTEX = /* glsl */ `
     vUv = uv;
     vec3 pos = position;
 
-    Wave waves[4];
+    Wave waves[5];
     waves[0] = Wave(normalize(vec2(1.0, 0.4)), uWaveAmplitude * 0.7, 0.35, 0.6, uWaveSpeed * 0.8);
     waves[1] = Wave(normalize(vec2(-0.8, 0.8)), uWaveAmplitude * 0.35, 0.65, 0.45, uWaveSpeed * 1.3);
     waves[2] = Wave(normalize(vec2(0.3, -0.9)), uWaveAmplitude * 0.18, 1.20, 0.3, uWaveSpeed * 2.1);
     waves[3] = Wave(normalize(vec2(0.6, 0.2)), uWaveAmplitude * 0.12, 2.10, 0.22, uWaveSpeed * 2.8);
+    waves[4] = Wave(normalize(vec2(-0.4, -0.6)), uWaveAmplitude * 0.08, 3.20, 0.18, uWaveSpeed * 3.5);
 
     vec3 displaced = pos;
     vec3 tangent = vec3(1.0, 0.0, 0.0);
     vec3 binormal = vec3(0.0, 1.0, 0.0);
 
-    for(int i = 0; i < 4; i++) {
+    for(int i = 0; i < 5; i++) {
       float phase = dot(waves[i].dir, pos.xy) * waves[i].freq + uTime * waves[i].speed;
       float c = cos(phase);
       float s = sin(phase);
-
       float QA = waves[i].steepness * waves[i].amp;
-      
+
       displaced.x += waves[i].dir.x * QA * c;
       displaced.y += waves[i].dir.y * QA * c;
       displaced.z += waves[i].amp * s;
@@ -388,7 +429,7 @@ const WATER_VERTEX = /* glsl */ `
 
     vec4 mvPosition = modelViewMatrix * vec4(displaced, 1.0);
     gl_Position = projectionMatrix * mvPosition;
-    
+
     vViewPosition = -mvPosition.xyz;
     vNormal = normalize(cross(tangent, binormal));
     vWorldPos = displaced;
@@ -413,6 +454,7 @@ const WATER_FRAGMENT = /* glsl */ `
   uniform vec2 uLanternPlanePos;
   uniform vec3 uLanternColor;
   uniform float uLanternIntensity;
+  uniform float uShoreProximity;
 
   varying vec2 vUv;
   varying vec3 vNormal;
@@ -420,7 +462,7 @@ const WATER_FRAGMENT = /* glsl */ `
   varying vec3 vWorldPos;
   varying float vHeight;
 
-  float hash(vec2 p) {
+  float noiseH(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
 
@@ -428,10 +470,10 @@ const WATER_FRAGMENT = /* glsl */ `
     vec2 i = floor(p);
     vec2 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
-    float a = hash(i);
-    float b = hash(i + vec2(1.0, 0.0));
-    float c = hash(i + vec2(0.0, 1.0));
-    float d = hash(i + vec2(1.0, 1.0));
+    float a = noiseH(i);
+    float b = noiseH(i + vec2(1.0, 0.0));
+    float c = noiseH(i + vec2(0.0, 1.0));
+    float d = noiseH(i + vec2(1.0, 1.0));
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
   }
 
@@ -440,7 +482,8 @@ const WATER_FRAGMENT = /* glsl */ `
     c += causticNoise(uv * 3.5 + vec2(t * 0.4, t * 0.25));
     c += causticNoise(uv * 7.0 - vec2(t * 0.55, t * 0.35)) * 0.5;
     c += causticNoise(uv * 14.0 + vec2(t * 0.3, -t * 0.2)) * 0.25;
-    return pow(c * 0.55, 1.4);
+    c += causticNoise(uv * 22.0 - vec2(t * 0.15, t * 0.45)) * 0.12;
+    return pow(c * 0.48, 1.4);
   }
 
   vec3 saturateColor(vec3 c, float amount) {
@@ -453,7 +496,7 @@ const WATER_FRAGMENT = /* glsl */ `
     vec3 viewDir = normalize(vViewPosition);
     float viewDepth = length(vViewPosition);
 
-    // Depth readout — near water is clearer, far shore richer
+    // Depth readout
     float depthFade = smoothstep(4.0, 28.0, viewDepth);
     float heightFactor = clamp((vHeight + 0.12) * 3.5, 0.0, 1.0);
 
@@ -463,14 +506,18 @@ const WATER_FRAGMENT = /* glsl */ `
     vec3 col = mix(mix(lagoonDeep, lagoonMid, heightFactor), lagoonBright, heightFactor * 0.45);
     col = mix(col, lagoonDeep * 0.95, depthFade * 0.25);
 
-    // Sky reflection — mirror lagoon clarity
+    // Shore proximity - shallower near edges, more transparent
+    float distToShore = abs(vWorldPos.y - uShoreLine);
+    float shoreShallow = smoothstep(3.0, 0.2, distToShore);
+
+    // Sky reflection
     vec3 reflectDir = reflect(-viewDir, normal);
     float skyBlend = reflectDir.y * 0.5 + 0.5;
     vec3 skyReflect = mix(uSkyBottom, uSkyTop, clamp(skyBlend, 0.0, 1.0));
     float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.2);
     col = mix(col, skyReflect * 1.15, fresnel * 0.62);
 
-    // Sun specular + glitter path across ripples
+    // Sun specular + glitter
     vec3 halfDir = normalize(uSunDirection + viewDir);
     float spec = pow(max(dot(normal, halfDir), 0.0), 28.0);
     col += uWaterSpecularColor * spec * uSunIntensity * 1.45;
@@ -478,21 +525,21 @@ const WATER_FRAGMENT = /* glsl */ `
     float glintSpec = pow(max(dot(normal, halfDir), 0.0), 180.0);
     col += vec3(1.0, 0.98, 0.9) * glintSpec * uSunIntensity * 2.2;
 
-    // Anisotropic sun streak on wave crests
+    // Anisotropic sun streak
     vec2 sunXZ = normalize(uSunDirection.xz + vec2(0.001));
     float streak = pow(max(dot(normalize(vWorldPos.xy) * 0.08, sunXZ), 0.0), 6.0);
     col += uWaterSpecularColor * streak * uSunIntensity * 0.18;
 
-    // Shallow caustic light patterns (visible lagoon floor detail)
-    float distToShore = abs(vWorldPos.y - uShoreLine);
+    // Shallow caustics
     float shallowMask = smoothstep(5.0, 0.3, distToShore);
     float caustic = caustics(vWorldPos.xy * 0.55, uTime) * shallowMask;
     col += vec3(0.55, 0.85, 0.75) * caustic * uSunIntensity * 0.42;
 
-    // Lagoon floor sediment — visible clarity in shallows
+    // Lagoon floor sediment
     float floorVar = causticNoise(vWorldPos.xy * 0.22 + vec2(3.7, 1.2));
     col = mix(col, col * 0.82 + vec3(0.14, 0.24, 0.16), floorVar * shallowMask * 0.4);
 
+    // Lantern reflection on water
     vec3 fragPosInView = -vViewPosition;
     vec3 lightDir = normalize(uLanternViewPosition - fragPosInView);
     vec3 halfDirLantern = normalize(lightDir + viewDir);
@@ -506,7 +553,7 @@ const WATER_FRAGMENT = /* glsl */ `
     float causticDisc = exp(-dot(lanternDist, lanternDist) * 0.32) * lanternRipple;
     col += uLanternColor * causticDisc * uLanternIntensity * 0.25;
 
-    // Tangalle shoreline color bands — sand → emerald shallows → teal depth
+    // Shoreline color bands
     vec3 sandShallow = vec3(0.94, 0.88, 0.72);
     vec3 emeraldShallow = vec3(0.35, 0.78, 0.62);
     vec3 tealMid = vec3(0.18, 0.62, 0.58);
@@ -517,34 +564,41 @@ const WATER_FRAGMENT = /* glsl */ `
     col = mix(col, emeraldShallow, shallowZone * 0.65);
     col = mix(col, tealMid, midZone * 0.35);
 
+    // Shore foam
     float wavePhase = uTime * 2.8 + vWorldPos.x * 2.0 + distToShore * 1.5;
     float shoreFoam = smoothstep(0.8, 0.0, distToShore) * (0.5 + 0.5 * sin(wavePhase));
 
+    // Rock foam
     vec2 rock1 = vec2(-4.0, 8.5);
     vec2 rock2 = vec2(1.5, 9.0);
     vec2 rock3 = vec2(4.5, 8.0);
     vec2 rock4 = vec2(-1.5, 9.5);
     vec2 rock5 = vec2(0.5, 10.0);
-
     float minRockDist = min(
       min(min(distance(vWorldPos.xy, rock1), distance(vWorldPos.xy, rock2)),
           min(distance(vWorldPos.xy, rock3), distance(vWorldPos.xy, rock4))),
       distance(vWorldPos.xy, rock5)
     );
     float rockFoam = smoothstep(0.5, 0.0, minRockDist) * (0.5 + 0.5 * sin(uTime * 3.4 + vWorldPos.x * 3.5));
-
     float finalFoam = max(shoreFoam, rockFoam);
     col = mix(col, vec3(0.96, 0.99, 1.0) * (uSunIntensity * 0.35 + 0.65), finalFoam * 0.72);
 
-    // Fine ripple detail on surface
+    // Fine ripple detail
     float ripple = sin(vWorldPos.x * 4.5 + uTime * 1.6) * sin(vWorldPos.y * 3.8 - uTime * 1.2);
     col += uWaterColor * ripple * 0.04;
 
     col = saturateColor(col, 1.55);
 
-    // Lake perimeter — depth fades softly at edges and field junction (left)
+    // Lake perimeter mask
     float distLake = length(vWorldPos.xy - uLakeCenter);
     float perimeterFade = smoothstep(uLakeRadius, uLakeRadius - 3.0, distLake);
+
+    // Near-shore depth reduction — water becomes very shallow near embankment
+    float nearShoreY = vWorldPos.y; // y in water plane space ~ mapped from Z in world
+    float shoreDepthFade = smoothstep(10.5, 8.0, nearShoreY); // shallow near high Y values (close to road)
+    float deepBlend = shoreDepthFade * 0.3;
+    col = mix(col, emeraldShallow * 1.2, (1.0 - shoreDepthFade) * 0.25);
+
     float fieldJunction = smoothstep(-7.5, -4.0, vWorldPos.x);
     float lakeMask = perimeterFade * fieldJunction;
     col = mix(col * 0.35, col, lakeMask);
@@ -568,10 +622,10 @@ const createWoodTexture = () => {
   ctx.fillStyle = "#3d2e22";
   ctx.fillRect(0, 0, 512, 512);
 
-  ctx.strokeStyle = "#2a1f16";
-  ctx.lineWidth = 3;
   const plankWidth = 64;
   for (let x = 0; x < 512; x += plankWidth) {
+    ctx.strokeStyle = "#2a1f16";
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, 512);
@@ -579,7 +633,7 @@ const createWoodTexture = () => {
 
     ctx.strokeStyle = "rgba(255, 255, 255, 0.015)";
     ctx.lineWidth = 1.2;
-    for (let j = 0; j < 6; j++) {
+    for (let j = 0; j < 8; j++) {
       const gx = x + 5 + Math.random() * (plankWidth - 10);
       ctx.beginPath();
       ctx.moveTo(gx, 0);
@@ -587,14 +641,23 @@ const createWoodTexture = () => {
       ctx.stroke();
     }
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.09)";
+    // Knots
+    if (Math.random() > 0.7) {
+      const kx = x + plankWidth / 2;
+      const ky = Math.random() * 512;
+      ctx.fillStyle = "rgba(30, 18, 10, 0.5)";
+      ctx.beginPath();
+      ctx.ellipse(kx, ky, 6, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.04 + Math.random() * 0.08})`;
     if (Math.random() > 0.5) {
       ctx.fillRect(x, 0, plankWidth, 512);
     }
   }
 
-  const texture = new THREE.CanvasTexture(canvas);
-  return texture;
+  return new THREE.CanvasTexture(canvas);
 };
 
 const createConcreteTexture = () => {
@@ -607,7 +670,7 @@ const createConcreteTexture = () => {
   ctx.fillStyle = "#5a6e72";
   ctx.fillRect(0, 0, 256, 256);
 
-  for (let i = 0; i < 4000; i++) {
+  for (let i = 0; i < 5000; i++) {
     const x = Math.random() * 256;
     const y = Math.random() * 256;
     const size = Math.random() * 1.5;
@@ -618,12 +681,13 @@ const createConcreteTexture = () => {
   ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(0, 128); ctx.lineTo(256, 128);
-  ctx.moveTo(128, 0); ctx.lineTo(128, 256);
+  ctx.moveTo(0, 128);
+  ctx.lineTo(256, 128);
+  ctx.moveTo(128, 0);
+  ctx.lineTo(128, 256);
   ctx.stroke();
 
-  const texture = new THREE.CanvasTexture(canvas);
-  return texture;
+  return new THREE.CanvasTexture(canvas);
 };
 
 const createPalmLeafTexture = () => {
@@ -634,7 +698,7 @@ const createPalmLeafTexture = () => {
   if (!ctx) return new THREE.Texture();
 
   ctx.clearRect(0, 0, 128, 256);
-  
+
   ctx.strokeStyle = "#1a5c3a";
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -644,15 +708,13 @@ const createPalmLeafTexture = () => {
 
   ctx.strokeStyle = "#2a7a4a";
   ctx.lineWidth = 1.8;
-  
   const leafletsCount = 38;
   for (let i = 0; i < leafletsCount; i++) {
     const t = i / leafletsCount;
     const py = 250 - t * 235;
     const px = 64 - t * t * 16;
-    
     const length = Math.sin(t * Math.PI) * 48;
-    
+
     ctx.beginPath();
     ctx.moveTo(px, py);
     ctx.quadraticCurveTo(px - length * 0.7, py + 12, px - length, py + 26);
@@ -670,7 +732,122 @@ const createPalmLeafTexture = () => {
   return texture;
 };
 
-// ─── Component Props ─────────────────────────────────────────────────────────
+const createRoadTexture = () => {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 512;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return new THREE.Texture();
+
+  // Asphalt base
+  ctx.fillStyle = "#4a4642";
+  ctx.fillRect(0, 0, 256, 512);
+
+  // Noise grain
+  for (let i = 0; i < 8000; i++) {
+    const x = Math.random() * 256;
+    const y = Math.random() * 512;
+    const s = Math.random() * 1.8;
+    ctx.fillStyle = Math.random() > 0.5 ? "rgba(255,255,255,0.015)" : "rgba(0,0,0,0.04)";
+    ctx.fillRect(x, y, s, s);
+  }
+
+  // Faded center marking
+  ctx.strokeStyle = "rgba(200, 190, 160, 0.12)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([20, 30]);
+  ctx.beginPath();
+  ctx.moveTo(128, 0);
+  ctx.lineTo(128, 512);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Edge wear
+  ctx.fillStyle = "rgba(90, 85, 75, 0.15)";
+  ctx.fillRect(0, 0, 12, 512);
+  ctx.fillRect(244, 0, 12, 512);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+};
+
+const createBarkTexture = () => {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return new THREE.Texture();
+
+  ctx.fillStyle = "#3a2a1e";
+  ctx.fillRect(0, 0, 128, 256);
+
+  // Vertical bark grooves
+  ctx.strokeStyle = "rgba(0,0,0,0.2)";
+  for (let i = 0; i < 20; i++) {
+    ctx.lineWidth = 1 + Math.random() * 2;
+    const x = Math.random() * 128;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.quadraticCurveTo(x + (Math.random() - 0.5) * 15, 128, x + (Math.random() - 0.5) * 10, 256);
+    ctx.stroke();
+  }
+
+  // Horizontal texture bands
+  for (let y = 0; y < 256; y += 8 + Math.random() * 12) {
+    ctx.strokeStyle = `rgba(${50 + Math.random() * 30}, ${35 + Math.random() * 20}, ${20 + Math.random() * 15}, 0.3)`;
+    ctx.lineWidth = 0.5 + Math.random();
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(128, y + (Math.random() - 0.5) * 4);
+    ctx.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+};
+
+const createSunGlowTexture = () => {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return new THREE.Texture();
+
+  const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, "rgba(255, 245, 200, 0.9)");
+  grad.addColorStop(0.15, "rgba(255, 225, 150, 0.5)");
+  grad.addColorStop(0.4, "rgba(255, 200, 100, 0.15)");
+  grad.addColorStop(0.7, "rgba(255, 180, 80, 0.04)");
+  grad.addColorStop(1, "rgba(255, 160, 60, 0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 128, 128);
+
+  return new THREE.CanvasTexture(canvas);
+};
+
+const createMoonGlowTexture = () => {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return new THREE.Texture();
+
+  const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, "rgba(200, 210, 230, 0.6)");
+  grad.addColorStop(0.3, "rgba(180, 200, 220, 0.2)");
+  grad.addColorStop(0.6, "rgba(150, 180, 210, 0.05)");
+  grad.addColorStop(1, "rgba(130, 160, 200, 0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 64, 64);
+
+  return new THREE.CanvasTexture(canvas);
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 interface HeroCanvasProps {
   scrollProgress: number;
@@ -687,14 +864,14 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     let rafId: number;
+    const isMobile = window.innerWidth < 768;
 
     // ─── Renderer Setup ──────────────────────────────────────────────────
-    const dpr = Math.min(window.devicePixelRatio, window.innerWidth < 768 ? 1.25 : 1.75);
+    const dpr = Math.min(window.devicePixelRatio, isMobile ? 1.25 : 1.75);
     const w = window.innerWidth;
     const h = window.innerHeight;
 
@@ -713,15 +890,14 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     // ─── Scene & Camera ──────────────────────────────────────────────────
     const scene = new THREE.Scene();
-    
     const fog = new THREE.FogExp2(0x0a1f24, 0.015);
     scene.fog = fog;
 
-    const camera = new THREE.PerspectiveCamera(48, w / h, 0.1, 100);
-    camera.position.set(2.5, 0.65, 7.5);
+    const camera = new THREE.PerspectiveCamera(48, w / h, 0.1, 120);
+    camera.position.set(7, 1.4, 5);
     scene.add(camera);
 
-    // ─── Lighting Setup ──────────────────────────────────────────────────
+    // ─── Lighting ────────────────────────────────────────────────────────
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
     scene.add(ambientLight);
 
@@ -732,7 +908,12 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     sunLight.castShadow = false;
     scene.add(sunLight);
 
-    // ─── Sky Dome Background ──────────────────────────────────────────────
+    // Fill light from lake direction to illuminate villa front
+    const fillLight = new THREE.DirectionalLight(0x8ac8d0, 0.25);
+    fillLight.position.set(0, 3, -8);
+    scene.add(fillLight);
+
+    // ─── Sky Dome ────────────────────────────────────────────────────────
     const skyGeo = new THREE.SphereGeometry(60, 32, 15);
     const skyMat = new THREE.ShaderMaterial({
       vertexShader: SKY_VERTEX,
@@ -754,22 +935,137 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const skyMesh = new THREE.Mesh(skyGeo, skyMat);
     scene.add(skyMesh);
 
-    // ─── Procedural Textures & Materials ──────────────────────────────────
+    // ─── Sun & Moon Celestial Bodies ─────────────────────────────────────
+    const sunGlowTex = createSunGlowTexture();
+    const moonGlowTex = createMoonGlowTexture();
+
+    // Sun orb
+    const sunOrbGeo = new THREE.SphereGeometry(1.2, 16, 16);
+    const sunOrbMat = new THREE.MeshBasicMaterial({
+      color: 0xfff5d0,
+      fog: false,
+    });
+    const sunOrb = new THREE.Mesh(sunOrbGeo, sunOrbMat);
+
+    const sunGlowSprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: sunGlowTex,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        fog: false,
+      })
+    );
+    sunGlowSprite.scale.set(12, 12, 1);
+    sunOrb.add(sunGlowSprite);
+    scene.add(sunOrb);
+
+    // Moon orb
+    const moonOrbGeo = new THREE.SphereGeometry(0.6, 16, 16);
+    const moonOrbMat = new THREE.MeshBasicMaterial({
+      color: 0xd8d4cc,
+      fog: false,
+    });
+    const moonOrb = new THREE.Mesh(moonOrbGeo, moonOrbMat);
+
+    const moonGlowSprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: moonGlowTex,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        fog: false,
+      })
+    );
+    moonGlowSprite.scale.set(5, 5, 1);
+    moonOrb.add(moonGlowSprite);
+    scene.add(moonOrb);
+
+    // ─── 3D Cloud Clusters ───────────────────────────────────────────────
+    const cloudMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.6,
+      depthWrite: false,
+      fog: false,
+    });
+
+    interface CloudData {
+      group: THREE.Group;
+      baseX: number;
+      baseY: number;
+      baseZ: number;
+      speed: number;
+    }
+
+    const cloudGeometries: THREE.IcosahedronGeometry[] = [];
+    const cloudsData: CloudData[] = [];
+    const cloudCount = isMobile ? 5 : 10;
+
+    const createCloudCluster = (scale: number): THREE.Group => {
+      const cloud = new THREE.Group();
+      const puffCount = 5 + Math.floor(Math.random() * 5);
+      for (let i = 0; i < puffCount; i++) {
+        const r = 0.4 + Math.random() * 0.6;
+        const geo = new THREE.IcosahedronGeometry(r, 1);
+        cloudGeometries.push(geo);
+        const puff = new THREE.Mesh(geo, cloudMat);
+        puff.position.set(
+          (Math.random() - 0.5) * 3.0,
+          (Math.random() - 0.3) * 0.8,
+          (Math.random() - 0.5) * 1.5
+        );
+        puff.scale.set(
+          0.8 + Math.random() * 0.4,
+          0.5 + Math.random() * 0.3,
+          0.7 + Math.random() * 0.3
+        );
+        cloud.add(puff);
+      }
+      cloud.scale.setScalar(scale);
+      return cloud;
+    };
+
+    for (let i = 0; i < cloudCount; i++) {
+      const cx = -20 + Math.random() * 40;
+      const cy = 12 + Math.random() * 18;
+      const cz = -25 + Math.random() * 15;
+      const cScale = 1.5 + Math.random() * 2.5;
+
+      const cloudGroup = createCloudCluster(cScale);
+      cloudGroup.position.set(cx, cy, cz);
+      cloudGroup.rotation.y = Math.random() * Math.PI;
+      scene.add(cloudGroup);
+
+      cloudsData.push({
+        group: cloudGroup,
+        baseX: cx,
+        baseY: cy,
+        baseZ: cz,
+        speed: 0.002 + Math.random() * 0.004,
+      });
+    }
+
+    // ─── Procedural Textures ─────────────────────────────────────────────
     const woodTexture = createWoodTexture();
+    const concreteTexture = createConcreteTexture();
+    const leafTexture = createPalmLeafTexture();
+    const roadTexture = createRoadTexture();
+    const barkTexture = createBarkTexture();
+
+    // ─── Materials ───────────────────────────────────────────────────────
     const woodPlankMat = new THREE.MeshStandardMaterial({
       map: woodTexture,
       roughness: 0.8,
       metalness: 0.1,
     });
 
-    const concreteTexture = createConcreteTexture();
     const concreteMat = new THREE.MeshStandardMaterial({
       map: concreteTexture,
       roughness: 0.72,
       metalness: 0.12,
     });
 
-    const leafTexture = createPalmLeafTexture();
     const leafMaterial = new THREE.MeshStandardMaterial({
       map: leafTexture,
       color: 0x5aaa78,
@@ -782,26 +1078,9 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const leafGeo = new THREE.PlaneGeometry(0.7, 1.8);
     leafGeo.translate(0, 0.9, 0);
 
-
-    const slimPillarMat = new THREE.MeshStandardMaterial({
-      color: 0x030709,
-      roughness: 0.2,
-      metalness: 0.92,
-    });
-
-    const luxuryGlassMat = new THREE.MeshPhysicalMaterial({
-      color: 0x7ba38c,
-      transparent: true,
-      opacity: 0.18,
-      roughness: 0.05,
-      metalness: 0.95,
-      transmission: 0.75,
-      thickness: 0.25,
-    });
-
     // ─── Water Geometry & Material ───────────────────────────────────────
-    const SEG = window.innerWidth < 768 ? 96 : 160;
-    const waterGeo = new THREE.PlaneGeometry(18, 22, SEG, SEG);
+    const SEG = isMobile ? 120 : 200;
+    const waterGeo = new THREE.PlaneGeometry(20, 24, SEG, SEG);
 
     const waterUniforms = {
       uTime: { value: 0 },
@@ -821,6 +1100,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       uLanternPlanePos: { value: new THREE.Vector2(0, 0) },
       uLanternColor: { value: new THREE.Color(0xffb04d) },
       uLanternIntensity: { value: 0.0 },
+      uShoreProximity: { value: 0.0 },
     };
 
     const waterMat = new THREE.ShaderMaterial({
@@ -833,43 +1113,252 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     const waterMesh = new THREE.Mesh(waterGeo, waterMat);
     waterMesh.rotation.x = -Math.PI / 2;
-    waterMesh.position.set(0.5, -1.2, -2.5);
+    // Lake is in FRONT of road (negative Z), centered slightly left
+    waterMesh.position.set(-0.5, WATER_Y, -8);
     scene.add(waterMesh);
 
-    const fieldMat = new THREE.MeshStandardMaterial({
-      color: 0x6a9e5a,
-      roughness: 0.92,
+    // ─── Terrain: Ground beneath villa ───────────────────────────────────
+    const villaGroundGeo = new THREE.PlaneGeometry(12, 10);
+    const villaGroundMat = new THREE.MeshStandardMaterial({
+      color: 0x5a8a4a,
+      roughness: 0.94,
     });
-    const fieldGeo = new THREE.PlaneGeometry(12, 22);
-    const fieldMesh = new THREE.Mesh(fieldGeo, fieldMat);
-    fieldMesh.rotation.x = -Math.PI / 2;
-    fieldMesh.position.set(-7.5, -1.19, -2.5);
-    scene.add(fieldMesh);
+    const villaGroundMesh = new THREE.Mesh(villaGroundGeo, villaGroundMat);
+    villaGroundMesh.rotation.x = -Math.PI / 2;
+    villaGroundMesh.position.set(5, GROUND_Y, 4);
+    scene.add(villaGroundMesh);
 
-    const roadMat = new THREE.MeshStandardMaterial({ color: 0x6a6560, roughness: 0.96 });
-    const roadGeo = new THREE.PlaneGeometry(2.2, 20);
+    // ─── Road — elevated, runs along X axis in front of villa ────────────
+    const roadMat = new THREE.MeshStandardMaterial({
+      map: roadTexture,
+      color: 0x5a5550,
+      roughness: 0.96,
+    });
+    const roadGeo = new THREE.PlaneGeometry(24, 2.8);
     const roadMesh = new THREE.Mesh(roadGeo, roadMat);
     roadMesh.rotation.x = -Math.PI / 2;
-    roadMesh.position.set(5.2, -1.185, -2.5);
+    // Road at z ≈ 0, elevated above water
+    roadMesh.position.set(0, ROAD_Y, 0.2);
     scene.add(roadMesh);
 
-    // Wireframe overlay
-    const wireMat = new THREE.MeshBasicMaterial({
-      color: 0xc9a55a,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.0,
-      depthWrite: false,
-    });
-    const wireMesh = new THREE.Mesh(waterGeo, wireMat);
-    wireMesh.rotation.x = -Math.PI / 2;
-    wireMesh.position.copy(waterMesh.position);
-    wireMesh.position.y = -1.198;
-    scene.add(wireMesh);
+    // Road edge curbs
+    const curbGeo = new THREE.BoxGeometry(24, 0.06, 0.12);
+    const curbMat = new THREE.MeshStandardMaterial({ color: 0x8a8880, roughness: 0.8 });
+    const curbNear = new THREE.Mesh(curbGeo, curbMat);
+    curbNear.position.set(0, ROAD_Y + 0.02, 1.55);
+    scene.add(curbNear);
+    const curbFar = new THREE.Mesh(curbGeo, curbMat);
+    curbFar.position.set(0, ROAD_Y + 0.02, -1.15);
+    scene.add(curbFar);
 
-    // ─── Two-storey Lake View Villa (guest floor faces the lake) ───────────
+    // ─── Grass Strip between road and lake ────────────────────────────────
+    // This is the grassy embankment with terrain height difference
+    const grassStripSeg = 40;
+    const grassStripGeo = new THREE.PlaneGeometry(22, 3.5, grassStripSeg, grassStripSeg);
+    grassStripGeo.rotateX(-Math.PI / 2);
+
+    // Displace vertices to create slope from road level to water level
+    const gsPositions = grassStripGeo.attributes.position;
+    for (let i = 0; i < gsPositions.count; i++) {
+      const z = gsPositions.getZ(i);
+      const x = gsPositions.getX(i);
+      // z goes from -1.75 to 1.75 (half-width of 3.5)
+      // 1.75 = near road (top), -1.75 = near water (bottom)
+      const t = (z + 1.75) / 3.5; // 0=water side, 1=road side
+      const slopeY = THREE.MathUtils.lerp(WATER_Y + 0.08, ROAD_Y - 0.02, t * t);
+      // Add subtle terrain undulation
+      const noise = Math.sin(x * 1.8 + z * 2.3) * 0.02 + Math.cos(x * 3.1) * 0.01;
+      gsPositions.setY(i, slopeY + noise);
+    }
+    grassStripGeo.computeVertexNormals();
+
+    const grassStripMat = new THREE.MeshStandardMaterial({
+      color: 0x5e9a4e,
+      roughness: 0.92,
+    });
+    const grassStripMesh = new THREE.Mesh(grassStripGeo, grassStripMat);
+    // Position between road (z≈-1.2) and lake (z≈-3)
+    grassStripMesh.position.set(0, 0, -3.0);
+    scene.add(grassStripMesh);
+
+    // ─── Lake Field — angled at ~120° CCW from road ──────────────────────
+    // Grassy terrain connecting road's left side to lake's left shore
+    const lakeFieldGeo = new THREE.PlaneGeometry(5, 7, 10, 14);
+    lakeFieldGeo.rotateX(-Math.PI / 2);
+
+    const lfPositions = lakeFieldGeo.attributes.position;
+    for (let i = 0; i < lfPositions.count; i++) {
+      const localZ = lfPositions.getZ(i); // -3.5 to 3.5
+      const t = (localZ + 3.5) / 7.0; // 0=lake side, 1=road side
+      // Same height as road near road, slopes to near-water near lake
+      const slopeY = THREE.MathUtils.lerp(WATER_Y + 0.12, ROAD_Y - 0.01, t * t);
+      const nx = lfPositions.getX(i);
+      const noise = Math.sin(nx * 2.0 + localZ * 1.5) * 0.015;
+      lfPositions.setY(i, slopeY + noise);
+    }
+    lakeFieldGeo.computeVertexNormals();
+
+    const lakeFieldMat = new THREE.MeshStandardMaterial({
+      color: 0x6aaa5a,
+      roughness: 0.9,
+    });
+    const lakeFieldMesh = new THREE.Mesh(lakeFieldGeo, lakeFieldMat);
+    // 120° CCW from road direction: rotate around Y
+    // Road goes along +X. 120° CCW in top-down view:
+    // cos(120°) = -0.5, sin(120°) = 0.866
+    // The field extends toward upper-left from the road
+    lakeFieldMesh.rotation.y = -(60 * Math.PI) / 180; // 60° from -Z toward -X
+    lakeFieldMesh.position.set(-6.5, 0, -3);
+    scene.add(lakeFieldMesh);
+
+    // ─── Far Shore & Shoreline ───────────────────────────────────────────
+    const landscapeGroup = new THREE.Group();
+    scene.add(landscapeGroup);
+
+    const shorelineGeo = new THREE.BoxGeometry(30, 0.35, 2.5);
+    const shorelineSandMat = new THREE.MeshStandardMaterial({
+      color: 0x9aae88,
+      roughness: 0.88,
+    });
+    const shorelineMesh = new THREE.Mesh(shorelineGeo, shorelineSandMat);
+    shorelineMesh.position.set(-1, WATER_Y - 0.05, -18);
+    landscapeGroup.add(shorelineMesh);
+
+    // Mountains
+    const mtnMat = new THREE.MeshStandardMaterial({ color: 0x4a6a62, roughness: 0.95 });
+    const mountainGeo1 = new THREE.ConeGeometry(6.5, 5.5, 10);
+    const mountain1 = new THREE.Mesh(mountainGeo1, mtnMat);
+    mountain1.position.set(-7, 0.5, -22);
+    landscapeGroup.add(mountain1);
+
+    const mtnMat2 = new THREE.MeshStandardMaterial({ color: 0x3d5e55, roughness: 0.92 });
+    const mountainGeo2 = new THREE.ConeGeometry(5.0, 4.2, 10);
+    const mountain2 = new THREE.Mesh(mountainGeo2, mtnMat2);
+    mountain2.position.set(5, 0.1, -23);
+    landscapeGroup.add(mountain2);
+
+    const mountainGeo3 = new THREE.ConeGeometry(4.0, 3.5, 8);
+    const mountain3 = new THREE.Mesh(mountainGeo3, mtnMat);
+    mountain3.position.set(0, -0.2, -24);
+    landscapeGroup.add(mountain3);
+
+    // ─── Forest Trees along far shore (enhanced multi-layer crowns) ──────
+    const forestTrunkMat = new THREE.MeshStandardMaterial({
+      map: barkTexture,
+      color: 0x3d4a32,
+      roughness: 0.9,
+    });
+    const forestCrownMats = [
+      new THREE.MeshStandardMaterial({ color: 0x2d6a48, roughness: 0.85 }),
+      new THREE.MeshStandardMaterial({ color: 0x357a52, roughness: 0.82 }),
+      new THREE.MeshStandardMaterial({ color: 0x2a5e3e, roughness: 0.88 }),
+    ];
+    const forestTrunkGeo = new THREE.CylinderGeometry(0.05, 0.12, 1.4, 6);
+    const forestCrownGeo1 = new THREE.ConeGeometry(0.65, 1.0, 7);
+    const forestCrownGeo2 = new THREE.ConeGeometry(0.50, 0.8, 7);
+    const forestCrownGeo3 = new THREE.IcosahedronGeometry(0.55, 1);
+
+    const forestTreeCount = isMobile ? 30 : 55;
+    for (let f = 0; f < forestTreeCount; f++) {
+      const tree = new THREE.Group();
+      const tx = -14 + Math.random() * 28;
+      const tz = -17 - Math.random() * 5;
+      const treeHeight = 0.8 + Math.random() * 1.2;
+      tree.position.set(tx, WATER_Y - 0.3, tz);
+      tree.scale.y = treeHeight;
+
+      const trunk = new THREE.Mesh(forestTrunkGeo, forestTrunkMat);
+      trunk.position.y = 0.7;
+      tree.add(trunk);
+
+      const matIdx = f % 3;
+      // Multi-layer crown
+      if (Math.random() > 0.4) {
+        // Conifer-style: stacked cones
+        const c1 = new THREE.Mesh(forestCrownGeo1, forestCrownMats[matIdx]);
+        c1.position.y = 1.3;
+        tree.add(c1);
+        const c2 = new THREE.Mesh(forestCrownGeo2, forestCrownMats[(matIdx + 1) % 3]);
+        c2.position.y = 1.85;
+        tree.add(c2);
+      } else {
+        // Broadleaf-style: icosahedron
+        const c = new THREE.Mesh(forestCrownGeo3, forestCrownMats[matIdx]);
+        c.position.y = 1.5;
+        c.scale.set(1.1, 0.8, 1.1);
+        tree.add(c);
+      }
+
+      // Slight random lean for natural look
+      tree.rotation.z = (Math.random() - 0.5) * 0.08;
+      landscapeGroup.add(tree);
+    }
+
+    // Ground bushes along embankment
+    const bushGeo = new THREE.IcosahedronGeometry(0.25, 1);
+    const bushMat = new THREE.MeshStandardMaterial({ color: 0x4a8a52, roughness: 0.9 });
+    for (let b = 0; b < 18; b++) {
+      const bush = new THREE.Mesh(bushGeo, bushMat);
+      const bx = -8 + Math.random() * 16;
+      const bz = -2.5 - Math.random() * 2;
+      const t = Math.max(0, Math.min(1, (-bz - 2.5) / 2.0));
+      const by = THREE.MathUtils.lerp(ROAD_Y, WATER_Y + 0.15, t);
+      bush.position.set(bx, by + 0.1, bz);
+      bush.scale.set(
+        0.7 + Math.random() * 0.6,
+        0.5 + Math.random() * 0.4,
+        0.7 + Math.random() * 0.6
+      );
+      scene.add(bush);
+    }
+
+    // Reeds along waterline
+    const reedMat = new THREE.MeshStandardMaterial({
+      color: 0x5cb87a,
+      side: THREE.DoubleSide,
+      roughness: 0.9,
+    });
+    const reedGeo = new THREE.PlaneGeometry(0.05, 0.75);
+    const reedsData: Array<{ mesh: THREE.Mesh; baseRotZ: number; phase: number }> = [];
+    for (let r = 0; r < 30; r++) {
+      const reed = new THREE.Mesh(reedGeo, reedMat);
+      const rx = -6 + r * 0.6 + (Math.random() - 0.5) * 0.3;
+      const baseRotZ = (Math.random() - 0.5) * 0.12;
+      reed.position.set(rx, WATER_Y + 0.2 + Math.random() * 0.1, -4.8 - Math.random() * 1.5);
+      reed.rotation.y = (Math.random() - 0.5) * 0.4;
+      reed.rotation.z = baseRotZ;
+      scene.add(reed);
+      reedsData.push({ mesh: reed, baseRotZ, phase: Math.random() * Math.PI * 2 });
+    }
+
+    // Rocks along the shore
+    const rockGeo = new THREE.DodecahedronGeometry(1, 0);
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x5a7a72, roughness: 0.82 });
+    const rocks: THREE.Mesh[] = [];
+
+    const rockPositions = [
+      [-4.5, WATER_Y + 0.05, -5.0, 0.5, 0.6, 0.5],
+      [2.5, WATER_Y + 0.03, -5.5, 0.4, 0.5, 0.4],
+      [6.0, WATER_Y + 0.04, -4.8, 0.35, 0.45, 0.35],
+      [-1.0, WATER_Y + 0.02, -5.8, 0.6, 0.4, 0.55],
+      [-7.5, WATER_Y + 0.06, -4.5, 0.45, 0.5, 0.4],
+    ];
+
+    rockPositions.forEach(([rx, ry, rz, sx, sy, sz]) => {
+      const rock = new THREE.Mesh(rockGeo, rockMat);
+      rock.position.set(rx, ry, rz);
+      rock.scale.set(sx, sy, sz);
+      rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+      scene.add(rock);
+      rocks.push(rock);
+    });
+
+    // ─── Villa (enhanced architecture) ───────────────────────────────────
     const villaGroup = new THREE.Group();
-    villaGroup.position.set(7.8, 0, 0.5);
+    // Villa on positive X, positive Z — behind road, right side
+    villaGroup.position.set(6, GROUND_Y + 0.88, 3.5);
+    // Rotate villa to face the road/lake (face toward -Z)
+    villaGroup.rotation.y = -0.15;
     scene.add(villaGroup);
 
     const wallMat = new THREE.MeshStandardMaterial({
@@ -885,44 +1374,116 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       metalness: 0.1,
       transmission: 0.65,
     });
+    const windowFrameMat = new THREE.MeshStandardMaterial({
+      color: 0x2a3a3e,
+      roughness: 0.3,
+      metalness: 0.7,
+    });
 
-    const groundFloorGeo = new THREE.BoxGeometry(3.4, 1.5, 4.6);
+    // Ground floor
+    const groundFloorGeo = new THREE.BoxGeometry(3.6, 1.5, 5.0);
     const groundFloor = new THREE.Mesh(groundFloorGeo, wallMat);
     groundFloor.position.set(0, -0.45, 0);
     villaGroup.add(groundFloor);
 
-    const guestFloorGeo = new THREE.BoxGeometry(3.6, 1.6, 4.8);
+    // Upper floor (slightly larger cantilever)
+    const guestFloorGeo = new THREE.BoxGeometry(3.8, 1.6, 5.2);
     const guestFloor = new THREE.Mesh(guestFloorGeo, wallMat);
     guestFloor.position.set(0, 0.85, 0);
     villaGroup.add(guestFloor);
 
-    const villaRoofGeo = new THREE.BoxGeometry(3.9, 0.18, 5.1);
+    // Roof with slight overhang
+    const villaRoofGeo = new THREE.BoxGeometry(4.2, 0.18, 5.6);
     const villaRoof = new THREE.Mesh(villaRoofGeo, roofMat);
     villaRoof.position.set(0, 1.72, 0);
     villaGroup.add(villaRoof);
 
-    const balconyGeo = new THREE.BoxGeometry(3.7, 0.08, 0.9);
+    // Balcony facing the lake
+    const balconyGeo = new THREE.BoxGeometry(3.9, 0.08, 1.1);
     const balcony = new THREE.Mesh(balconyGeo, concreteMat);
-    balcony.position.set(0, 0.15, -2.65);
+    balcony.position.set(0, 0.15, -2.8);
     villaGroup.add(balcony);
 
-    const windowGeo = new THREE.PlaneGeometry(0.75, 0.6);
-    for (let w = 0; w < 3; w++) {
-      const win = new THREE.Mesh(windowGeo, windowMat);
-      win.position.set(-0.85 + w * 0.85, 0.95, -2.42);
-      villaGroup.add(win);
+    // Balcony railing
+    const railGeo = new THREE.BoxGeometry(3.9, 0.4, 0.03);
+    const railMat = new THREE.MeshStandardMaterial({ color: 0x3a4a4e, roughness: 0.3, metalness: 0.8 });
+    const railing = new THREE.Mesh(railGeo, railMat);
+    railing.position.set(0, 0.38, -3.32);
+    villaGroup.add(railing);
+
+    // Railing posts
+    const postGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.45, 6);
+    for (let p = 0; p < 8; p++) {
+      const post = new THREE.Mesh(postGeo, railMat);
+      post.position.set(-1.7 + p * 0.49, 0.36, -3.32);
+      villaGroup.add(post);
     }
 
+    // Windows — upper floor (3 windows facing lake)
+    const windowGeo = new THREE.PlaneGeometry(0.75, 0.6);
+    const winFrameGeo = new THREE.BoxGeometry(0.82, 0.67, 0.04);
+    for (let wn = 0; wn < 3; wn++) {
+      const win = new THREE.Mesh(windowGeo, windowMat);
+      win.position.set(-0.85 + wn * 0.85, 0.95, -2.62);
+      villaGroup.add(win);
+
+      const frame = new THREE.Mesh(winFrameGeo, windowFrameMat);
+      frame.position.set(-0.85 + wn * 0.85, 0.95, -2.61);
+      villaGroup.add(frame);
+    }
+
+    // Ground floor windows
+    for (let wn = 0; wn < 2; wn++) {
+      const win = new THREE.Mesh(windowGeo, windowMat);
+      win.position.set(-0.5 + wn * 1.0, -0.35, -2.52);
+      villaGroup.add(win);
+
+      const frame = new THREE.Mesh(winFrameGeo, windowFrameMat);
+      frame.position.set(-0.5 + wn * 1.0, -0.35, -2.51);
+      villaGroup.add(frame);
+    }
+
+    // Front door
+    const doorGeo = new THREE.PlaneGeometry(0.5, 1.0);
+    const doorMat = new THREE.MeshStandardMaterial({ color: 0x3d2e22, roughness: 0.7 });
+    const door = new THREE.Mesh(doorGeo, doorMat);
+    door.position.set(0.6, -0.7, -2.52);
+    villaGroup.add(door);
+
+    // Porch pillars
+    const pillarGeo = new THREE.CylinderGeometry(0.04, 0.06, 1.6, 8);
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0xd8d0c4, roughness: 0.6 });
+    const pillarPositions = [-1.6, -0.5, 0.5, 1.6];
+    pillarPositions.forEach((px) => {
+      const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+      pillar.position.set(px, -0.4, -2.95);
+      villaGroup.add(pillar);
+    });
+
+    // Porch roof (small overhang above ground floor entrance)
+    const porchRoofGeo = new THREE.BoxGeometry(3.8, 0.06, 0.8);
+    const porchRoof = new THREE.Mesh(porchRoofGeo, roofMat);
+    porchRoof.position.set(0, 0.42, -2.95);
+    villaGroup.add(porchRoof);
+
+    // Chimney
+    const chimneyGeo = new THREE.BoxGeometry(0.35, 0.8, 0.35);
+    const chimney = new THREE.Mesh(chimneyGeo, new THREE.MeshStandardMaterial({ color: 0x6a5a50, roughness: 0.85 }));
+    chimney.position.set(1.3, 2.1, 1.2);
+    villaGroup.add(chimney);
+
+    // Warm lantern light
     const bulbGeo = new THREE.SphereGeometry(0.04, 8, 8);
     const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffd090 });
     const bulbSphere = new THREE.Mesh(bulbGeo, bulbMat);
-    bulbSphere.position.set(0, 0.95, -2.3);
+    bulbSphere.position.set(0, 0.95, -2.5);
     villaGroup.add(bulbSphere);
 
     const warmLight = new THREE.PointLight(0xffa04d, 0, 14);
-    warmLight.position.set(0, 0.9, -2.2);
+    warmLight.position.set(0, 0.9, -2.4);
     villaGroup.add(warmLight);
 
+    // Volumetric light cone
     const coneGeo = new THREE.CylinderGeometry(0.03, 0.8, 1.6, 12, 1, true);
     coneGeo.translate(0, -0.8, 0);
     const coneUniforms = {
@@ -964,9 +1525,17 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       side: THREE.DoubleSide,
     });
     const lightCone = new THREE.Mesh(coneGeo, coneMat);
-    lightCone.position.set(0, 0.95, -2.2);
+    lightCone.position.set(0, 0.95, -2.4);
     lightCone.rotation.x = Math.PI;
     villaGroup.add(lightCone);
+
+    // Garden path from villa to road
+    const pathGeo = new THREE.PlaneGeometry(0.8, 3.5);
+    const pathMat = new THREE.MeshStandardMaterial({ color: 0x8a8478, roughness: 0.88 });
+    const gardenPath = new THREE.Mesh(pathGeo, pathMat);
+    gardenPath.rotation.x = -Math.PI / 2;
+    gardenPath.position.set(6.2, GROUND_Y + 0.01, 1.5);
+    scene.add(gardenPath);
 
     // Foreground lens silhouette leaf
     const foregroundLeafGeo = new THREE.PlaneGeometry(2.2, 4.4);
@@ -980,115 +1549,26 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     fgLeafMesh.rotation.set(0.5, 0.6, -0.3);
     fgLeafMesh.scale.setScalar(0.7);
 
-    // ─── Shoreline & Landscape Elements ───────────────────────────────────
-    const landscapeGroup = new THREE.Group();
-    scene.add(landscapeGroup);
-
-    const shorelineGeo = new THREE.BoxGeometry(28, 0.35, 2.5);
-    const shorelineSandMat = new THREE.MeshStandardMaterial({
-      color: 0x9aae88,
-      roughness: 0.88,
-    });
-    const shorelineMesh = new THREE.Mesh(shorelineGeo, shorelineSandMat);
-    shorelineMesh.position.set(-1, -1.2, -12);
-    landscapeGroup.add(shorelineMesh);
-
-    const mtnMat = new THREE.MeshStandardMaterial({ color: 0x4a6a62, roughness: 0.95 });
-    const mountainGeo1 = new THREE.ConeGeometry(5.5, 4.2, 8);
-    const mountain1 = new THREE.Mesh(mountainGeo1, mtnMat);
-    mountain1.position.set(-5, 0.6, -14.5);
-    landscapeGroup.add(mountain1);
-
-    const mountainGeo2 = new THREE.ConeGeometry(4.2, 3.4, 8);
-    const mountain2 = new THREE.Mesh(mountainGeo2, mtnMat);
-    mountain2.position.set(4.5, 0.3, -15);
-    landscapeGroup.add(mountain2);
-
-    const forestTrunkMat = new THREE.MeshStandardMaterial({ color: 0x3d4a32, roughness: 0.9 });
-    const forestCrownMat = new THREE.MeshStandardMaterial({ color: 0x2d6a48, roughness: 0.85 });
-    const forestTrunkGeo = new THREE.CylinderGeometry(0.06, 0.1, 1.2, 6);
-    const forestCrownGeo = new THREE.ConeGeometry(0.55, 1.4, 7);
-    for (let f = 0; f < 45; f++) {
-      const tree = new THREE.Group();
-      const tx = -14 + Math.random() * 28;
-      const tz = -15.5 - Math.random() * 4;
-      tree.position.set(tx, -0.5, tz);
-      const trunk = new THREE.Mesh(forestTrunkGeo, forestTrunkMat);
-      trunk.position.y = 0.6;
-      tree.add(trunk);
-      const crown = new THREE.Mesh(forestCrownGeo, forestCrownMat);
-      crown.position.y = 1.5;
-      tree.add(crown);
-      landscapeGroup.add(tree);
-    }
-
-    const reedMat = new THREE.MeshStandardMaterial({
-      color: 0x5cb87a,
-      side: THREE.DoubleSide,
-      roughness: 0.9,
-    });
-    const reedGeo = new THREE.PlaneGeometry(0.05, 0.75);
-    const reedsData: Array<{ mesh: THREE.Mesh; baseRotZ: number; phase: number }> = [];
-    for (let r = 0; r < 24; r++) {
-      const reed = new THREE.Mesh(reedGeo, reedMat);
-      const rx = -4 + r * 0.55 + (Math.random() - 0.5) * 0.3;
-      const baseRotZ = (Math.random() - 0.5) * 0.12;
-      reed.position.set(rx, -0.85 + Math.random() * 0.12, -10.5 - Math.random() * 1.5);
-      reed.rotation.y = (Math.random() - 0.5) * 0.4;
-      reed.rotation.z = baseRotZ;
-      landscapeGroup.add(reed);
-      reedsData.push({ mesh: reed, baseRotZ, phase: Math.random() * Math.PI * 2 });
-    }
-
-    const rockGeo = new THREE.DodecahedronGeometry(1, 0);
-    const rockMat = new THREE.MeshStandardMaterial({
-      color: 0x5a7a72,
-      roughness: 0.82,
-    });
-    const rocks: THREE.Mesh[] = [];
-
-    const rockPositions = [
-      [-3.5, -1.1, -11.0, 0.7, 1.0, 0.8],
-      [2.0, -1.1, -11.5, 0.5, 0.7, 0.6],
-      [5.0, -1.1, -10.5, 0.6, 0.8, 0.7],
-      [-1.0, -1.15, -12.0, 0.9, 0.6, 0.9],
-    ];
-
-    rockPositions.forEach(([rx, ry, rz, sx, sy, sz]) => {
-      const rock = new THREE.Mesh(rockGeo, rockMat);
-      rock.position.set(rx, ry, rz);
-      rock.scale.set(sx, sy, sz);
-      rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-      landscapeGroup.add(rock);
-      rocks.push(rock);
-    });
-
-    // ─── Shoreline Silhouette Palms ──────────────────────────────────────
+    // ─── Shoreline Palm Trees ────────────────────────────────────────────
     const palmsGroup = new THREE.Group();
     scene.add(palmsGroup);
 
     const trunkMaterial = new THREE.MeshStandardMaterial({
-      color: 0x3d5c48,
+      map: barkTexture,
+      color: 0x4a6a52,
       roughness: 0.88,
     });
 
-    const birdSilhouetteMat = new THREE.MeshStandardMaterial({
-      color: 0x051319,
-      roughness: 0.92,
-      transparent: true,
-      opacity: 1,
-    });
-
-    const palmsCount = 6;
+    const palmsCount = 7;
     const palmsData: Array<{ group: THREE.Group; baseRotationZ: number; index: number }> = [];
-
     const trunkGeo = new THREE.CylinderGeometry(0.015, 0.055, 4.0, 8);
 
     for (let i = 0; i < palmsCount; i++) {
       const palmTree = new THREE.Group();
-      const x = -10 + i * 4.0 + (Math.random() - 0.5) * 1.5;
-      const z = -11 - Math.random() * 2.0;
-      palmTree.position.set(x, -1.2, z);
+      const x = -9 + i * 3.5 + (Math.random() - 0.5) * 1.5;
+      const z = -5.5 - Math.random() * 2.5;
+      const palmY = WATER_Y + 0.1;
+      palmTree.position.set(x, palmY, z);
 
       const leanZ = (Math.random() - 0.5) * 0.18 + (x < 0 ? -0.1 : 0.1);
       palmTree.rotation.z = leanZ;
@@ -1099,10 +1579,9 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
       const leavesGroup = new THREE.Group();
       leavesGroup.position.y = 4.0;
-      
-      for (let j = 0; j < 8; j++) {
+      for (let j = 0; j < 10; j++) {
         const leafMesh = new THREE.Mesh(leafGeo, leafMaterial);
-        const angle = (j / 8) * Math.PI * 2;
+        const angle = (j / 10) * Math.PI * 2;
         leafMesh.rotation.y = angle;
         leafMesh.rotation.x = 0.52 + Math.random() * 0.14;
         leafMesh.rotation.z = (Math.random() - 0.5) * 0.1;
@@ -1111,14 +1590,17 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       palmTree.add(leavesGroup);
       palmsGroup.add(palmTree);
 
-      palmsData.push({
-        group: palmTree,
-        baseRotationZ: leanZ,
-        index: i,
-      });
+      palmsData.push({ group: palmTree, baseRotationZ: leanZ, index: i });
     }
 
-    // ─── Phase 5: Silhouette lagoon egrets / herons ────────────────────────
+    // ─── Birds (3D body + wings) ─────────────────────────────────────────
+    const birdSilhouetteMat = new THREE.MeshStandardMaterial({
+      color: 0x051319,
+      roughness: 0.92,
+      transparent: true,
+      opacity: 1,
+    });
+
     const birdsData: Array<{
       group: THREE.Group;
       wingL: THREE.Mesh;
@@ -1127,39 +1609,47 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       phase: number;
       radius: number;
       baseX: number;
+      baseY: number;
     }> = [];
-    const wingGeo = new THREE.PlaneGeometry(0.42, 0.13);
-    wingGeo.translate(-0.21, 0, 0);
-    const heronBodyGeo = new THREE.PlaneGeometry(0.22, 0.06);
-    const heronNeckGeo = new THREE.PlaneGeometry(0.05, 0.28);
-    heronNeckGeo.translate(0, 0.14, 0);
 
-    const createHeronBird = () => {
+    const birdBodyGeo = new THREE.SphereGeometry(0.08, 8, 6);
+    birdBodyGeo.scale(1.5, 0.6, 2.5);
+    const wingGeo = new THREE.PlaneGeometry(0.5, 0.15);
+    wingGeo.translate(-0.25, 0, 0);
+    const headGeo = new THREE.SphereGeometry(0.04, 6, 6);
+    const beakGeo = new THREE.ConeGeometry(0.015, 0.08, 4);
+    beakGeo.rotateX(-Math.PI / 2);
+
+    for (let i = 0; i < 5; i++) {
       const birdGroup = new THREE.Group();
 
-      const body = new THREE.Mesh(heronBodyGeo, birdSilhouetteMat);
+      // Body
+      const body = new THREE.Mesh(birdBodyGeo, birdSilhouetteMat);
       birdGroup.add(body);
 
-      const neck = new THREE.Mesh(heronNeckGeo, birdSilhouetteMat);
-      neck.position.set(0.1, 0.02, 0);
-      neck.rotation.z = -0.35;
-      birdGroup.add(neck);
+      // Head
+      const head = new THREE.Mesh(headGeo, birdSilhouetteMat);
+      head.position.set(0.15, 0.03, 0);
+      birdGroup.add(head);
 
+      // Beak
+      const beak = new THREE.Mesh(beakGeo, birdSilhouetteMat);
+      beak.position.set(0.22, 0.02, 0);
+      birdGroup.add(beak);
+
+      // Wings with shoulder pivot
       const wingL = new THREE.Mesh(wingGeo, birdSilhouetteMat);
-      wingL.position.set(-0.02, 0.04, 0);
+      wingL.position.set(-0.02, 0.05, 0);
       birdGroup.add(wingL);
 
       const wingR = new THREE.Mesh(wingGeo, birdSilhouetteMat);
       wingR.scale.x = -1;
-      wingR.position.set(0.02, 0.04, 0);
+      wingR.position.set(0.02, 0.05, 0);
       birdGroup.add(wingR);
 
-      return { birdGroup, wingL, wingR };
-    };
-
-    for (let i = 0; i < 4; i++) {
-      const { birdGroup, wingL, wingR } = createHeronBird();
-      birdGroup.position.set(-9 + i * 6, 2.2 + Math.random() * 1.3, -9);
+      const birdY = 2.5 + Math.random() * 2.0;
+      birdGroup.position.set(-8 + i * 5, birdY, -8);
+      birdGroup.scale.setScalar(0.8 + Math.random() * 0.5);
       scene.add(birdGroup);
 
       birdsData.push({
@@ -1169,11 +1659,12 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
         speed: 4.5 + Math.random() * 2.5,
         phase: Math.random() * Math.PI,
         radius: 3.5 + Math.random() * 4.0,
-        baseX: -6 + i * 4.5,
+        baseX: -6 + i * 3.5,
+        baseY: birdY,
       });
     }
 
-    // ─── Floating Lily Pads Geometry ─────────────────────────────────────
+    // ─── Floating Lily Pads (repositioned to lake area) ──────────────────
     const padsGroup = new THREE.Group();
     scene.add(padsGroup);
 
@@ -1192,11 +1683,12 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       roughness: 0.65,
     });
     const lotusGeo = new THREE.CylinderGeometry(0.035, 0.045, 0.025, 8);
-    const lotusCenterMat = new THREE.MeshStandardMaterial({ color: 0xffe8a0, emissive: 0x8a6020, emissiveIntensity: 0.3 });
+    const lotusCenterMat = new THREE.MeshStandardMaterial({
+      color: 0xffe8a0,
+      emissive: 0x8a6020,
+      emissiveIntensity: 0.3,
+    });
     const lotusCenterGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.03, 6);
-
-    const padData: Array<{ mesh: THREE.Mesh; lotus?: THREE.Group; x: number; z: number; phase: number; scale: number }> = [];
-
     const lotusLeafGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.012, 14);
     const lotusLeafMat = new THREE.MeshStandardMaterial({
       color: 0x4a9a68,
@@ -1204,9 +1696,19 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       side: THREE.DoubleSide,
     });
 
+    const padData: Array<{
+      mesh: THREE.Mesh;
+      lotus?: THREE.Group;
+      x: number;
+      z: number;
+      phase: number;
+      scale: number;
+    }> = [];
+
     for (let i = 0; i < 28; i++) {
-      const x = -2 + Math.random() * 7;
-      const z = -6 + Math.random() * 5;
+      // Position within the lake area (negative Z from road)
+      const x = -4 + Math.random() * 8;
+      const z = -6 - Math.random() * 6;
       const scale = 0.55 + Math.random() * 0.75;
 
       const mesh = new THREE.Mesh(
@@ -1230,24 +1732,17 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
         padsGroup.add(lotusGroup);
       }
 
-      padData.push({
-        mesh,
-        lotus: lotusGroup,
-        x,
-        z,
-        phase: Math.random() * Math.PI * 2,
-        scale,
-      });
+      padData.push({ mesh, lotus: lotusGroup, x, z, phase: Math.random() * Math.PI * 2, scale });
     }
 
     const getWaveHeightAt = (x: number, z: number, time: number, speed: number, amp: number) => {
       const w1 = Math.sin(x * 0.35 + time * speed * 0.8) * amp * 0.7;
       const w2 = Math.sin(-x * 0.65 + time * speed * 1.3) * amp * 0.35;
-      const w3 = Math.cos(x * 1.20 + time * speed * 2.1) * amp * 0.18;
+      const w3 = Math.cos(x * 1.2 + time * speed * 2.1) * amp * 0.18;
       return w1 + w2 + w3;
     };
 
-    // ─── Lake fish (visible just below surface) ───────────────────────────
+    // ─── Lake fish ───────────────────────────────────────────────────────
     const fishGeo = new THREE.SphereGeometry(0.05, 6, 4);
     fishGeo.scale(1.2, 0.45, 2.2);
     const fishMat = new THREE.MeshStandardMaterial({
@@ -1267,11 +1762,11 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       radius: number;
     }> = [];
 
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 14; i++) {
       const fish = new THREE.Mesh(fishGeo, fishMat);
-      const fx = -1 + Math.random() * 6;
-      const fz = -5 + Math.random() * 4;
-      fish.position.set(fx, -1.28, fz);
+      const fx = -3 + Math.random() * 7;
+      const fz = -7 - Math.random() * 5;
+      fish.position.set(fx, WATER_Y - 0.06, fz);
       scene.add(fish);
       fishData.push({
         mesh: fish,
@@ -1283,12 +1778,44 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       });
     }
 
-    // ─── Mist/Fog Particles System (Horizon layer) ───────────────────────
+    // ─── Grass Blade Instances ───────────────────────────────────────────
+    const grassBladeGeo = new THREE.PlaneGeometry(0.03, 0.2);
+    grassBladeGeo.translate(0, 0.1, 0);
+    const grassBladeMat = new THREE.MeshStandardMaterial({
+      color: 0x5a9a4e,
+      side: THREE.DoubleSide,
+      roughness: 0.92,
+    });
+    const grassCount = isMobile ? 250 : 700;
+    const grassInstanced = new THREE.InstancedMesh(grassBladeGeo, grassBladeMat, grassCount);
+    const grassDummy = new THREE.Object3D();
+
+    for (let i = 0; i < grassCount; i++) {
+      const gx = -10 + Math.random() * 22;
+      const gz = -1.5 - Math.random() * 3.5;
+      // Height follows the embankment slope
+      const slopeT = Math.max(0, Math.min(1, (-gz - 1.5) / 3.5));
+      const gy = THREE.MathUtils.lerp(ROAD_Y - 0.02, WATER_Y + 0.12, slopeT * slopeT);
+
+      grassDummy.position.set(gx, gy, gz);
+      grassDummy.rotation.set(0, Math.random() * Math.PI, (Math.random() - 0.5) * 0.35);
+      grassDummy.scale.set(
+        0.7 + Math.random() * 0.5,
+        0.5 + Math.random() * 1.0,
+        1
+      );
+      grassDummy.updateMatrix();
+      grassInstanced.setMatrixAt(i, grassDummy.matrix);
+    }
+    grassInstanced.instanceMatrix.needsUpdate = true;
+    scene.add(grassInstanced);
+
+    // ─── Mist Particles ──────────────────────────────────────────────────
     const mistTexture = (() => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 32;
-      canvas.height = 32;
-      const ctx = canvas.getContext("2d");
+      const c = document.createElement("canvas");
+      c.width = 32;
+      c.height = 32;
+      const ctx = c.getContext("2d");
       if (ctx) {
         const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
         grad.addColorStop(0, "rgba(255, 255, 255, 0.3)");
@@ -1297,18 +1824,24 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 32, 32);
       }
-      return new THREE.CanvasTexture(canvas);
+      return new THREE.CanvasTexture(c);
     })();
 
-    const particleCount = window.innerWidth < 768 ? 40 : 100;
+    const particleCount = isMobile ? 40 : 100;
     const particleGeo = new THREE.BufferGeometry();
     const particlePositions = new Float32Array(particleCount * 3);
-    const particleData: Array<{ index: number; speedX: number; speedZ: number; limitX: number; originX: number }> = [];
+    const particleData: Array<{
+      index: number;
+      speedX: number;
+      speedZ: number;
+      limitX: number;
+      originX: number;
+    }> = [];
 
     for (let i = 0; i < particleCount; i++) {
       const x = (Math.random() - 0.5) * 20;
-      const y = -0.8 + Math.random() * 0.6;
-      const z = -6.0 - Math.random() * 8.0;
+      const y = WATER_Y + 0.2 + Math.random() * 0.6;
+      const z = -5.0 - Math.random() * 10.0;
 
       particlePositions[i * 3] = x;
       particlePositions[i * 3 + 1] = y;
@@ -1337,17 +1870,16 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const mistPoints = new THREE.Points(particleGeo, particleMat);
     scene.add(mistPoints);
 
-    // ─── Phase 2: Floating Fireflies/Bioluminescence ─────────────────────
-    const isMobile = window.innerWidth < 768;
+    // ─── Fireflies / Bioluminescence ─────────────────────────────────────
     const fireflyCount = isMobile ? 15 : 30;
     const fireflyGeo = new THREE.BufferGeometry();
     const fireflyPositions = new Float32Array(fireflyCount * 3);
     const fireflyData: Array<{ y: number; phase: number; speed: number }> = [];
 
     for (let i = 0; i < fireflyCount; i++) {
-      const fx = (Math.random() - 0.5) * 8.0;
-      const fy = -1.05 + Math.random() * 0.35;
-      const fz = -2.0 + Math.random() * 5.5;
+      const fx = (Math.random() - 0.5) * 12.0;
+      const fy = WATER_Y + 0.15 + Math.random() * 0.5;
+      const fz = -3.0 - Math.random() * 8.0;
 
       fireflyPositions[i * 3] = fx;
       fireflyPositions[i * 3 + 1] = fy;
@@ -1362,10 +1894,10 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     fireflyGeo.setAttribute("position", new THREE.BufferAttribute(fireflyPositions, 3));
 
     const fireflyTexture = (() => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 16;
-      canvas.height = 16;
-      const ctx = canvas.getContext("2d");
+      const c = document.createElement("canvas");
+      c.width = 16;
+      c.height = 16;
+      const ctx = c.getContext("2d");
       if (ctx) {
         const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
         grad.addColorStop(0, "rgba(255, 185, 91, 0.95)");
@@ -1374,7 +1906,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 16, 16);
       }
-      return new THREE.CanvasTexture(canvas);
+      return new THREE.CanvasTexture(c);
     })();
 
     const fireflyMat = new THREE.PointsMaterial({
@@ -1388,7 +1920,25 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const fireflies = new THREE.Points(fireflyGeo, fireflyMat);
     scene.add(fireflies);
 
-    // ─── Environment Interpolation Handler ──────────────────────────────
+    // ─── Camera Path (Cinematic Scroll-Driven) ───────────────────────────
+    // Option A: Villa porch → sweep forward over road → rise above lake
+    const cameraPath = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(7.0, 1.4, 5.0),    // Inside villa, eye level
+      new THREE.Vector3(5.5, 1.8, 2.5),    // Villa porch, slightly rising
+      new THREE.Vector3(3.5, 2.8, -0.5),   // Over road, rising
+      new THREE.Vector3(1.5, 4.2, -3.5),   // Over grass, ascending
+      new THREE.Vector3(-0.5, 6.0, -6.5),  // Above lake, panoramic
+    ]);
+
+    const lookAtPath = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(3.0, 0.0, -3.0),   // Looking toward road/lake
+      new THREE.Vector3(1.5, -0.2, -6.0),  // Toward lake
+      new THREE.Vector3(0.0, -0.5, -9.0),  // Lake center
+      new THREE.Vector3(-0.5, -0.8, -12.0), // Far shore
+      new THREE.Vector3(-1.0, -1.0, -16.0), // Mountains
+    ]);
+
+    // ─── Environment State ───────────────────────────────────────────────
     const currentEnv: EnvConfig = {
       skyTop: new THREE.Color(),
       skyBottom: new THREE.Color(),
@@ -1406,7 +1956,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       lanternIntensity: 0.0,
     };
 
-    // Parallax
+    // ─── Mouse Parallax ──────────────────────────────────────────────────
     const mouse = { x: 0, y: 0 };
     const onMouseMove = (e: MouseEvent) => {
       mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -1428,18 +1978,22 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const tempViewPos = new THREE.Vector3();
     const tempWorldPos = new THREE.Vector3();
     const boostedWater = new THREE.Color();
+    const camPos = new THREE.Vector3();
+    const camLookAt = new THREE.Vector3();
+    const smoothedCamPos = new THREE.Vector3(7, 1.4, 5);
+    const smoothedLookAt = new THREE.Vector3(3, 0, -3);
 
     const animate = () => {
       if (!prefersReduced) rafId = requestAnimationFrame(animate);
-      
+
       const elapsed = clock.getElapsedTime();
       const scroll = scrollRef.current;
       const timeVal = timeRef.current;
 
-      // 1. Interpolate environment values
+      // 1. Interpolate environment
       interpolateEnv(timeVal, currentEnv);
 
-      // 2. Apply dynamic environment variables
+      // 2. Apply lighting
       ambientLight.color.copy(currentEnv.ambient);
       ambientLight.intensity = currentEnv.ambientIntensity * 1.2;
 
@@ -1448,12 +2002,15 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       sunLight.position.copy(currentEnv.sunPos);
 
       fog.color.copy(currentEnv.fogColor);
-      fog.density = currentEnv.fogDensity * 0.28 * (1.0 - scroll * 0.4);
+      fog.density = currentEnv.fogDensity * 0.25 * (1.0 - scroll * 0.4);
       hemiLight.intensity = 0.45 + currentEnv.ambientIntensity * 0.35;
       hemiLight.color.set(0x9ee8ec);
       hemiLight.groundColor.copy(currentEnv.water).multiplyScalar(0.85);
 
-      // 3. Update Sky dome variables
+      // Adjust fill light based on time
+      fillLight.intensity = currentEnv.ambientIntensity * 0.15;
+
+      // 3. Update sky dome
       skyMat.uniforms.uColorTop.value.copy(currentEnv.skyTop);
       skyMat.uniforms.uColorBottom.value.copy(currentEnv.skyBottom);
       skyMat.uniforms.uSunDirection.value.copy(currentEnv.sunPos).normalize();
@@ -1463,11 +2020,59 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       skyMat.uniforms.uIsNight.value = computeIsNight(timeVal);
       skyMat.uniforms.uSunSize.value = computeIsNight(timeVal) > 0.5 ? 0.028 : 0.035;
       skyMat.uniforms.uWindX.value = computeWindX(timeVal);
-
-      // Pin sky dome back to camera position to keep it infinite
       skyMesh.position.copy(camera.position);
 
-      // 4. Compute View-Space Position of the warm lantern PointLight
+      // 4. Update celestial bodies (sun/moon)
+      const nightSmooth = computeNightSmooth(timeVal);
+      const sunDir = currentEnv.sunPos.clone().normalize();
+
+      // Sun — visible during day
+      sunOrb.position.copy(sunDir).multiplyScalar(42);
+      sunOrb.visible = nightSmooth < 0.7;
+      sunOrbMat.color.lerpColors(
+        new THREE.Color(0xfff5d0),
+        new THREE.Color(0xe8904e),
+        computeGoldenHourBoost(timeVal)
+      );
+      const sunGlowMat = sunGlowSprite.material as THREE.SpriteMaterial;
+      sunGlowMat.opacity = (1.0 - nightSmooth) * 0.8;
+      sunGlowSprite.scale.setScalar(8 + computeGoldenHourBoost(timeVal) * 6);
+
+      // Moon — visible during night
+      // Moon at opposite-ish direction from sun
+      const moonDir = sunDir.clone();
+      moonOrb.position.copy(moonDir).multiplyScalar(40);
+      moonOrb.visible = nightSmooth > 0.3;
+      const moonGlowMat = moonGlowSprite.material as THREE.SpriteMaterial;
+      moonGlowMat.opacity = nightSmooth * 0.6;
+
+      // 5. Drift clouds
+      const windX = computeWindX(timeVal);
+      cloudsData.forEach((cd) => {
+        cd.group.position.x = cd.baseX + elapsed * cd.speed * windX * 20;
+        // Wrap clouds
+        if (cd.group.position.x > 30) cd.group.position.x = -30;
+        if (cd.group.position.x < -30) cd.group.position.x = 30;
+      });
+
+      // Cloud color/opacity based on time
+      const cloudDayColor = new THREE.Color(0xffffff);
+      const cloudNightColor = new THREE.Color(0x1a2030);
+      const cloudSunsetColor = new THREE.Color().copy(currentEnv.sun).multiplyScalar(0.8);
+      const ghBoost = computeGoldenHourBoost(timeVal);
+
+      if (nightSmooth > 0.5) {
+        cloudMat.color.copy(cloudNightColor);
+        cloudMat.opacity = 0.15;
+      } else if (ghBoost > 0.3) {
+        cloudMat.color.lerpColors(cloudDayColor, cloudSunsetColor, ghBoost);
+        cloudMat.opacity = 0.7;
+      } else {
+        cloudMat.color.copy(cloudDayColor);
+        cloudMat.opacity = 0.55;
+      }
+
+      // 6. Villa lantern (view-space position for water reflection)
       tempViewPos.copy(bulbSphere.position);
       tempViewPos.applyMatrix4(villaGroup.matrixWorld);
       tempViewPos.applyMatrix4(camera.matrixWorldInverse);
@@ -1476,7 +2081,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       tempWorldPos.applyMatrix4(villaGroup.matrixWorld);
       waterUniforms.uLanternPlanePos.value.set(tempWorldPos.x, -tempWorldPos.z);
 
-      // 5. Update water uniforms
+      // 7. Update water uniforms
       waterUniforms.uTime.value = elapsed;
       waterUniforms.uWaveSpeed.value = currentEnv.waveSpeed;
       waterUniforms.uWaveAmplitude.value = currentEnv.waveAmplitude * 0.85;
@@ -1489,39 +2094,41 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       waterUniforms.uSunDirection.value.copy(currentEnv.sunPos).normalize();
       waterUniforms.uSunIntensity.value = currentEnv.sunIntensity;
       waterUniforms.uScrollProgress.value = scroll;
-      
+
       waterUniforms.uLanternViewPosition.value.copy(tempViewPos);
       waterUniforms.uLanternIntensity.value = currentEnv.lanternIntensity;
 
-      // Apply light strength to local PointLight source
+      // Villa lantern light intensity
       warmLight.intensity = currentEnv.lanternIntensity * 2.2;
-
-      // Update Volumetric Lantern Light Cone intensity
       coneUniforms.uIntensity.value = currentEnv.lanternIntensity;
 
-      wireMat.opacity = 0.0;
-
-      // 7. Sway palms silhouettes
+      // 8. Sway palms
       palmsData.forEach((palm) => {
         palm.group.rotation.z = palm.baseRotationZ + Math.sin(elapsed * 0.75 + palm.index) * 0.025;
         palm.group.rotation.x = Math.cos(elapsed * 0.6 + palm.index) * 0.012;
       });
 
-      // 8. Flap wings & soar lagoon egrets (most active dawn/dusk)
+      // 9. Animate birds
       const birdVis = computeBirdVisibility(timeVal);
       birdsData.forEach((bird, idx) => {
         const flap = Math.sin(elapsed * bird.speed + bird.phase) * 0.65;
         bird.wingL.rotation.y = flap;
         bird.wingR.rotation.y = -flap;
 
-        const angle = elapsed * 0.06 + idx * 2.0;
+        const angle = elapsed * 0.06 + idx * 1.8;
         bird.group.position.x = bird.baseX + Math.sin(angle) * bird.radius * 0.35;
-        bird.group.position.z = -8.5 + Math.cos(angle) * 1.5;
+        bird.group.position.z = -7 + Math.cos(angle) * 2.0;
+        bird.group.position.y = bird.baseY + Math.sin(elapsed * 0.3 + idx) * 0.3;
         bird.group.visible = birdVis > 0.15;
+        // Face flight direction
+        bird.group.rotation.y = Math.atan2(
+          Math.cos(angle) * bird.radius * 0.35,
+          -Math.sin(angle) * 2.0
+        );
         birdSilhouetteMat.opacity = birdVis;
       });
 
-      // 9. Bob floating lily pads + lotus blooms on wave heights
+      // 10. Bob lily pads
       padData.forEach((pad) => {
         const height = getWaveHeightAt(
           pad.x,
@@ -1530,7 +2137,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
           currentEnv.waveSpeed,
           currentEnv.waveAmplitude
         );
-        const waterY = waterMesh.position.y + height + 0.005;
+        const waterY = WATER_Y + height + 0.005;
         pad.mesh.position.set(pad.x, waterY, pad.z);
         pad.mesh.rotation.z = Math.sin(elapsed * currentEnv.waveSpeed + pad.phase) * 0.04;
         pad.mesh.rotation.x = Math.cos(elapsed * currentEnv.waveSpeed + pad.phase) * 0.02;
@@ -1540,28 +2147,28 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
         }
       });
 
+      // 11. Sway reeds
       reedsData.forEach((reed) => {
-        reed.mesh.rotation.z =
-          reed.baseRotZ + Math.sin(elapsed * 1.1 + reed.phase) * 0.1;
+        reed.mesh.rotation.z = reed.baseRotZ + Math.sin(elapsed * 1.1 + reed.phase) * 0.1;
       });
 
-      const windX = computeWindX(timeVal);
-      fishData.forEach((fish, i) => {
+      // 12. Swim fish
+      fishData.forEach((fish) => {
         const swim = elapsed * fish.speed + fish.phase;
-        fish.mesh.position.x = fish.x + Math.sin(swim) * fish.radius + windX * elapsed * 0.02;
+        fish.mesh.position.x = fish.x + Math.sin(swim) * fish.radius + windX * elapsed * 0.01;
         fish.mesh.position.z = fish.z + Math.cos(swim * 0.8) * fish.radius * 0.6;
         fish.mesh.position.y =
-          waterMesh.position.y +
+          WATER_Y +
           getWaveHeightAt(fish.mesh.position.x, fish.mesh.position.z, elapsed, currentEnv.waveSpeed, currentEnv.waveAmplitude) -
           0.06;
         fish.mesh.rotation.y = Math.atan2(
           Math.cos(swim * 0.8) * fish.radius * 0.6,
           Math.cos(swim) * fish.radius
         );
-        fish.mesh.visible = computeIsNight(timeVal) < 0.5 || currentEnv.lanternIntensity > 0.5;
+        fish.mesh.visible = !isNight || currentEnv.lanternIntensity > 0.5;
       });
 
-      // 10. Drift mist particles
+      // 13. Drift mist
       const positions = particleGeo.attributes.position.array as Float32Array;
       for (let i = 0; i < particleCount; i++) {
         const data = particleData[i];
@@ -1575,7 +2182,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       particleMat.color.copy(currentEnv.fogColor);
       particleMat.opacity = 0.1 * (1.0 - scroll);
 
-      // 11. Update Fireflies positions & fade opacity
+      // 14. Fireflies
       const ffPositions = fireflyGeo.attributes.position.array as Float32Array;
       for (let i = 0; i < fireflyCount; i++) {
         const data = fireflyData[i];
@@ -1589,20 +2196,29 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
         (currentEnv.lanternIntensity * 0.35 + nightFactor * 0.45) * (1.0 - scroll);
 
       // Foreground leaf parallax depth on scroll
-      fgLeafMat.opacity = 0.25 + scroll * 0.08;
+      fgLeafMat.opacity = Math.max(0, 0.25 - scroll * 0.3);
 
-      // 12. Camera — field left, lake center, villa right, mountains beyond
-      const targetCamX = 2.5 + mouse.x * 0.3;
-      const targetCamY = 0.65 - mouse.y * 0.1;
-      const targetCamZ = 7.5 - scroll * 4.0;
+      // 15. Camera — scroll-driven cinematic path
+      const scrollT = Math.max(0, Math.min(1, scroll));
+      cameraPath.getPoint(scrollT, camPos);
+      lookAtPath.getPoint(scrollT, camLookAt);
 
-      camera.position.x += (targetCamX - camera.position.x) * 0.05;
-      camera.position.y += (targetCamY - camera.position.y) * 0.05;
-      camera.position.z += (targetCamZ - camera.position.z) * 0.05;
+      // Add subtle mouse parallax offset
+      camPos.x += mouse.x * 0.25 * (1.0 - scrollT * 0.5);
+      camPos.y -= mouse.y * 0.1 * (1.0 - scrollT * 0.5);
 
-      camera.lookAt(0, 0.1 - scroll * 0.08, -6);
+      // Add gentle breathing motion
+      camPos.x += Math.sin(elapsed * 0.3) * 0.04;
+      camPos.y += Math.cos(elapsed * 0.25) * 0.02;
 
-      // 13. Render
+      // Smooth camera interpolation
+      smoothedCamPos.lerp(camPos, 0.06);
+      smoothedLookAt.lerp(camLookAt, 0.06);
+
+      camera.position.copy(smoothedCamPos);
+      camera.lookAt(smoothedLookAt);
+
+      // 16. Render
       renderer.autoClear = false;
       renderer.clear();
       renderer.render(scene, camera);
@@ -1615,31 +2231,47 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       cancelAnimationFrame(rafId);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("resize", onResize);
-      
+
       camera.remove(fgLeafMesh);
 
       // Geometries
       waterGeo.dispose();
       skyGeo.dispose();
-      fieldGeo.dispose();
+      villaGroundGeo.dispose();
       roadGeo.dispose();
+      grassStripGeo.dispose();
+      lakeFieldGeo.dispose();
+      curbGeo.dispose();
       groundFloorGeo.dispose();
       guestFloorGeo.dispose();
       villaRoofGeo.dispose();
       balconyGeo.dispose();
+      railGeo.dispose();
+      postGeo.dispose();
       windowGeo.dispose();
+      winFrameGeo.dispose();
+      doorGeo.dispose();
+      pillarGeo.dispose();
+      porchRoofGeo.dispose();
+      chimneyGeo.dispose();
       bulbGeo.dispose();
       coneGeo.dispose();
       foregroundLeafGeo.dispose();
+      pathGeo.dispose();
+      shorelineGeo.dispose();
       mountainGeo1.dispose();
       mountainGeo2.dispose();
+      mountainGeo3.dispose();
       forestTrunkGeo.dispose();
-      forestCrownGeo.dispose();
+      forestCrownGeo1.dispose();
+      forestCrownGeo2.dispose();
+      forestCrownGeo3.dispose();
+      bushGeo.dispose();
       wingGeo.dispose();
-      heronBodyGeo.dispose();
-      heronNeckGeo.dispose();
+      birdBodyGeo.dispose();
+      headGeo.dispose();
+      beakGeo.dispose();
       reedGeo.dispose();
-      shorelineGeo.dispose();
       rockGeo.dispose();
       leafGeo.dispose();
       trunkGeo.dispose();
@@ -1648,46 +2280,68 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       lotusGeo.dispose();
       lotusCenterGeo.dispose();
       fishGeo.dispose();
+      grassBladeGeo.dispose();
       particleGeo.dispose();
       fireflyGeo.dispose();
+      sunOrbGeo.dispose();
+      moonOrbGeo.dispose();
+      cloudGeometries.forEach((g) => g.dispose());
 
       // Materials
       waterMat.dispose();
-      wireMat.dispose();
       skyMat.dispose();
       woodPlankMat.dispose();
       concreteMat.dispose();
-      fieldMat.dispose();
+      villaGroundMat.dispose();
       roadMat.dispose();
+      grassStripMat.dispose();
+      lakeFieldMat.dispose();
+      curbMat.dispose();
       wallMat.dispose();
       roofMat.dispose();
       windowMat.dispose();
+      windowFrameMat.dispose();
+      doorMat.dispose();
+      pillarMat.dispose();
+      railMat.dispose();
       leafMaterial.dispose();
-      slimPillarMat.dispose();
-      luxuryGlassMat.dispose();
-      bulbMat.dispose();
-      coneMat.dispose();
       fgLeafMat.dispose();
-      mtnMat.dispose();
-      forestTrunkMat.dispose();
-      forestCrownMat.dispose();
+      coneMat.dispose();
+      bulbMat.dispose();
+      pathMat.dispose();
       shorelineSandMat.dispose();
+      mtnMat.dispose();
+      mtnMat2.dispose();
+      forestTrunkMat.dispose();
+      forestCrownMats.forEach((m) => m.dispose());
+      bushMat.dispose();
+      birdSilhouetteMat.dispose();
+      trunkMaterial.dispose();
       reedMat.dispose();
       rockMat.dispose();
-      trunkMaterial.dispose();
-      birdSilhouetteMat.dispose();
       padMaterial.dispose();
       lotusLeafMat.dispose();
       lotusMat.dispose();
       lotusCenterMat.dispose();
       fishMat.dispose();
+      grassBladeMat.dispose();
       particleMat.dispose();
       fireflyMat.dispose();
+      sunOrbMat.dispose();
+      moonOrbMat.dispose();
+      cloudMat.dispose();
+      (sunGlowSprite.material as THREE.SpriteMaterial).dispose();
+      (moonGlowSprite.material as THREE.SpriteMaterial).dispose();
+      chimney.material.dispose();
 
       // Textures
       woodTexture.dispose();
       concreteTexture.dispose();
       leafTexture.dispose();
+      roadTexture.dispose();
+      barkTexture.dispose();
+      sunGlowTex.dispose();
+      moonGlowTex.dispose();
       mistTexture.dispose();
       fireflyTexture.dispose();
 
