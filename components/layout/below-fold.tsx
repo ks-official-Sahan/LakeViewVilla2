@@ -1,6 +1,7 @@
 "use client";
 
 import { lazy, Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ExperiencesReel = lazy(() => import("@/components/sections/experiences-reel").then(m => ({ default: m.ExperiencesReel })));
 const GalleryTeaser = lazy(() => import("@/components/sections/gallery-teaser").then(m => ({ default: m.GalleryTeaser })));
@@ -23,12 +24,7 @@ interface BelowFoldProps {
 function SectionSkeleton({ className = "h-96" }: { className?: string }) {
   return (
     <div className="lv-container py-12">
-      <div 
-        className={[
-          "w-full bg-foreground/[0.02] dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-sm animate-pulse",
-          className
-        ].join(" ")}
-      />
+      <Skeleton className={className} />
     </div>
   );
 }

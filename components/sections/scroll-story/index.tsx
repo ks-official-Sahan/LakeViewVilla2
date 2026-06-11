@@ -13,7 +13,9 @@ import { BookingCallout } from "./booking-callout";
 
 const HeroCanvas = dynamic(() => import("@/components/webgl/HeroCanvas"), {
   ssr: false,
-  loading: () => null,
+  loading: () => (
+    <div className="absolute inset-0 bg-[#0b2027] before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-teal-500/10 before:to-transparent" />
+  ),
 });
 
 interface ScrollStoryProps {
