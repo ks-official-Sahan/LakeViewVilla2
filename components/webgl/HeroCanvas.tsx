@@ -51,7 +51,7 @@ const ENV_PRESETS = [
     sunPos: [15, 4, -4],
     fogColor: "#2B1A24",
     fogDensity: 0.035,
-    water: "#14252C",
+    water: "#1E6B6E",
     waterSpecular: "#E8A87C",
     waveSpeed: 0.20,
     waveAmplitude: 0.04,
@@ -68,7 +68,7 @@ const ENV_PRESETS = [
     sunPos: [8, 15, 6],
     fogColor: "#F5F0E6",
     fogDensity: 0.012,
-    water: "#1A5C5E",
+    water: "#2A8A8E",
     waterSpecular: "#FFF8E7",
     waveSpeed: 0.26,
     waveAmplitude: 0.05,
@@ -85,7 +85,7 @@ const ENV_PRESETS = [
     sunPos: [-6, 17, 8],
     fogColor: "#FAF6EE",
     fogDensity: 0.008,
-    water: "#185658",
+    water: "#268588",
     waterSpecular: "#FFFFFF",
     waveSpeed: 0.28,
     waveAmplitude: 0.055,
@@ -102,7 +102,7 @@ const ENV_PRESETS = [
     sunPos: [-15, 3, -2],
     fogColor: "#2A140F",
     fogDensity: 0.03,
-    water: "#1D231E",
+    water: "#2D6A6E",
     waterSpecular: "#C9A55A",
     waveSpeed: 0.22,
     waveAmplitude: 0.042,
@@ -408,11 +408,13 @@ const WATER_FRAGMENT = /* glsl */ `
     vec3 viewDir = normalize(vViewPosition);
 
     float heightFactor = clamp((vHeight + 0.12) * 3.5, 0.0, 1.0);
-    vec3 col = mix(uWaterColor * 0.65, uWaterColor * 1.3, heightFactor);
+    vec3 lagoonDeep = uWaterColor * 1.15;
+    vec3 lagoonBright = uWaterColor * 1.65 + vec3(0.06, 0.12, 0.10);
+    vec3 col = mix(lagoonDeep, lagoonBright, heightFactor);
 
     vec3 halfDir = normalize(uSunDirection + viewDir);
-    float spec = pow(max(dot(normal, halfDir), 0.0), 38.0);
-    col += uWaterSpecularColor * spec * uSunIntensity * 0.7;
+    float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
+    col += uWaterSpecularColor * spec * uSunIntensity * 1.1;
 
     float glintSpec = pow(max(dot(normal, halfDir), 0.0), 220.0);
     col += vec3(1.0, 0.95, 0.85) * glintSpec * uSunIntensity * 1.5;
@@ -431,17 +433,17 @@ const WATER_FRAGMENT = /* glsl */ `
     float causticDisc = exp(-dot(lanternDist, lanternDist) * 0.32) * lanternRipple;
     col += uLanternColor * causticDisc * uLanternIntensity * 0.2;
 
-    float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.5);
-    col = mix(col, uWaterSpecularColor * 1.4, fresnel * 0.35);
+    float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.8);
+    col = mix(col, uWaterSpecularColor * 1.6 + uWaterColor * 0.3, fresnel * 0.45);
 
     // Tangalle lagoon shoreline — sand → shallow teal → deep lagoon
     float distToShore = abs(vWorldPos.y - uShoreLine);
     vec3 sandShallow = vec3(0.91, 0.86, 0.78);
     vec3 tealShallow = vec3(0.48, 0.64, 0.55);
     float sandZone = smoothstep(1.6, 0.15, distToShore);
-    float shallowZone = smoothstep(3.2, 0.6, distToShore);
-    col = mix(col, sandShallow * 0.6 + uWaterColor * 0.15, sandZone * 0.58);
-    col = mix(col, tealShallow, shallowZone * 0.42);
+    float shallowZone = smoothstep(3.5, 0.5, distToShore);
+    col = mix(col, sandShallow * 0.75 + uWaterColor * 0.25, sandZone * 0.45);
+    col = mix(col, tealShallow * 1.15, shallowZone * 0.55);
 
     float wavePhase = uTime * 2.8 + vWorldPos.x * 2.0 + distToShore * 1.5;
     float shoreFoam = smoothstep(0.75, 0.0, distToShore) * (0.45 + 0.45 * sin(wavePhase));
@@ -462,13 +464,10 @@ const WATER_FRAGMENT = /* glsl */ `
     float finalFoam = max(shoreFoam, rockFoam);
     col = mix(col, vec3(0.92, 0.96, 1.0) * (uSunIntensity * 0.4 + 0.6), finalFoam * 0.65);
 
-    float distanceToPavilion = distance(vUv, vec2(0.5, 0.7));
-    float transparency = smoothstep(0.05, 0.35, distanceToPavilion);
+    float edgeVignette = smoothstep(0.0, 0.85, distance(vUv, vec2(0.5)));
+    col = mix(col, uWaterColor * 0.7, edgeVignette * 0.18);
 
-    float edgeVignette = smoothstep(0.0, 0.65, distance(vUv, vec2(0.5)));
-    col = mix(col, uWaterColor * 0.45, edgeVignette * 0.5);
-
-    float alpha = (0.3 + 0.7 * transparency) * (1.0 - uScrollProgress * 0.90);
+    float alpha = 0.92 * (1.0 - uScrollProgress * 0.82);
 
     gl_FragColor = vec4(col, alpha);
   }
@@ -483,10 +482,10 @@ const createWoodTexture = () => {
   const ctx = canvas.getContext("2d");
   if (!ctx) return new THREE.Texture();
 
-  ctx.fillStyle = "#0a1417";
+  ctx.fillStyle = "#3d2e22";
   ctx.fillRect(0, 0, 512, 512);
 
-  ctx.strokeStyle = "#04080a";
+  ctx.strokeStyle = "#2a1f16";
   ctx.lineWidth = 3;
   const plankWidth = 64;
   for (let x = 0; x < 512; x += plankWidth) {
@@ -522,7 +521,7 @@ const createConcreteTexture = () => {
   const ctx = canvas.getContext("2d");
   if (!ctx) return new THREE.Texture();
 
-  ctx.fillStyle = "#122024";
+  ctx.fillStyle = "#5a6e72";
   ctx.fillRect(0, 0, 256, 256);
 
   for (let i = 0; i < 4000; i++) {
@@ -626,6 +625,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     renderer.setPixelRatio(dpr);
     renderer.setSize(w, h);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.22;
     renderer.debug.checkShaderErrors = false;
 
     // ─── Scene & Camera ──────────────────────────────────────────────────
@@ -634,8 +635,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const fog = new THREE.FogExp2(0x0a1f24, 0.015);
     scene.fog = fog;
 
-    const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
-    camera.position.set(0, 0.4, 7.8);
+    const camera = new THREE.PerspectiveCamera(48, w / h, 0.1, 100);
+    camera.position.set(0, 0.55, 7.2);
     scene.add(camera);
 
     // ─── Lighting Setup ──────────────────────────────────────────────────
@@ -748,7 +749,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       color: 0xc9a55a,
       wireframe: true,
       transparent: true,
-      opacity: 0.04,
+      opacity: 0.0,
       depthWrite: false,
     });
     const wireMesh = new THREE.Mesh(waterGeo, wireMat);
@@ -756,8 +757,10 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     wireMesh.position.y = -1.198;
     scene.add(wireMesh);
 
-    // ─── 3D Architecture: Detailed Villa Pavilion ───────────────────────
+    // ─── 3D Architecture: Villa deck (scaled down — lagoon is the hero) ───
     const deckGroup = new THREE.Group();
+    deckGroup.scale.setScalar(0.48);
+    deckGroup.position.set(2.4, -0.15, 3.6);
     scene.add(deckGroup);
 
     const deckBaseGeo = new THREE.BoxGeometry(6.6, 0.3, 5.6);
@@ -1037,11 +1040,12 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     foregroundLeafGeo.translate(0, 2.2, 0);
     const fgLeafMat = leafMaterial.clone();
     fgLeafMat.transparent = true;
-    fgLeafMat.opacity = 0.85;
+    fgLeafMat.opacity = 0.28;
     const fgLeafMesh = new THREE.Mesh(foregroundLeafGeo, fgLeafMat);
     camera.add(fgLeafMesh);
-    fgLeafMesh.position.set(-1.8, -1.8, -2.5);
+    fgLeafMesh.position.set(-2.2, -2.0, -2.8);
     fgLeafMesh.rotation.set(0.5, 0.6, -0.3);
+    fgLeafMesh.scale.setScalar(0.7);
 
     // ─── Shoreline & Landscape Elements ───────────────────────────────────
     const landscapeGroup = new THREE.Group();
@@ -1049,8 +1053,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     const shorelineGeo = new THREE.BoxGeometry(45, 0.4, 3);
     const shorelineSandMat = new THREE.MeshStandardMaterial({
-      color: 0x081316,
-      roughness: 0.95,
+      color: 0x4a6a62,
+      roughness: 0.92,
     });
     const shorelineMesh = new THREE.Mesh(shorelineGeo, shorelineSandMat);
     shorelineMesh.position.set(0, -1.2, -7.5);
@@ -1075,7 +1079,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     const rockGeo = new THREE.DodecahedronGeometry(1, 0);
     const rockMat = new THREE.MeshStandardMaterial({
-      color: 0x040e11,
+      color: 0x2a4a4e,
       roughness: 0.88,
     });
     const rocks: THREE.Mesh[] = [];
@@ -1102,7 +1106,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     scene.add(palmsGroup);
 
     const trunkMaterial = new THREE.MeshStandardMaterial({
-      color: 0x051319,
+      color: 0x1a3a3e,
       roughness: 0.92,
     });
 
@@ -1213,8 +1217,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     const padGeometry = new THREE.CylinderGeometry(0.18, 0.18, 0.01, 12);
     const padMaterial = new THREE.MeshStandardMaterial({
-      color: 0x7ba38c,
-      roughness: 0.8,
+      color: 0x8ec4a0,
+      roughness: 0.75,
     });
 
     const padData: Array<{ mesh: THREE.Mesh; x: number; z: number; phase: number; scale: number }> = [];
@@ -1402,14 +1406,14 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
       // 2. Apply dynamic environment variables
       ambientLight.color.copy(currentEnv.ambient);
-      ambientLight.intensity = currentEnv.ambientIntensity;
+      ambientLight.intensity = currentEnv.ambientIntensity * 1.2;
 
       sunLight.color.copy(currentEnv.sun);
       sunLight.intensity = currentEnv.sunIntensity;
       sunLight.position.copy(currentEnv.sunPos);
 
       fog.color.copy(currentEnv.fogColor);
-      fog.density = currentEnv.fogDensity * (1.0 - scroll * 0.4);
+      fog.density = currentEnv.fogDensity * 0.55 * (1.0 - scroll * 0.4);
 
       // 3. Update Sky dome variables
       skyMat.uniforms.uColorTop.value.copy(currentEnv.skyTop);
@@ -1452,9 +1456,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       // Update Volumetric Lantern Light Cone intensity
       coneUniforms.uIntensity.value = currentEnv.lanternIntensity;
 
-      // 6. Update wireframe overlay (subtle in light mode)
-      wireMat.color.copy(currentEnv.waterSpecular);
-      wireMat.opacity = (isDarkRefTheme() ? 0.022 : 0.028) * (1.0 - scroll);
+      wireMat.opacity = 0.0;
 
       // 7. Sway palms silhouettes
       palmsData.forEach((palm) => {
@@ -1518,27 +1520,23 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
         (currentEnv.lanternIntensity * 0.35 + nightFactor * 0.45) * (1.0 - scroll);
 
       // Foreground leaf parallax depth on scroll
-      fgLeafMat.opacity = 0.82 + scroll * 0.12;
+      fgLeafMat.opacity = 0.25 + scroll * 0.08;
 
-      // 12. Camera positioning (calibrated lower-angle upward architectural look)
-      const targetCamX = mouse.x * 0.45;
-      const targetCamY = 0.4 - mouse.y * 0.20; 
-      const targetCamZ = 7.0 - scroll * 4.2;
+      // 12. Camera — lagoon vista (deck tucked to corner, lake fills frame)
+      const targetCamX = mouse.x * 0.35;
+      const targetCamY = 0.55 - mouse.y * 0.12;
+      const targetCamZ = 7.2 - scroll * 4.0;
 
       camera.position.x += (targetCamX - camera.position.x) * 0.05;
       camera.position.y += (targetCamY - camera.position.y) * 0.05;
       camera.position.z += (targetCamZ - camera.position.z) * 0.05;
 
-      camera.lookAt(0, 1.15 - scroll * 0.25, -2); // looking up towards canopy
+      camera.lookAt(0, -0.15 - scroll * 0.1, -9.5);
 
       // 13. Render
       renderer.autoClear = false;
       renderer.clear();
       renderer.render(scene, camera);
-    };
-
-    const isDarkRefTheme = () => {
-      return document.documentElement.classList.contains("dark");
     };
 
     animate();

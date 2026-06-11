@@ -164,26 +164,19 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
             <HeroCanvas scrollProgress={canvasProgress} timeOfDay={time} />
           </Suspense>
 
-          {/* Cinematic vignette — stronger in light mode for text contrast */}
+          {/* Light vignette — text legibility without crushing lagoon color */}
           <div
             aria-hidden
-            className="absolute inset-0 bg-gradient-to-b from-[#0a0c0e]/80 via-[#0a0c0e]/15 to-[#0a0c0e]/85"
+            className="absolute inset-0 bg-gradient-to-b from-[#0a0c0e]/45 via-transparent to-[#0a0c0e]/55"
             style={{
-              opacity: isDark ? 1 : 0.85,
+              opacity: isDark ? 0.9 : 0.75,
             }}
           />
-          {/* Light-mode compensation overlay — darkens the bright WebGL */}
-          {!isDark && (
-            <div
-              aria-hidden
-              className="absolute inset-0 bg-[#0a0c0e]/40"
-            />
-          )}
 
           {/* Warm lagoon glow — radial center accent */}
           <div
             aria-hidden
-            className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,rgba(201,165,90,0.06)_0%,transparent_60%)]"
+            className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_55%,rgba(42,138,142,0.14)_0%,rgba(201,165,90,0.05)_40%,transparent_70%)]"
           />
         </div>
 
