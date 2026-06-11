@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
@@ -228,9 +227,30 @@ function computeBirdVisibility(time: number): number {
 const ROAD_Y = -0.85;
 const WATER_Y = -1.28;
 const GROUND_Y = -0.88;
-const SHORE_PLANE_Y = 10.5;
-const LAKE_CENTER = new THREE.Vector2(0.5, 1.5);
-const LAKE_RADIUS = 9.5;
+const SHORE_WORLD_Z = -4.8;
+const LAKE_CENTER = new THREE.Vector2(-0.5, -8);
+const LAKE_RADIUS = 10.5;
+
+type CameraKeyframe = { t: number; pos: THREE.Vector3; look: THREE.Vector3 };
+
+function sampleCameraKeyframes(
+  scroll: number,
+  keyframes: CameraKeyframe[],
+  outPos: THREE.Vector3,
+  outLook: THREE.Vector3
+) {
+  const t = Math.max(0, Math.min(1, scroll));
+  let i = 0;
+  for (let k = 0; k < keyframes.length - 1; k++) {
+    if (t >= keyframes[k].t) i = k;
+  }
+  const a = keyframes[i];
+  const b = keyframes[Math.min(i + 1, keyframes.length - 1)];
+  const f = THREE.MathUtils.clamp((t - a.t) / Math.max(0.0001, b.t - a.t), 0, 1);
+  const eased = f * f * (3 - 2 * f);
+  outPos.lerpVectors(a.pos, b.pos, eased);
+  outLook.lerpVectors(a.look, b.look, eased);
+}
 
 // ─── Enhanced Sky Shader ─────────────────────────────────────────────────────
 
@@ -381,6 +401,8 @@ const WATER_VERTEX = /* glsl */ `
   varying vec3 vViewPosition;
   varying vec3 vWorldPos;
   varying float vHeight;
+  varying float vWorldZ;
+  varying float vWorldX;
 
   struct Wave {
     vec2 dir;
@@ -434,6 +456,9 @@ const WATER_VERTEX = /* glsl */ `
     vNormal = normalize(cross(tangent, binormal));
     vWorldPos = displaced;
     vHeight = displaced.z;
+    vec4 worldPos = modelMatrix * vec4(displaced, 1.0);
+    vWorldX = worldPos.x;
+    vWorldZ = worldPos.z;
   }
 `;
 
@@ -446,7 +471,7 @@ const WATER_FRAGMENT = /* glsl */ `
   uniform float uSunIntensity;
   uniform float uScrollProgress;
   uniform float uTime;
-  uniform float uShoreLine;
+  uniform float uShoreWorldZ;
   uniform vec2 uLakeCenter;
   uniform float uLakeRadius;
 
@@ -461,6 +486,8 @@ const WATER_FRAGMENT = /* glsl */ `
   varying vec3 vViewPosition;
   varying vec3 vWorldPos;
   varying float vHeight;
+  varying float vWorldZ;
+  varying float vWorldX;
 
   float noiseH(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -506,9 +533,9 @@ const WATER_FRAGMENT = /* glsl */ `
     vec3 col = mix(mix(lagoonDeep, lagoonMid, heightFactor), lagoonBright, heightFactor * 0.45);
     col = mix(col, lagoonDeep * 0.95, depthFade * 0.25);
 
-    // Shore proximity - shallower near edges, more transparent
-    float distToShore = abs(vWorldPos.y - uShoreLine);
-    float shoreShallow = smoothstep(3.0, 0.2, distToShore);
+    // Shore proximity — shallow water near grass embankment (world Z)
+    float distToShore = abs(vWorldZ - uShoreWorldZ);
+    float shoreShallow = smoothstep(3.5, 0.15, distToShore);
 
     // Sky reflection
     vec3 reflectDir = reflect(-viewDir, normal);
@@ -551,7 +578,7 @@ const WATER_FRAGMENT = /* glsl */ `
     vec2 lanternDist = vWorldPos.xy - uLanternPlanePos;
     float lanternRipple = sin(length(lanternDist) * 8.0 - uTime * 2.5) * 0.5 + 0.5;
     float causticDisc = exp(-dot(lanternDist, lanternDist) * 0.32) * lanternRipple;
-    col += uLanternColor * causticDisc * uLanternIntensity * 0.25;
+    col += uLanternColor * causticDisc * uLanternIntensity * 0.12;
 
     // Shoreline color bands
     vec3 sandShallow = vec3(0.94, 0.88, 0.72);
@@ -587,24 +614,22 @@ const WATER_FRAGMENT = /* glsl */ `
     float ripple = sin(vWorldPos.x * 4.5 + uTime * 1.6) * sin(vWorldPos.y * 3.8 - uTime * 1.2);
     col += uWaterColor * ripple * 0.04;
 
-    col = saturateColor(col, 1.55);
+    col = saturateColor(col, 1.42);
 
-    // Lake perimeter mask
-    float distLake = length(vWorldPos.xy - uLakeCenter);
-    float perimeterFade = smoothstep(uLakeRadius, uLakeRadius - 3.0, distLake);
+    // Lake perimeter mask (world XZ)
+    vec2 lakePos = vec2(vWorldX, vWorldZ);
+    float distLake = length(lakePos - uLakeCenter);
+    float perimeterFade = smoothstep(uLakeRadius, uLakeRadius - 2.5, distLake);
 
-    // Near-shore depth reduction — water becomes very shallow near embankment
-    float nearShoreY = vWorldPos.y; // y in water plane space ~ mapped from Z in world
-    float shoreDepthFade = smoothstep(10.5, 8.0, nearShoreY); // shallow near high Y values (close to road)
-    float deepBlend = shoreDepthFade * 0.3;
-    col = mix(col, emeraldShallow * 1.2, (1.0 - shoreDepthFade) * 0.25);
+    // Shallow transition near road-side embankment
+    float shoreDepthFade = smoothstep(-2.5, -5.5, vWorldZ);
+    col = mix(col, emeraldShallow * 1.15, (1.0 - shoreDepthFade) * 0.22);
 
-    float fieldJunction = smoothstep(-7.5, -4.0, vWorldPos.x);
+    float fieldJunction = smoothstep(-9.0, -5.5, vWorldX);
     float lakeMask = perimeterFade * fieldJunction;
-    col = mix(col * 0.35, col, lakeMask);
-    col = mix(col, uWaterColor * 0.5, (1.0 - perimeterFade) * 0.4);
+    col = mix(col * 0.55, col, lakeMask);
 
-    float alpha = 0.98 * lakeMask * (1.0 - uScrollProgress * 0.68);
+    float alpha = 0.94 * lakeMask * (1.0 - uScrollProgress * 0.45);
 
     gl_FragColor = vec4(col, alpha);
   }
@@ -893,8 +918,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const fog = new THREE.FogExp2(0x0a1f24, 0.015);
     scene.fog = fog;
 
-    const camera = new THREE.PerspectiveCamera(48, w / h, 0.1, 120);
-    camera.position.set(6.0, 0.65, 4.0);
+    const camera = new THREE.PerspectiveCamera(62, w / h, 0.1, 120);
+    camera.position.set(6.02, 1.42, 4.9);
     scene.add(camera);
 
     // ─── Lighting ────────────────────────────────────────────────────────
@@ -1093,7 +1118,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       uSunDirection: { value: new THREE.Vector3(0, 1, 0) },
       uSunIntensity: { value: 1.0 },
       uScrollProgress: { value: 0.0 },
-      uShoreLine: { value: SHORE_PLANE_Y },
+      uShoreWorldZ: { value: SHORE_WORLD_Z },
       uLakeCenter: { value: LAKE_CENTER.clone() },
       uLakeRadius: { value: LAKE_RADIUS },
       uLanternViewPosition: { value: new THREE.Vector3(0, 0, 0) },
@@ -1207,13 +1232,44 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     // Road goes along +X. 120° CCW in top-down view:
     // cos(120°) = -0.5, sin(120°) = 0.866
     // The field extends toward upper-left from the road
-    lakeFieldMesh.rotation.y = -(60 * Math.PI) / 180; // 60° from -Z toward -X
-    lakeFieldMesh.position.set(-6.5, 0, -3);
+    lakeFieldMesh.rotation.y = (120 * Math.PI) / 180;
+    lakeFieldMesh.position.set(-5.8, 0, -2.8);
     scene.add(lakeFieldMesh);
 
     // ─── Far Shore & Shoreline (organic sloped plane) ───────────────────
     const landscapeGroup = new THREE.Group();
     scene.add(landscapeGroup);
+
+    const getTerrainHeight = (x: number, z: number) => {
+      const localZ = z - (-28);
+      const t = THREE.MathUtils.clamp((8 - localZ) / 16, 0, 1);
+      const shoreBlend = THREE.MathUtils.smoothstep(-20, -16, z);
+      const slopeY = THREE.MathUtils.lerp(WATER_Y + 0.05, WATER_Y - 0.02 + t * 3.5, shoreBlend);
+      const shoreCurve = Math.sin(x * 0.15) * 0.35 + Math.cos(x * 0.08) * 0.18;
+      const detailNoise = Math.sin(x * 1.0 + localZ * 1.3) * 0.1 + Math.cos(x * 2.2) * 0.05;
+      return slopeY + detailNoise + shoreCurve * Math.max(0, 1 - t * 1.5);
+    };
+
+    // Shore transition wedge — blends lake embankment into far terrain
+    const shoreWedgeGeo = new THREE.PlaneGeometry(42, 6, 28, 8);
+    shoreWedgeGeo.rotateX(-Math.PI / 2);
+    const swPos = shoreWedgeGeo.attributes.position;
+    for (let i = 0; i < swPos.count; i++) {
+      const x = swPos.getX(i);
+      const localZ = swPos.getZ(i);
+      const worldZ = -17 + localZ;
+      const t = THREE.MathUtils.clamp((localZ + 3) / 6, 0, 1);
+      const y = THREE.MathUtils.lerp(WATER_Y + 0.1, getTerrainHeight(x, worldZ), t * t);
+      swPos.setY(i, y);
+    }
+    shoreWedgeGeo.computeVertexNormals();
+    const shoreWedgeMat = new THREE.MeshStandardMaterial({
+      color: 0x4a7a52,
+      roughness: 0.94,
+    });
+    const shoreWedgeMesh = new THREE.Mesh(shoreWedgeGeo, shoreWedgeMat);
+    shoreWedgeMesh.position.set(0, 0, -17);
+    landscapeGroup.add(shoreWedgeMesh);
 
     const farTerrainGeo = new THREE.PlaneGeometry(50, 16, 40, 20);
     farTerrainGeo.rotateX(-Math.PI / 2);
@@ -1221,24 +1277,10 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const ftPositions = farTerrainGeo.attributes.position;
     for (let i = 0; i < ftPositions.count; i++) {
       const x = ftPositions.getX(i);
-      const z = ftPositions.getZ(i); // local Z goes from -8 to 8
-      
-      // t goes from 0 (lake side / near) to 1 (mountains side / far)
-      const t = (z + 8) / 16;
-      
-      // Slope upward from water level to create a hill/embankment in the background
-      const slopeY = WATER_Y + 0.05 + t * 2.5;
-      
-      // Wavy shoreline along X axis (near t = 0)
-      const shoreCurve = Math.sin(x * 0.15) * 0.45 + Math.cos(x * 0.08) * 0.25;
-      
-      // Fine-grained detail noise for bumpy grassy ground
-      const detailNoise = Math.sin(x * 1.0 + z * 1.3) * 0.12 + Math.cos(x * 2.2) * 0.06;
-      
-      // Shoreline curve fades out as we go further back
-      const finalY = slopeY + detailNoise + shoreCurve * Math.max(0, 1 - t * 1.5);
-      
-      ftPositions.setY(i, finalY);
+      const localZ = ftPositions.getZ(i); // local Z goes from -8 to 8
+      const worldZ = -28 + localZ; // convert to world Z
+      const height = getTerrainHeight(x, worldZ);
+      ftPositions.setY(i, height);
     }
     farTerrainGeo.computeVertexNormals();
 
@@ -1248,26 +1290,32 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       metalness: 0.02,
     });
     const farTerrainMesh = new THREE.Mesh(farTerrainGeo, farTerrainMat);
-    // Center it at z = -22. It spans from z = -14 to z = -30
-    farTerrainMesh.position.set(0, 0, -22);
+    // Center it at z = -28. It spans from z = -20 to z = -36
+    farTerrainMesh.position.set(0, 0, -28);
     landscapeGroup.add(farTerrainMesh);
 
     // Mountains (positioned smoothly on the sloped terrain)
     const mtnMat = new THREE.MeshStandardMaterial({ color: 0x4a6a62, roughness: 0.95 });
     const mountainGeo1 = new THREE.ConeGeometry(6.5, 5.5, 10);
     const mountain1 = new THREE.Mesh(mountainGeo1, mtnMat);
-    mountain1.position.set(-7, 0.4, -22);
+    const m1z = -28;
+    const m1x = -7;
+    mountain1.position.set(m1x, getTerrainHeight(m1x, m1z) + 2.75, m1z); // Center of ConeGeometry is half its height (5.5 / 2 = 2.75)
     landscapeGroup.add(mountain1);
 
     const mtnMat2 = new THREE.MeshStandardMaterial({ color: 0x3d5e55, roughness: 0.92 });
     const mountainGeo2 = new THREE.ConeGeometry(5.0, 4.2, 10);
     const mountain2 = new THREE.Mesh(mountainGeo2, mtnMat2);
-    mountain2.position.set(5, 0.2, -23);
+    const m2z = -30;
+    const m2x = 5;
+    mountain2.position.set(m2x, getTerrainHeight(m2x, m2z) + 2.1, m2z); // 4.2 / 2 = 2.1
     landscapeGroup.add(mountain2);
 
     const mountainGeo3 = new THREE.ConeGeometry(4.0, 3.5, 8);
     const mountain3 = new THREE.Mesh(mountainGeo3, mtnMat);
-    mountain3.position.set(0, 0.0, -24);
+    const m3z = -32;
+    const m3x = 0;
+    mountain3.position.set(m3x, getTerrainHeight(m3x, m3z) + 1.75, m3z); // 3.5 / 2 = 1.75
     landscapeGroup.add(mountain3);
 
     // ─── Forest Trees along far shore (enhanced multi-layer crowns) ──────
@@ -1290,16 +1338,11 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     for (let f = 0; f < forestTreeCount; f++) {
       const tree = new THREE.Group();
       const tx = -14 + Math.random() * 28;
-      const tz = -17 - Math.random() * 5;
+      // Spans from Z = -20 to -26 (water edge to forest area)
+      const tz = -20 - Math.random() * 6;
       const treeHeight = 0.8 + Math.random() * 1.2;
       
-      // Calculate Y position dynamically based on farTerrain height at (tx, tz)
-      const localZ = tz - (-22);
-      const t = THREE.MathUtils.clamp((localZ + 8) / 16, 0, 1);
-      const slopeY = WATER_Y + 0.05 + t * 2.5;
-      const shoreCurve = Math.sin(tx * 0.15) * 0.45 + Math.cos(tx * 0.08) * 0.25;
-      const detailNoise = Math.sin(tx * 1.0 + localZ * 1.3) * 0.12 + Math.cos(tx * 2.2) * 0.06;
-      const treeY = slopeY + detailNoise + shoreCurve * Math.max(0, 1 - t * 1.5);
+      const treeY = getTerrainHeight(tx, tz);
       
       tree.position.set(tx, treeY - 0.05, tz);
       tree.scale.y = treeHeight;
@@ -1411,22 +1454,79 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       opacity: 0.65,
     });
     const windowFrameMat = new THREE.MeshStandardMaterial({
-      color: 0x5a4d44,
-      roughness: 0.2,
-      metalness: 0.8,
+      color: 0x6a5d54,
+      roughness: 0.35,
+      metalness: 0.45,
+      transparent: true,
+      opacity: 0.85,
     });
 
-    // Ground floor
-    const groundFloorGeo = new THREE.BoxGeometry(3.6, 1.5, 5.0);
-    const groundFloor = new THREE.Mesh(groundFloorGeo, wallMat);
-    groundFloor.position.set(0, -0.45, 0);
-    villaGroup.add(groundFloor);
+    // Ground floor (hollow structure)
+    const gfFloorGeo = new THREE.BoxGeometry(3.6, 0.1, 5.0);
+    const gfFloor = new THREE.Mesh(gfFloorGeo, concreteMat);
+    gfFloor.position.set(0, -1.15, 0);
+    villaGroup.add(gfFloor);
 
-    // Upper floor (slightly larger cantilever)
-    const guestFloorGeo = new THREE.BoxGeometry(3.8, 1.6, 5.2);
-    const guestFloor = new THREE.Mesh(guestFloorGeo, wallMat);
-    guestFloor.position.set(0, 0.85, 0);
-    villaGroup.add(guestFloor);
+    const gfBackGeo = new THREE.BoxGeometry(3.6, 1.1, 0.1);
+    const gfBack = new THREE.Mesh(gfBackGeo, wallMat);
+    gfBack.position.set(0, -0.6, 2.45);
+    villaGroup.add(gfBack);
+
+    const gfLeftGeo = new THREE.BoxGeometry(0.1, 1.1, 5.0);
+    const gfLeft = new THREE.Mesh(gfLeftGeo, wallMat);
+    gfLeft.position.set(-1.75, -0.6, 0);
+    villaGroup.add(gfLeft);
+
+    const gfRightGeo = new THREE.BoxGeometry(0.1, 1.1, 5.0);
+    const gfRight = new THREE.Mesh(gfRightGeo, wallMat);
+    gfRight.position.set(1.75, -0.6, 0);
+    villaGroup.add(gfRight);
+
+    // Upper floor (hollow structure)
+    const ufFloorGeo = new THREE.BoxGeometry(3.8, 0.1, 5.2);
+    const ufFloor = new THREE.Mesh(ufFloorGeo, concreteMat);
+    ufFloor.position.set(0, 0.05, 0);
+    villaGroup.add(ufFloor);
+
+    const ufBackGeo = new THREE.BoxGeometry(3.8, 1.5, 0.1);
+    const ufBack = new THREE.Mesh(ufBackGeo, wallMat);
+    ufBack.position.set(0, 0.85, 2.55);
+    villaGroup.add(ufBack);
+
+    const ufLeftGeo = new THREE.BoxGeometry(0.1, 1.5, 5.2);
+    const ufLeft = new THREE.Mesh(ufLeftGeo, wallMat);
+    ufLeft.position.set(-1.85, 0.85, 0);
+    villaGroup.add(ufLeft);
+
+    const ufRightGeo = new THREE.BoxGeometry(0.1, 1.5, 5.2);
+    const ufRight = new THREE.Mesh(ufRightGeo, wallMat);
+    ufRight.position.set(1.85, 0.85, 0);
+    villaGroup.add(ufRight);
+
+    // Front Glass Facade (Upper Floor lakeside view)
+    const glassFacadeGeo = new THREE.BoxGeometry(3.8, 1.5, 0.02);
+    const glassFacadeMat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.12,
+      roughness: 0.02,
+      metalness: 0.05,
+      transmission: 0.96,
+      thickness: 0.01,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const glassFacade = new THREE.Mesh(glassFacadeGeo, glassFacadeMat);
+    glassFacade.position.set(0, 0.85, -2.55);
+    villaGroup.add(glassFacade);
+
+    // Elegant vertical window frame mullions on glass facade
+    const mullionGeo = new THREE.BoxGeometry(0.018, 1.5, 0.012);
+    for (let m = 0; m < 4; m++) {
+      const mullion = new THREE.Mesh(mullionGeo, windowFrameMat);
+      mullion.position.set(-1.8 + m * 1.2, 0.85, -2.54);
+      villaGroup.add(mullion);
+    }
 
     // Roof with slight overhang
     const villaRoofGeo = new THREE.BoxGeometry(4.2, 0.18, 5.6);
@@ -1435,9 +1535,16 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     villaGroup.add(villaRoof);
 
     // Balcony facing the lake
-    const balconyGeo = new THREE.BoxGeometry(3.9, 0.08, 1.1);
-    const balcony = new THREE.Mesh(balconyGeo, concreteMat);
-    balcony.position.set(0, 0.15, -2.8);
+    const balconyGeo = new THREE.BoxGeometry(3.9, 0.04, 1.0);
+    const balconyMat = new THREE.MeshStandardMaterial({
+      map: concreteTexture,
+      color: 0xd8d2c8,
+      roughness: 0.78,
+      transparent: true,
+      opacity: 0.92,
+    });
+    const balcony = new THREE.Mesh(balconyGeo, balconyMat);
+    balcony.position.set(0, 0.12, -2.75);
     villaGroup.add(balcony);
 
     // Balcony railing
@@ -1455,35 +1562,23 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       villaGroup.add(post);
     }
 
-    // Windows — upper floor (3 windows facing lake)
+    // Ground floor windows and door
+    const winFrameGeo = new THREE.BoxGeometry(0.82, 0.67, 0.012);
     const windowGeo = new THREE.PlaneGeometry(0.75, 0.6);
-    const winFrameGeo = new THREE.BoxGeometry(0.82, 0.67, 0.04);
-    for (let wn = 0; wn < 3; wn++) {
-      const win = new THREE.Mesh(windowGeo, windowMat);
-      win.position.set(-0.85 + wn * 0.85, 0.95, -2.62);
-      villaGroup.add(win);
-
-      const frame = new THREE.Mesh(winFrameGeo, windowFrameMat);
-      frame.position.set(-0.85 + wn * 0.85, 0.95, -2.61);
-      villaGroup.add(frame);
-    }
-
-    // Ground floor windows
     for (let wn = 0; wn < 2; wn++) {
       const win = new THREE.Mesh(windowGeo, windowMat);
-      win.position.set(-0.5 + wn * 1.0, -0.35, -2.52);
+      win.position.set(-0.6 + wn * 1.2, -0.35, -2.48);
       villaGroup.add(win);
 
       const frame = new THREE.Mesh(winFrameGeo, windowFrameMat);
-      frame.position.set(-0.5 + wn * 1.0, -0.35, -2.51);
+      frame.position.set(-0.6 + wn * 1.2, -0.35, -2.475);
       villaGroup.add(frame);
     }
 
-    // Front door
-    const doorGeo = new THREE.PlaneGeometry(0.5, 1.0);
+    const doorGeo = new THREE.PlaneGeometry(0.6, 1.1);
     const doorMat = new THREE.MeshStandardMaterial({ color: 0x3d2e22, roughness: 0.7 });
     const door = new THREE.Mesh(doorGeo, doorMat);
-    door.position.set(0.6, -0.7, -2.52);
+    door.position.set(0.6, -0.6, -2.48);
     villaGroup.add(door);
 
     // Porch pillars
@@ -1496,10 +1591,16 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       villaGroup.add(pillar);
     });
 
-    // Porch roof (small overhang above ground floor entrance)
-    const porchRoofGeo = new THREE.BoxGeometry(3.8, 0.06, 0.8);
-    const porchRoof = new THREE.Mesh(porchRoofGeo, roofMat);
-    porchRoof.position.set(0, 0.42, -2.95);
+    // Porch overhang — thin, elevated to avoid blocking lake view
+    const porchRoofGeo = new THREE.BoxGeometry(3.6, 0.03, 0.55);
+    const porchRoofMat = new THREE.MeshStandardMaterial({
+      color: 0x4a5c62,
+      roughness: 0.75,
+      transparent: true,
+      opacity: 0.55,
+    });
+    const porchRoof = new THREE.Mesh(porchRoofGeo, porchRoofMat);
+    porchRoof.position.set(0, 0.58, -2.88);
     villaGroup.add(porchRoof);
 
     // Chimney
@@ -1508,62 +1609,161 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     chimney.position.set(1.3, 2.1, 1.2);
     villaGroup.add(chimney);
 
-    // Warm lantern light
+    // ─── Interior Details for Hollow Upper Floor ─────────────────────────
+    const interiorGroup = new THREE.Group();
+    villaGroup.add(interiorGroup);
+
+    // Sofa
+    const fabricMat = new THREE.MeshStandardMaterial({
+      color: 0xdfdcd6,
+      roughness: 0.85,
+    });
+    const woodTrimMat = new THREE.MeshStandardMaterial({
+      color: 0x4a3c31,
+      roughness: 0.6,
+    });
+
+    const sofaBase = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.2, 0.75), fabricMat);
+    sofaBase.position.set(-0.3, 0.15, 1.1);
+    interiorGroup.add(sofaBase);
+
+    const sofaBack = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.5, 0.18), fabricMat);
+    sofaBack.position.set(-0.3, 0.45, 1.48);
+    interiorGroup.add(sofaBack);
+
+    const sofaArmL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.45, 0.75), fabricMat);
+    sofaArmL.position.set(-1.3, 0.28, 1.1);
+    interiorGroup.add(sofaArmL);
+
+    const sofaArmR = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.45, 0.75), fabricMat);
+    sofaArmR.position.set(0.7, 0.28, 1.1);
+    interiorGroup.add(sofaArmR);
+
+    // Coffee table
+    const glassTableMat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.4,
+      roughness: 0.1,
+      metalness: 0.9,
+      transmission: 0.6,
+      thickness: 0.05,
+    });
+    const tableTop = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.03, 0.5), glassTableMat);
+    tableTop.position.set(-0.3, 0.18, 0.4);
+    interiorGroup.add(tableTop);
+
+    const legGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.18, 6);
+    const legPositions = [
+      [-0.72, 0.09, 0.18],
+      [0.12, 0.09, 0.18],
+      [-0.72, 0.09, 0.62],
+      [0.12, 0.09, 0.62],
+    ];
+    legPositions.forEach(([lx, ly, lz], idx) => {
+      const leg = new THREE.Mesh(legGeo, woodTrimMat);
+      leg.position.set(lx, ly, lz);
+      interiorGroup.add(leg);
+    });
+
+    // Bulbs / Pendant Lamps hanging from the ceiling
+    const cordGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.65, 6);
+    const cordMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+
+    const bulbGeoInt = new THREE.SphereGeometry(0.05, 8, 8);
+    const bulbMatInt = new THREE.MeshBasicMaterial({ color: 0xffe0a0 });
+
+    // Lamp 1
+    const cord1 = new THREE.Mesh(cordGeo, cordMat);
+    cord1.position.set(-0.5, 1.32, 0.4);
+    interiorGroup.add(cord1);
+    const bulb1 = new THREE.Mesh(bulbGeoInt, bulbMatInt);
+    bulb1.position.set(-0.5, 0.95, 0.4);
+    interiorGroup.add(bulb1);
+
+    // Lamp 2
+    const cord2 = new THREE.Mesh(cordGeo, cordMat);
+    cord2.position.set(0.3, 1.32, 0.4);
+    interiorGroup.add(cord2);
+    const bulb2 = new THREE.Mesh(bulbGeoInt, bulbMatInt);
+    bulb2.position.set(0.3, 0.95, 0.4);
+    interiorGroup.add(bulb2);
+
+    // Interior Point Light (warm cozy ambiance inside)
+    const interiorLight = new THREE.PointLight(0xffa550, 0.8, 8.0);
+    interiorLight.position.set(-0.1, 1.0, 0.6);
+    interiorGroup.add(interiorLight);
+
+    // Corner Plant
+    const potGeo = new THREE.CylinderGeometry(0.14, 0.1, 0.28, 8);
+    const pot = new THREE.Mesh(potGeo, concreteMat);
+    pot.position.set(1.4, 0.19, 1.9);
+    interiorGroup.add(pot);
+
+    const plantStemGeo = new THREE.CylinderGeometry(0.008, 0.015, 0.7, 6);
+    const plantStem = new THREE.Mesh(plantStemGeo, woodTrimMat);
+    plantStem.position.set(1.4, 0.45, 1.9);
+    plantStem.rotation.z = -0.15;
+    interiorGroup.add(plantStem);
+
+    const plantLeaves = new THREE.Group();
+    plantLeaves.position.set(1.35, 0.75, 1.9);
+    for (let l = 0; l < 6; l++) {
+      const leaf = new THREE.Mesh(leafGeo, leafMaterial);
+      leaf.scale.setScalar(0.4);
+      leaf.rotation.y = (l / 6) * Math.PI * 2;
+      leaf.rotation.x = 0.6 + Math.random() * 0.3;
+      plantLeaves.add(leaf);
+    }
+    interiorGroup.add(plantLeaves);
+
+    // Accent armchair
+    const chairSeat = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, 0.55), fabricMat);
+    chairSeat.position.set(1.1, 0.14, 0.35);
+    interiorGroup.add(chairSeat);
+    const chairBack = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.45, 0.1), fabricMat);
+    chairBack.position.set(1.1, 0.38, 0.58);
+    interiorGroup.add(chairBack);
+
+    // Area rug
+    const rugMat = new THREE.MeshStandardMaterial({ color: 0x8a7a68, roughness: 0.95 });
+    const rug = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.02, 1.6), rugMat);
+    rug.position.set(-0.2, 0.08, 0.75);
+    interiorGroup.add(rug);
+
+    // Wall sconces flanking the view
+    const sconceMat = new THREE.MeshStandardMaterial({
+      color: 0xc9a55a,
+      emissive: 0xffa040,
+      emissiveIntensity: 0.35,
+      metalness: 0.6,
+      roughness: 0.3,
+    });
+    const sconceGeo = new THREE.BoxGeometry(0.08, 0.15, 0.06);
+    const sconceL = new THREE.Mesh(sconceGeo, sconceMat);
+    sconceL.position.set(-1.55, 1.05, -1.8);
+    interiorGroup.add(sconceL);
+    const sconceR = new THREE.Mesh(sconceGeo, sconceMat);
+    sconceR.position.set(1.55, 1.05, -1.8);
+    interiorGroup.add(sconceR);
+
+    const sconceLightL = new THREE.PointLight(0xffb060, 0.4, 4);
+    sconceLightL.position.set(-1.55, 1.05, -1.6);
+    interiorGroup.add(sconceLightL);
+    const sconceLightR = new THREE.PointLight(0xffb060, 0.4, 4);
+    sconceLightR.position.set(1.55, 1.05, -1.6);
+    interiorGroup.add(sconceLightR);
+
+    // Exterior Balcony lantern (bulbSphere & warmLight) hanging from the overhang
     const bulbGeo = new THREE.SphereGeometry(0.04, 8, 8);
     const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffd090 });
     const bulbSphere = new THREE.Mesh(bulbGeo, bulbMat);
-    bulbSphere.position.set(0, 0.95, -2.5);
+    bulbSphere.position.set(0, 1.45, -2.8);
     villaGroup.add(bulbSphere);
 
     const warmLight = new THREE.PointLight(0xffa04d, 0, 14);
-    warmLight.position.set(0, 0.9, -2.4);
+    warmLight.position.set(0, 1.4, -2.7);
     villaGroup.add(warmLight);
-
-    // Volumetric light cone
-    const coneGeo = new THREE.CylinderGeometry(0.03, 0.8, 1.6, 12, 1, true);
-    coneGeo.translate(0, -0.8, 0);
-    const coneUniforms = {
-      uColor: { value: new THREE.Color(0xffa04d) },
-      uIntensity: { value: 0.0 },
-    };
-    const coneMat = new THREE.ShaderMaterial({
-      vertexShader: /* glsl */ `
-        varying vec2 vUv;
-        varying vec3 vNormal;
-        varying vec3 vViewPosition;
-        void main() {
-          vUv = uv;
-          vNormal = normalize(normalMatrix * normal);
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          vViewPosition = -mvPosition.xyz;
-          gl_Position = projectionMatrix * mvPosition;
-        }
-      `,
-      fragmentShader: /* glsl */ `
-        varying vec2 vUv;
-        varying vec3 vNormal;
-        varying vec3 vViewPosition;
-        uniform vec3 uColor;
-        uniform float uIntensity;
-        void main() {
-          float verticalFade = pow(1.0 - vUv.y, 2.0);
-          vec3 normal = normalize(vNormal);
-          vec3 viewDir = normalize(vViewPosition);
-          float edgeFade = pow(1.0 - abs(dot(normal, viewDir)), 2.0);
-          float alpha = verticalFade * edgeFade * uIntensity * 0.3;
-          gl_FragColor = vec4(uColor, alpha);
-        }
-      `,
-      uniforms: coneUniforms,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      side: THREE.DoubleSide,
-    });
-    const lightCone = new THREE.Mesh(coneGeo, coneMat);
-    lightCone.position.set(0, 0.95, -2.4);
-    lightCone.rotation.x = Math.PI;
-    villaGroup.add(lightCone);
 
     // Garden path from villa to road
     const pathGeo = new THREE.PlaneGeometry(0.8, 3.5);
@@ -1601,8 +1801,9 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     for (let i = 0; i < palmsCount; i++) {
       const palmTree = new THREE.Group();
-      const x = -8 + i * 3.3 + (Math.random() - 0.5) * 1.2;
-      const z = -1.8 - Math.random() * 2.0; // on the grass strip
+      const x = -7.5 + i * 2.8 + (Math.random() - 0.5) * 0.8;
+      // Grass strip between road (z ~ -1.2) and lake shore (z ~ -4.8) — never in water
+      const z = -2.1 - Math.random() * 2.4;
       
       // Calculate palm Y height based on the grass slope height at that Z
       const localZ = z - (-3.0);
@@ -1635,11 +1836,19 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     }
 
     // ─── Birds (3D body + wings) ─────────────────────────────────────────
-    const birdSilhouetteMat = new THREE.MeshStandardMaterial({
-      color: 0x051319,
-      roughness: 0.92,
+    const birdBodyMat = new THREE.MeshStandardMaterial({
+      color: 0x2a3840,
+      roughness: 0.65,
+      metalness: 0.08,
       transparent: true,
       opacity: 1,
+    });
+    const birdWingMat = new THREE.MeshStandardMaterial({
+      color: 0x3d4f58,
+      roughness: 0.55,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.92,
     });
 
     const birdsData: Array<{
@@ -1653,44 +1862,41 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       baseY: number;
     }> = [];
 
-    const birdBodyGeo = new THREE.SphereGeometry(0.08, 8, 6);
-    birdBodyGeo.scale(1.5, 0.6, 2.5);
-    const wingGeo = new THREE.PlaneGeometry(0.5, 0.15);
-    wingGeo.translate(-0.25, 0, 0);
-    const headGeo = new THREE.SphereGeometry(0.04, 6, 6);
-    const beakGeo = new THREE.ConeGeometry(0.015, 0.08, 4);
+    const birdBodyGeo = new THREE.SphereGeometry(0.09, 10, 8);
+    birdBodyGeo.scale(1.6, 0.65, 2.8);
+    const wingGeo = new THREE.PlaneGeometry(0.62, 0.18);
+    wingGeo.translate(-0.28, 0, 0);
+    const headGeo = new THREE.SphereGeometry(0.045, 8, 8);
+    const beakGeo = new THREE.ConeGeometry(0.018, 0.1, 5);
     beakGeo.rotateX(-Math.PI / 2);
+    const beakMat = new THREE.MeshStandardMaterial({ color: 0xc9a55a, roughness: 0.4 });
 
     for (let i = 0; i < 5; i++) {
       const birdGroup = new THREE.Group();
 
-      // Body
-      const body = new THREE.Mesh(birdBodyGeo, birdSilhouetteMat);
+      const body = new THREE.Mesh(birdBodyGeo, birdBodyMat);
       birdGroup.add(body);
 
-      // Head
-      const head = new THREE.Mesh(headGeo, birdSilhouetteMat);
-      head.position.set(0.15, 0.03, 0);
+      const head = new THREE.Mesh(headGeo, birdBodyMat);
+      head.position.set(0.17, 0.04, 0);
       birdGroup.add(head);
 
-      // Beak
-      const beak = new THREE.Mesh(beakGeo, birdSilhouetteMat);
-      beak.position.set(0.22, 0.02, 0);
+      const beak = new THREE.Mesh(beakGeo, beakMat);
+      beak.position.set(0.26, 0.02, 0);
       birdGroup.add(beak);
 
-      // Wings with shoulder pivot
-      const wingL = new THREE.Mesh(wingGeo, birdSilhouetteMat);
-      wingL.position.set(-0.02, 0.05, 0);
+      const wingL = new THREE.Mesh(wingGeo, birdWingMat);
+      wingL.position.set(-0.02, 0.06, 0);
       birdGroup.add(wingL);
 
-      const wingR = new THREE.Mesh(wingGeo, birdSilhouetteMat);
+      const wingR = new THREE.Mesh(wingGeo, birdWingMat);
       wingR.scale.x = -1;
-      wingR.position.set(0.02, 0.05, 0);
+      wingR.position.set(0.02, 0.06, 0);
       birdGroup.add(wingR);
 
-      const birdY = 2.5 + Math.random() * 2.0;
-      birdGroup.position.set(-8 + i * 5, birdY, -8);
-      birdGroup.scale.setScalar(0.8 + Math.random() * 0.5);
+      const birdY = 3.0 + Math.random() * 2.5;
+      birdGroup.position.set(-6 + i * 3.5, birdY, -9 - Math.random() * 2);
+      birdGroup.scale.setScalar(1.0 + Math.random() * 0.4);
       scene.add(birdGroup);
 
       birdsData.push({
@@ -1961,32 +2167,19 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const fireflies = new THREE.Points(fireflyGeo, fireflyMat);
     scene.add(fireflies);
 
-    // ─── Camera Path (Cinematic Scroll-Driven) ───────────────────────────
-    // Option A: Inside villa upper floor → exit through balcony → road → rise above lake
-    // Villa roof is at world y≈1.72, upper floor center at y≈0.85
-    // Villa front face (balcony) is at world z≈0.7
-    // Camera MUST stay below y=0.85 until past z≈0.7 to avoid clipping the roof
-    const cameraPath = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(6.0, 0.65, 4.0),     // Inside villa upper floor, eye level standing
-      new THREE.Vector3(6.0, 0.65, 2.8),     // Walking toward the window/balcony, same height
-      new THREE.Vector3(5.8, 0.7, 0.5),      // Exited through balcony, now outside past villa front
-      new THREE.Vector3(5.0, 0.8, -0.8),     // Over the road, still low — no clipping possible
-      new THREE.Vector3(3.5, 1.8, -2.5),     // Now past villa entirely, starting gentle rise
-      new THREE.Vector3(1.5, 3.5, -5.0),     // Rising over grass strip toward lake
-      new THREE.Vector3(0.0, 5.5, -7.5),     // Higher above lake edge
-      new THREE.Vector3(-0.5, 7.5, -10.0),   // Panoramic aerial over lake center
-    ]);
-
-    const lookAtPath = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(5.5, 0.3, -1.0),     // Looking out through window toward road/lake
-      new THREE.Vector3(4.5, 0.1, -3.0),     // Through balcony toward lake
-      new THREE.Vector3(3.0, -0.1, -5.0),    // Lake shore coming into view
-      new THREE.Vector3(1.5, -0.3, -7.0),    // Lake center
-      new THREE.Vector3(0.5, -0.5, -9.0),    // Deeper into lake
-      new THREE.Vector3(0.0, -0.6, -11.0),   // Far shore
-      new THREE.Vector3(-0.5, -0.8, -14.0),  // Far shore + mountains
-      new THREE.Vector3(-1.0, -1.0, -18.0),  // Mountains panorama
-    ]);
+    // ─── Camera Path (scroll-keyframed: inside → balcony → road → rise over lake) ──
+    const cameraKeyframes: CameraKeyframe[] = [
+      { t: 0.0, pos: new THREE.Vector3(6.02, 1.42, 4.9), look: new THREE.Vector3(4.8, 0.9, -2.0) },
+      { t: 0.15, pos: new THREE.Vector3(6.06, 1.4, 3.6), look: new THREE.Vector3(4.2, 0.55, -4.0) },
+      { t: 0.3, pos: new THREE.Vector3(6.1, 1.36, 2.2), look: new THREE.Vector3(3.2, 0.25, -6.0) },
+      { t: 0.42, pos: new THREE.Vector3(6.12, 1.32, 1.0), look: new THREE.Vector3(2.0, 0.05, -7.5) },
+      { t: 0.52, pos: new THREE.Vector3(6.08, 1.18, 0.15), look: new THREE.Vector3(0.8, -0.1, -8.8) },
+      { t: 0.62, pos: new THREE.Vector3(5.2, 1.08, -0.35), look: new THREE.Vector3(0.0, -0.2, -9.8) },
+      { t: 0.72, pos: new THREE.Vector3(3.6, 1.05, -0.8), look: new THREE.Vector3(-0.5, -0.25, -11.0) },
+      { t: 0.82, pos: new THREE.Vector3(2.0, 1.55, -2.8), look: new THREE.Vector3(-0.3, -0.35, -13.5) },
+      { t: 0.92, pos: new THREE.Vector3(0.4, 3.2, -6.5), look: new THREE.Vector3(0.0, -0.45, -16.0) },
+      { t: 1.0, pos: new THREE.Vector3(-0.6, 5.8, -11.5), look: new THREE.Vector3(0.2, -0.55, -22.0) },
+    ];
 
     // ─── Environment State ───────────────────────────────────────────────
     const currentEnv: EnvConfig = {
@@ -2030,8 +2223,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const boostedWater = new THREE.Color();
     const camPos = new THREE.Vector3();
     const camLookAt = new THREE.Vector3();
-    const smoothedCamPos = new THREE.Vector3(6.0, 0.65, 4.0);
-    const smoothedLookAt = new THREE.Vector3(5.5, 0.3, -1.0);
+    const smoothedCamPos = new THREE.Vector3(6.02, 1.42, 4.9);
+    const smoothedLookAt = new THREE.Vector3(4.8, 0.9, -2.0);
 
     const animate = () => {
       if (!prefersReduced) rafId = requestAnimationFrame(animate);
@@ -2067,6 +2260,11 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
         windowMat.emissiveIntensity = nightVal * 0.6;
       }
 
+      if (interiorLight) {
+        const nightVal = computeNightSmooth(timeVal);
+        interiorLight.intensity = 0.25 + nightVal * 1.55;
+      }
+
       // 3. Update sky dome
       skyMat.uniforms.uColorTop.value.copy(currentEnv.skyTop);
       skyMat.uniforms.uColorBottom.value.copy(currentEnv.skyBottom);
@@ -2095,9 +2293,10 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       sunGlowMat.opacity = (1.0 - nightSmooth) * 0.8;
       sunGlowSprite.scale.setScalar(8 + computeGoldenHourBoost(timeVal) * 6);
 
-      // Moon — visible during night
-      // Moon at opposite-ish direction from sun
-      const moonDir = sunDir.clone();
+      // Moon — opposite hemisphere from sun
+      const moonDir = sunDir.clone().negate();
+      moonDir.y = Math.abs(moonDir.y) * 0.85 + 0.12;
+      moonDir.normalize();
       moonOrb.position.copy(moonDir).multiplyScalar(40);
       moonOrb.visible = nightSmooth > 0.3;
       const moonGlowMat = moonGlowSprite.material as THREE.SpriteMaterial;
@@ -2157,7 +2356,6 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
       // Villa lantern light intensity
       warmLight.intensity = currentEnv.lanternIntensity * 2.2;
-      coneUniforms.uIntensity.value = currentEnv.lanternIntensity;
 
       // 8. Sway palms
       palmsData.forEach((palm) => {
@@ -2182,7 +2380,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
           Math.cos(angle) * bird.radius * 0.35,
           -Math.sin(angle) * 2.0
         );
-        birdSilhouetteMat.opacity = birdVis;
+        birdBodyMat.opacity = 0.75 + birdVis * 0.25;
+        birdWingMat.opacity = 0.7 + birdVis * 0.3;
       });
 
       // 10. Bob lily pads
@@ -2255,10 +2454,9 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       // Foreground leaf parallax depth on scroll
       fgLeafMat.opacity = Math.max(0, 0.25 - scroll * 0.3);
 
-      // 15. Camera — scroll-driven cinematic path
+      // 15. Camera — scroll-keyframed path (height rises only after road segment)
       const scrollT = Math.max(0, Math.min(1, scroll));
-      cameraPath.getPoint(scrollT, camPos);
-      lookAtPath.getPoint(scrollT, camLookAt);
+      sampleCameraKeyframes(scrollT, cameraKeyframes, camPos, camLookAt);
 
       // Add subtle mouse parallax offset
       camPos.x += mouse.x * 0.25 * (1.0 - scrollT * 0.5);
@@ -2299,8 +2497,16 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       grassStripGeo.dispose();
       lakeFieldGeo.dispose();
       curbGeo.dispose();
-      groundFloorGeo.dispose();
-      guestFloorGeo.dispose();
+      gfFloorGeo.dispose();
+      gfBackGeo.dispose();
+      gfLeftGeo.dispose();
+      gfRightGeo.dispose();
+      ufFloorGeo.dispose();
+      ufBackGeo.dispose();
+      ufLeftGeo.dispose();
+      ufRightGeo.dispose();
+      glassFacadeGeo.dispose();
+      mullionGeo.dispose();
       villaRoofGeo.dispose();
       balconyGeo.dispose();
       railGeo.dispose();
@@ -2312,7 +2518,6 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       porchRoofGeo.dispose();
       chimneyGeo.dispose();
       bulbGeo.dispose();
-      coneGeo.dispose();
       foregroundLeafGeo.dispose();
       pathGeo.dispose();
       farTerrainGeo.dispose();
@@ -2344,6 +2549,18 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       moonOrbGeo.dispose();
       cloudGeometries.forEach((g) => g.dispose());
 
+      // Interior geometries
+      sofaBase.geometry.dispose();
+      sofaBack.geometry.dispose();
+      sofaArmL.geometry.dispose();
+      sofaArmR.geometry.dispose();
+      tableTop.geometry.dispose();
+      legGeo.dispose();
+      cordGeo.dispose();
+      bulbGeoInt.dispose();
+      potGeo.dispose();
+      plantStemGeo.dispose();
+
       // Materials
       waterMat.dispose();
       skyMat.dispose();
@@ -2363,7 +2580,6 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       railMat.dispose();
       leafMaterial.dispose();
       fgLeafMat.dispose();
-      coneMat.dispose();
       bulbMat.dispose();
       pathMat.dispose();
       farTerrainMat.dispose();
@@ -2372,7 +2588,15 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       forestTrunkMat.dispose();
       forestCrownMats.forEach((m) => m.dispose());
       bushMat.dispose();
-      birdSilhouetteMat.dispose();
+      birdBodyMat.dispose();
+      birdWingMat.dispose();
+      beakMat.dispose();
+      balconyMat.dispose();
+      porchRoofMat.dispose();
+      shoreWedgeGeo.dispose();
+      shoreWedgeMat.dispose();
+      rugMat.dispose();
+      sconceMat.dispose();
       trunkMaterial.dispose();
       reedMat.dispose();
       rockMat.dispose();
@@ -2387,6 +2611,15 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       sunOrbMat.dispose();
       moonOrbMat.dispose();
       cloudMat.dispose();
+
+      // Interior materials
+      fabricMat.dispose();
+      woodTrimMat.dispose();
+      glassTableMat.dispose();
+      cordMat.dispose();
+      bulbMatInt.dispose();
+      glassFacadeMat.dispose();
+
       (sunGlowSprite.material as THREE.SpriteMaterial).dispose();
       (moonGlowSprite.material as THREE.SpriteMaterial).dispose();
       chimney.material.dispose();

@@ -35,10 +35,10 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
   const heroRef = useRef<HTMLDivElement>(null);
   const canvasWrapRef = useRef<HTMLDivElement>(null);
   const heroTextRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   const [canvasProgress, setCanvasProgress] = useState(0);
 
-  // Time-of-day states
   const getLocalTime = () => {
     const now = new Date();
     return now.getHours() + now.getMinutes() / 60;
@@ -46,19 +46,16 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
 
   const [timeOfDay, setTimeOfDay] = useState(getLocalTime());
   const [isAutoTime, setIsAutoTime] = useState(true);
+  const [hideUI, setHideUI] = useState(false);
 
-  // Auto time sync loop
   useEffect(() => {
     if (!isAutoTime) return;
     const interval = setInterval(() => {
       setTimeOfDay(getLocalTime());
-    }, 20000); // sync every 20s
+    }, 20000);
     return () => clearInterval(interval);
   }, [isAutoTime]);
 
-  const [hideUI, setHideUI] = useState(false);
-
-  // Keyboard listener for focus mode toggle ('H' key)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === "h") {
@@ -87,7 +84,6 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
     () => {
       const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      // Phase 1: Scroll Pin timeline
       const heroPin = ScrollTrigger.create({
         trigger: heroRef.current,
         start: "top top",
@@ -101,7 +97,6 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
       });
 
       if (!prefersReduced) {
-        // Unified text + canvas animations synced to scroll
         gsap.to(heroTextRef.current, {
           y: -120,
           opacity: 0,
@@ -115,7 +110,6 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
           },
         });
 
-        // Canvas backdrop zoom with brightness shift
         gsap.fromTo(
           canvasWrapRef.current,
           { scale: 1, filter: "brightness(1)" },
@@ -141,7 +135,20 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
     { scope: wrapperRef }
   );
 
-  // UI helpers for time indicators
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    const heroText = heroTextRef.current;
+    if (!overlay) return;
+
+    if (hideUI) {
+      gsap.killTweensOf([overlay, heroText]);
+      gsap.set(overlay, { autoAlpha: 0, pointerEvents: "none" });
+      if (heroText) gsap.set(heroText, { clearProps: "all" });
+    } else {
+      gsap.set(overlay, { autoAlpha: 1, pointerEvents: "auto" });
+    }
+  }, [hideUI]);
+
   const getTimeIcon = (h: number) => {
     if (h >= 5.0 && h < 7.5) return <Sunrise className="size-4 text-orange-400 animate-pulse" />;
     if (h >= 7.5 && h < 16.5) return <Sun className="size-4 text-[var(--color-gold)]" />;
@@ -160,7 +167,6 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
 
   return (
     <div ref={wrapperRef} className="relative select-none bg-[var(--color-background)]">
-      {/* Hero Section */}
       <section
         ref={heroRef}
         id="home"
@@ -171,87 +177,93 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
           <Suspense fallback={null}>
             <HeroCanvas scrollProgress={canvasProgress} timeOfDay={timeOfDay} />
           </Suspense>
-          
-          {/* Light edge vignette — lagoon stays vivid */}
-          <div
-            aria-hidden
-            className="absolute inset-0 bg-gradient-to-b from-[var(--hero-overlay-from)]/50 via-transparent to-[var(--hero-overlay-to)]/55 transition-colors duration-300"
-          />
-          <div
-            aria-hidden
-            className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(53,168,172,0.2)_0%,rgba(126,200,204,0.07)_35%,transparent_65%)]"
-          />
         </div>
 
-        <div 
-          ref={heroTextRef} 
-          className={`relative z-10 w-full h-full transition-opacity duration-700 ${
-            hideUI ? "opacity-0 pointer-events-none" : "opacity-100"
-          }`}
+        {/* All hero overlay UI — hidden in focus mode */}
+        <div
+          ref={overlayRef}
+          className="absolute inset-0 z-10 pointer-events-none [&_*]:pointer-events-auto"
+          aria-hidden={hideUI}
         >
-          <HeroText headline={headline} subheadline={subheadline} onBook={handleBook} />
-        </div>
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-gradient-to-b from-[var(--hero-overlay-from)]/50 via-transparent to-[var(--hero-overlay-to)]/55 transition-colors duration-300 pointer-events-none"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(53,168,172,0.2)_0%,rgba(126,200,204,0.07)_35%,transparent_65%)] pointer-events-none"
+          />
 
-        {/* Floating Time-of-Day Controller (Premium UX overlay) - Shifted to bottom-left to avoid FAB overlap */}
-        <div className="absolute bottom-6 left-6 md:left-8 z-20 flex items-center gap-3 bg-[var(--glass-2-bg)] backdrop-blur-xl border border-[var(--glass-2-border)] rounded-full px-4 py-2.5 shadow-2xl hover:scale-[1.01] transition-transform duration-300">
-          {/* Dev focus view toggle button */}
-          <button
-            onClick={() => setHideUI((prev) => !prev)}
-            className="flex items-center justify-center p-1.5 rounded-full bg-white/10 text-white/70 hover:text-white hover:bg-white/20 transition-all duration-300 cursor-pointer"
-            title="Toggle Focus View (Press 'H')"
-            aria-label={hideUI ? "Show UI overlay" : "Hide UI overlay"}
-          >
-            {hideUI ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </button>
+          <div ref={heroTextRef} className="relative w-full h-full">
+            <HeroText headline={headline} subheadline={subheadline} onBook={handleBook} />
+          </div>
 
-          <button
-            onClick={() => {
-              if (!isAutoTime) {
-                setIsAutoTime(true);
-                setTimeOfDay(getLocalTime());
-              } else {
-                setIsAutoTime(false);
-              }
-            }}
-            className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full transition-all duration-300 ${
-              isAutoTime
-                ? "bg-[var(--color-gold)] text-[var(--color-charcoal)] shadow-[0_2px_10px_rgba(201,165,90,0.3)]"
-                : "bg-white/10 text-white/70 hover:text-white"
-            }`}
-          >
-            Auto
-          </button>
-          
-          <div className="flex items-center gap-2 border-l border-white/10 pl-3">
-            {getTimeIcon(timeOfDay)}
-            <span className="text-[10px] font-bold text-white/90 min-w-[70px]">
-              {formatTimeLabel(timeOfDay)}
-            </span>
-            <input
-              type="range"
-              min="0"
-              max="23.9"
-              step="0.1"
-              value={timeOfDay}
-              onChange={(e) => {
-                setIsAutoTime(false);
-                setTimeOfDay(parseFloat(e.target.value));
+          <div className="absolute bottom-6 left-6 md:left-8 flex items-center gap-3 bg-[var(--glass-2-bg)] backdrop-blur-xl border border-[var(--glass-2-border)] rounded-full px-4 py-2.5 shadow-2xl hover:scale-[1.01] transition-transform duration-300">
+            <button
+              onClick={() => setHideUI((prev) => !prev)}
+              className="flex items-center justify-center p-1.5 rounded-full bg-white/10 text-white/70 hover:text-white hover:bg-white/20 transition-all duration-300 cursor-pointer"
+              title="Toggle Focus View (Press 'H')"
+              aria-label={hideUI ? "Show UI overlay" : "Hide UI overlay"}
+            >
+              {hideUI ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </button>
+
+            <button
+              onClick={() => {
+                if (!isAutoTime) {
+                  setIsAutoTime(true);
+                  setTimeOfDay(getLocalTime());
+                } else {
+                  setIsAutoTime(false);
+                }
               }}
-              className="w-20 md:w-28 h-1 rounded-full bg-white/20 accent-[var(--color-gold)] appearance-none cursor-pointer outline-none hover:bg-white/30 transition-colors"
-              style={{
-                WebkitAppearance: "none",
-              }}
-            />
+              className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full transition-all duration-300 ${
+                isAutoTime
+                  ? "bg-[var(--color-gold)] text-[var(--color-charcoal)] shadow-[0_2px_10px_rgba(201,165,90,0.3)]"
+                  : "bg-white/10 text-white/70 hover:text-white"
+              }`}
+            >
+              Auto
+            </button>
+
+            <div className="flex items-center gap-2 border-l border-white/10 pl-3">
+              {getTimeIcon(timeOfDay)}
+              <span className="text-[10px] font-bold text-white/90 min-w-[70px]">
+                {formatTimeLabel(timeOfDay)}
+              </span>
+              <input
+                type="range"
+                min="0"
+                max="23.9"
+                step="0.1"
+                value={timeOfDay}
+                onChange={(e) => {
+                  setIsAutoTime(false);
+                  setTimeOfDay(parseFloat(e.target.value));
+                }}
+                className="w-20 md:w-28 h-1 rounded-full bg-white/20 accent-[var(--color-gold)] appearance-none cursor-pointer outline-none hover:bg-white/30 transition-colors"
+                style={{ WebkitAppearance: "none" }}
+              />
+            </div>
           </div>
         </div>
+
+        {/* Minimal restore control when focus mode is active */}
+        {hideUI && (
+          <button
+            onClick={() => setHideUI(false)}
+            className="absolute bottom-6 left-6 z-20 flex items-center justify-center p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-white/80 hover:text-white hover:bg-black/55 transition-all duration-300 cursor-pointer"
+            title="Show UI overlay (Press 'H')"
+            aria-label="Show UI overlay"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+        )}
       </section>
 
       <div className="h-1 w-full bg-gradient-to-r from-transparent via-[var(--color-gold)] to-transparent opacity-30" />
 
-      {/* Story Section */}
       <StoryReveal />
-
-      {/* Booking Callout */}
       <BookingCallout onBook={handleBook} />
     </div>
   );
