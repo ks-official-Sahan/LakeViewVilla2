@@ -31,7 +31,7 @@ const ENV_PRESETS = [
     ambientIntensity: 0.12,
     sun: "#769bb0", // Moon
     sunIntensity: 0.35,
-    sunPos: [-12, 10, -8],
+    sunPos: [-8, 11, -6],
     fogColor: "#010508",
     fogDensity: 0.02,
     water: "#0C3540",
@@ -41,14 +41,14 @@ const ENV_PRESETS = [
     lanternIntensity: 1.6,
   },
   {
-    time: 5.5, // Dawn
+    time: 5.5, // Dawn — sun rises behind right of villa
     skyTop: "#3A6A8A",
     skyBottom: "#F0C8A0",
     ambient: "#4A6A7A",
     ambientIntensity: 0.65,
     sun: "#E8A87C",
     sunIntensity: 0.8,
-    sunPos: [15, 4, -4],
+    sunPos: [14, 2.8, 5],
     fogColor: "#2B1A24",
     fogDensity: 0.035,
     water: "#30A0A4",
@@ -65,7 +65,7 @@ const ENV_PRESETS = [
     ambientIntensity: 1.05,
     sun: "#FFF8E7",
     sunIntensity: 1.4,
-    sunPos: [8, 15, 6],
+    sunPos: [10, 16, 3],
     fogColor: "#F5F0E6",
     fogDensity: 0.012,
     water: "#35A8AC",
@@ -82,7 +82,7 @@ const ENV_PRESETS = [
     ambientIntensity: 1.1,
     sun: "#FFFFFF",
     sunIntensity: 1.5,
-    sunPos: [-6, 17, 8],
+    sunPos: [2, 18, 1],
     fogColor: "#FAF6EE",
     fogDensity: 0.008,
     water: "#32A5A9",
@@ -99,7 +99,7 @@ const ENV_PRESETS = [
     ambientIntensity: 0.45,
     sun: "#E8904E",
     sunIntensity: 1.6,
-    sunPos: [-15, 3, -2],
+    sunPos: [-14, 2.8, 5],
     fogColor: "#2A140F",
     fogDensity: 0.03,
     water: "#2D6A6E",
@@ -116,7 +116,7 @@ const ENV_PRESETS = [
     ambientIntensity: 0.25,
     sun: "#769bb0",
     sunIntensity: 0.5,
-    sunPos: [10, 8, -6],
+    sunPos: [9, 9, -5],
     fogColor: "#02070a",
     fogDensity: 0.015,
     water: "#123840",
@@ -133,7 +133,7 @@ const ENV_PRESETS = [
     ambientIntensity: 0.12,
     sun: "#769bb0",
     sunIntensity: 0.35,
-    sunPos: [-12, 10, -8],
+    sunPos: [-8, 11, -6],
     fogColor: "#010508",
     fogDensity: 0.02,
     water: "#0C3540",
@@ -143,6 +143,11 @@ const ENV_PRESETS = [
     lanternIntensity: 1.6,
   },
 ];
+
+/** Coastal breeze: day = sea→villa (+X), night = land→coast (−X). */
+function computeWindX(time: number): number {
+  return time >= 6 && time < 20 ? 1.0 : -1.0;
+}
 
 const ENV_KEYFRAMES = ENV_PRESETS.map((p) => ({
   time: p.time,
@@ -212,8 +217,10 @@ function computeBirdVisibility(time: number): number {
   return Math.max(midday, Math.max(dawnPeak, duskPeak));
 }
 
-// Water plane local Y matching Tangalle lagoon shoreline (world z ≈ -7.5)
-const SHORE_PLANE_Y = 7.5;
+// Far shore of lake (toward mountains) in water-plane local Y
+const SHORE_PLANE_Y = 10.5;
+const LAKE_CENTER = new THREE.Vector2(0.5, 1.5);
+const LAKE_RADIUS = 9.5;
 
 // ─── Shaders (FBM Sky Clouds + Wave Proximity Foam + Gerstner Waves) ───────────
 
@@ -235,6 +242,7 @@ const SKY_FRAGMENT = /* glsl */ `
   uniform float uTime;
   uniform float uGoldenHourBoost;
   uniform float uIsNight;
+  uniform float uWindX;
   varying vec3 vWorldPosition;
 
   float noise(vec2 p) {
@@ -294,15 +302,17 @@ const SKY_FRAGMENT = /* glsl */ `
       vec2 baseUv = vec2(direction.x, direction.z) / (direction.y + 0.1);
 
       vec2 cirrusUv = baseUv * 1.4;
-      cirrusUv.x += uTime * 0.003;
+      cirrusUv.x += uTime * 0.0035 * uWindX;
+      cirrusUv.y += uTime * 0.0008 * abs(uWindX);
       float cirrus = smoothstep(0.55, 0.78, fbm(cirrusUv)) * smoothstep(0.15, 0.55, direction.y);
 
       vec2 cumulusUv = baseUv * 2.2;
-      cumulusUv.x += uTime * 0.006;
+      cumulusUv.x += uTime * 0.007 * uWindX;
+      cumulusUv.y += uTime * 0.0012 * uWindX * 0.5;
       float cumulus = smoothstep(0.42, 0.72, fbm(cumulusUv)) * smoothstep(-0.05, 0.35, direction.y);
 
       vec2 hazeUv = baseUv * 0.9;
-      hazeUv.x += uTime * 0.004;
+      hazeUv.x += uTime * 0.0045 * uWindX;
       float lowHaze = smoothstep(0.35, 0.65, fbm(hazeUv)) * smoothstep(-0.05, 0.18, direction.y);
 
       cloudMix = cirrus * 0.12 + cumulus * 0.24 + lowHaze * 0.16;
@@ -396,6 +406,8 @@ const WATER_FRAGMENT = /* glsl */ `
   uniform float uScrollProgress;
   uniform float uTime;
   uniform float uShoreLine;
+  uniform vec2 uLakeCenter;
+  uniform float uLakeRadius;
 
   uniform vec3 uLanternViewPosition;
   uniform vec2 uLanternPlanePos;
@@ -508,11 +520,11 @@ const WATER_FRAGMENT = /* glsl */ `
     float wavePhase = uTime * 2.8 + vWorldPos.x * 2.0 + distToShore * 1.5;
     float shoreFoam = smoothstep(0.8, 0.0, distToShore) * (0.5 + 0.5 * sin(wavePhase));
 
-    vec2 rock1 = vec2(-6.0, 4.5);
-    vec2 rock2 = vec2(-4.8, 5.2);
-    vec2 rock3 = vec2(5.2, 4.8);
-    vec2 rock4 = vec2(6.5, 3.5);
-    vec2 rock5 = vec2(-2.0, 6.5);
+    vec2 rock1 = vec2(-4.0, 8.5);
+    vec2 rock2 = vec2(1.5, 9.0);
+    vec2 rock3 = vec2(4.5, 8.0);
+    vec2 rock4 = vec2(-1.5, 9.5);
+    vec2 rock5 = vec2(0.5, 10.0);
 
     float minRockDist = min(
       min(min(distance(vWorldPos.xy, rock1), distance(vWorldPos.xy, rock2)),
@@ -530,7 +542,15 @@ const WATER_FRAGMENT = /* glsl */ `
 
     col = saturateColor(col, 1.55);
 
-    float alpha = 0.98 * (1.0 - uScrollProgress * 0.68);
+    // Lake perimeter — depth fades softly at edges and field junction (left)
+    float distLake = length(vWorldPos.xy - uLakeCenter);
+    float perimeterFade = smoothstep(uLakeRadius, uLakeRadius - 3.0, distLake);
+    float fieldJunction = smoothstep(-7.5, -4.0, vWorldPos.x);
+    float lakeMask = perimeterFade * fieldJunction;
+    col = mix(col * 0.35, col, lakeMask);
+    col = mix(col, uWaterColor * 0.5, (1.0 - perimeterFade) * 0.4);
+
+    float alpha = 0.98 * lakeMask * (1.0 - uScrollProgress * 0.68);
 
     gl_FragColor = vec4(col, alpha);
   }
@@ -698,7 +718,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     scene.fog = fog;
 
     const camera = new THREE.PerspectiveCamera(48, w / h, 0.1, 100);
-    camera.position.set(0, 0.55, 7.2);
+    camera.position.set(2.5, 0.65, 7.5);
     scene.add(camera);
 
     // ─── Lighting Setup ──────────────────────────────────────────────────
@@ -726,6 +746,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
         uTime: { value: 0.0 },
         uGoldenHourBoost: { value: 0.0 },
         uIsNight: { value: 0.0 },
+        uWindX: { value: 1.0 },
       },
       side: THREE.BackSide,
       depthWrite: false,
@@ -780,8 +801,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     // ─── Water Geometry & Material ───────────────────────────────────────
     const SEG = window.innerWidth < 768 ? 96 : 160;
-    const waterGeo = new THREE.PlaneGeometry(28, 28, SEG, SEG);
-    
+    const waterGeo = new THREE.PlaneGeometry(18, 22, SEG, SEG);
+
     const waterUniforms = {
       uTime: { value: 0 },
       uWaveSpeed: { value: 0.2 },
@@ -794,8 +815,10 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       uSunIntensity: { value: 1.0 },
       uScrollProgress: { value: 0.0 },
       uShoreLine: { value: SHORE_PLANE_Y },
+      uLakeCenter: { value: LAKE_CENTER.clone() },
+      uLakeRadius: { value: LAKE_RADIUS },
       uLanternViewPosition: { value: new THREE.Vector3(0, 0, 0) },
-      uLanternPlanePos: { value: new THREE.Vector2(-1.8, -1.8) },
+      uLanternPlanePos: { value: new THREE.Vector2(0, 0) },
       uLanternColor: { value: new THREE.Color(0xffb04d) },
       uLanternIntensity: { value: 0.0 },
     };
@@ -810,8 +833,25 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     const waterMesh = new THREE.Mesh(waterGeo, waterMat);
     waterMesh.rotation.x = -Math.PI / 2;
-    waterMesh.position.y = -1.2;
+    waterMesh.position.set(0.5, -1.2, -2.5);
     scene.add(waterMesh);
+
+    const fieldMat = new THREE.MeshStandardMaterial({
+      color: 0x6a9e5a,
+      roughness: 0.92,
+    });
+    const fieldGeo = new THREE.PlaneGeometry(12, 22);
+    const fieldMesh = new THREE.Mesh(fieldGeo, fieldMat);
+    fieldMesh.rotation.x = -Math.PI / 2;
+    fieldMesh.position.set(-7.5, -1.19, -2.5);
+    scene.add(fieldMesh);
+
+    const roadMat = new THREE.MeshStandardMaterial({ color: 0x6a6560, roughness: 0.96 });
+    const roadGeo = new THREE.PlaneGeometry(2.2, 20);
+    const roadMesh = new THREE.Mesh(roadGeo, roadMat);
+    roadMesh.rotation.x = -Math.PI / 2;
+    roadMesh.position.set(5.2, -1.185, -2.5);
+    scene.add(roadMesh);
 
     // Wireframe overlay
     const wireMat = new THREE.MeshBasicMaterial({
@@ -823,179 +863,68 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     });
     const wireMesh = new THREE.Mesh(waterGeo, wireMat);
     wireMesh.rotation.x = -Math.PI / 2;
+    wireMesh.position.copy(waterMesh.position);
     wireMesh.position.y = -1.198;
     scene.add(wireMesh);
 
-    // ─── 3D Architecture: Villa deck (scaled down — lagoon is the hero) ───
-    const deckGroup = new THREE.Group();
-    deckGroup.scale.setScalar(0.48);
-    deckGroup.position.set(2.4, -0.15, 3.6);
-    scene.add(deckGroup);
+    // ─── Two-storey Lake View Villa (guest floor faces the lake) ───────────
+    const villaGroup = new THREE.Group();
+    villaGroup.position.set(7.8, 0, 0.5);
+    scene.add(villaGroup);
 
-    const deckBaseGeo = new THREE.BoxGeometry(6.6, 0.3, 5.6);
-    const deckBase = new THREE.Mesh(deckBaseGeo, concreteMat);
-    deckBase.position.set(0, -1.25, 1.8);
-    deckGroup.add(deckBase);
-
-    const mainDeckGeo = new THREE.BoxGeometry(6.5, 0.16, 5.5);
-    const mainDeck = new THREE.Mesh(mainDeckGeo, woodPlankMat);
-    mainDeck.position.set(0, -1.12, 1.8);
-    deckGroup.add(mainDeck);
-
-    const pillars: THREE.Mesh[] = [];
-    const pillarGeo = new THREE.CylinderGeometry(0.045, 0.045, 2.6, 12);
-    const bracketGeo = new THREE.BoxGeometry(0.12, 0.04, 0.12);
-
-    const pillarPositions = [
-      [-3.0, 0.2, -0.6],
-      [3.0, 0.2, -0.6],
-      [-3.0, 0.2, 4.0],
-      [3.0, 0.2, 4.0],
-    ];
-
-    pillarPositions.forEach(([px, py, pz]) => {
-      const pillar = new THREE.Mesh(pillarGeo, slimPillarMat);
-      pillar.position.set(px, py - 1.1, pz);
-      deckGroup.add(pillar);
-      pillars.push(pillar);
-
-      const basePlate = new THREE.Mesh(bracketGeo, slimPillarMat);
-      basePlate.position.set(px, -1.04, pz);
-      deckGroup.add(basePlate);
-
-      const capPlate = new THREE.Mesh(bracketGeo, slimPillarMat);
-      capPlate.position.set(px, 1.6 - 1.1 + 1.25, pz);
-      deckGroup.add(capPlate);
+    const wallMat = new THREE.MeshStandardMaterial({
+      color: 0xf2ebe0,
+      roughness: 0.82,
+    });
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x4a5c62, roughness: 0.75 });
+    const windowMat = new THREE.MeshPhysicalMaterial({
+      color: 0xa8dce8,
+      transparent: true,
+      opacity: 0.55,
+      roughness: 0.08,
+      metalness: 0.1,
+      transmission: 0.65,
     });
 
-    const roofSlabGeo = new THREE.BoxGeometry(6.7, 0.08, 5.7);
-    const roofSlab = new THREE.Mesh(roofSlabGeo, concreteMat);
-    roofSlab.position.set(0, 1.6 - 1.1 + 1.3, 1.8);
-    deckGroup.add(roofSlab);
+    const groundFloorGeo = new THREE.BoxGeometry(3.4, 1.5, 4.6);
+    const groundFloor = new THREE.Mesh(groundFloorGeo, wallMat);
+    groundFloor.position.set(0, -0.45, 0);
+    villaGroup.add(groundFloor);
 
-    const beamGeo = new THREE.BoxGeometry(6.6, 0.06, 0.06);
-    const structuralBeams: THREE.Mesh[] = [];
-    for (let i = 0; i < 5; i++) {
-      const beam = new THREE.Mesh(beamGeo, woodPlankMat);
-      const bz = -0.5 + i * 1.12;
-      beam.position.set(0, 1.6 - 1.1 + 1.18, bz);
-      deckGroup.add(beam);
-      structuralBeams.push(beam);
+    const guestFloorGeo = new THREE.BoxGeometry(3.6, 1.6, 4.8);
+    const guestFloor = new THREE.Mesh(guestFloorGeo, wallMat);
+    guestFloor.position.set(0, 0.85, 0);
+    villaGroup.add(guestFloor);
+
+    const villaRoofGeo = new THREE.BoxGeometry(3.9, 0.18, 5.1);
+    const villaRoof = new THREE.Mesh(villaRoofGeo, roofMat);
+    villaRoof.position.set(0, 1.72, 0);
+    villaGroup.add(villaRoof);
+
+    const balconyGeo = new THREE.BoxGeometry(3.7, 0.08, 0.9);
+    const balcony = new THREE.Mesh(balconyGeo, concreteMat);
+    balcony.position.set(0, 0.15, -2.65);
+    villaGroup.add(balcony);
+
+    const windowGeo = new THREE.PlaneGeometry(0.75, 0.6);
+    for (let w = 0; w < 3; w++) {
+      const win = new THREE.Mesh(windowGeo, windowMat);
+      win.position.set(-0.85 + w * 0.85, 0.95, -2.42);
+      villaGroup.add(win);
     }
 
-    const glassRailGeo = new THREE.BoxGeometry(0.02, 0.7, 4.6);
-    const handrailGeo = new THREE.BoxGeometry(0.03, 0.03, 4.6);
-    const postGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.8, 8);
-
-    const sideGlassL = new THREE.Mesh(glassRailGeo, luxuryGlassMat);
-    sideGlassL.position.set(-3.0, -0.68, 1.7);
-    deckGroup.add(sideGlassL);
-
-    const handrailL = new THREE.Mesh(handrailGeo, slimPillarMat);
-    handrailL.position.set(-3.0, -0.32, 1.7);
-    deckGroup.add(handrailL);
-
-    const postPositionsL = [
-      [-3.0, -0.72, -0.6],
-      [-3.0, -0.72, 1.7],
-      [-3.0, -0.72, 4.0],
-    ];
-    postPositionsL.forEach(([px, py, pz]) => {
-      const post = new THREE.Mesh(postGeo, slimPillarMat);
-      post.position.set(px, py, pz);
-      deckGroup.add(post);
-    });
-
-    const sideGlassR = new THREE.Mesh(glassRailGeo, luxuryGlassMat);
-    sideGlassR.position.set(3.0, -0.68, 1.7);
-    deckGroup.add(sideGlassR);
-
-    const handrailR = new THREE.Mesh(handrailGeo, slimPillarMat);
-    handrailR.position.set(3.0, -0.32, 1.7);
-    deckGroup.add(handrailR);
-
-    const postPositionsR = [
-      [3.0, -0.72, -0.6],
-      [3.0, -0.72, 1.7],
-      [3.0, -0.72, 4.0],
-    ];
-    postPositionsR.forEach(([px, py, pz]) => {
-      const post = new THREE.Mesh(postGeo, slimPillarMat);
-      post.position.set(px, py, pz);
-      deckGroup.add(post);
-    });
-
-    // Modern Lounge Chairs
-    const frameGeo = new THREE.BoxGeometry(0.72, 0.04, 1.7);
-    const cushionSeatGeo = new THREE.BoxGeometry(0.66, 0.08, 1.1);
-    const cushionBackGeo = new THREE.BoxGeometry(0.66, 0.08, 0.6);
-    const cushionMat = new THREE.MeshStandardMaterial({ color: 0xd6ecef, roughness: 0.9 });
-
-    const chairGroup1 = new THREE.Group();
-    chairGroup1.position.set(1.4, -1.02, 1.8);
-    chairGroup1.rotation.y = -0.12;
-    deckGroup.add(chairGroup1);
-
-    const baseFrame1 = new THREE.Mesh(frameGeo, woodPlankMat);
-    chairGroup1.add(baseFrame1);
-
-    const seatCushion1 = new THREE.Mesh(cushionSeatGeo, cushionMat);
-    seatCushion1.position.set(0, 0.06, 0.25);
-    chairGroup1.add(seatCushion1);
-
-    const backCushion1 = new THREE.Mesh(cushionBackGeo, cushionMat);
-    backCushion1.position.set(0, 0.22, -0.45);
-    backCushion1.rotation.x = -0.65;
-    chairGroup1.add(backCushion1);
-
-    const chairGroup2 = new THREE.Group();
-    chairGroup2.position.set(-1.4, -1.02, 2.4);
-    chairGroup2.rotation.y = 0.12;
-    deckGroup.add(chairGroup2);
-
-    const baseFrame2 = new THREE.Mesh(frameGeo, woodPlankMat);
-    chairGroup2.add(baseFrame2);
-
-    const seatCushion2 = new THREE.Mesh(cushionSeatGeo, cushionMat);
-    seatCushion2.position.set(0, 0.06, 0.25);
-    chairGroup2.add(seatCushion2);
-
-    const backCushion2 = new THREE.Mesh(cushionBackGeo, cushionMat);
-    backCushion2.position.set(0, 0.22, -0.45);
-    backCushion2.rotation.x = -0.65;
-    chairGroup2.add(backCushion2);
-
-    // Warm Hanging Pendant Light
-    const suspensionRodGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.8, 4);
-    const suspensionRod = new THREE.Mesh(suspensionRodGeo, slimPillarMat);
-    suspensionRod.position.set(-1.8, 1.3, 1.8);
-    deckGroup.add(suspensionRod);
-
-    const cageGeo = new THREE.CylinderGeometry(0.08, 0.16, 0.28, 8, 2);
-    const lanternCageMat = new THREE.MeshStandardMaterial({
-      color: 0x050d10,
-      wireframe: true,
-      roughness: 0.2,
-      metalness: 0.9,
-    });
-    const lanternCage = new THREE.Mesh(cageGeo, lanternCageMat);
-    lanternCage.position.set(-1.8, 0.82, 1.8);
-    deckGroup.add(lanternCage);
-
-    const bulbGeo = new THREE.SphereGeometry(0.05, 8, 8);
-    const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffb55b });
+    const bulbGeo = new THREE.SphereGeometry(0.04, 8, 8);
+    const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffd090 });
     const bulbSphere = new THREE.Mesh(bulbGeo, bulbMat);
-    bulbSphere.position.set(-1.8, 0.82, 1.8);
-    deckGroup.add(bulbSphere);
+    bulbSphere.position.set(0, 0.95, -2.3);
+    villaGroup.add(bulbSphere);
 
-    // Dynamic light casting warm glow
-    const warmLight = new THREE.PointLight(0xffa04d, 0, 12);
-    warmLight.position.set(-1.8, 0.8, 1.8);
-    deckGroup.add(warmLight);
+    const warmLight = new THREE.PointLight(0xffa04d, 0, 14);
+    warmLight.position.set(0, 0.9, -2.2);
+    villaGroup.add(warmLight);
 
-    // ─── Phase 2: Volumetric light cone ───────────────────────────────────
-    const coneGeo = new THREE.CylinderGeometry(0.04, 1.4, 2.6, 16, 1, true);
-    coneGeo.translate(0, -1.3, 0); // shift pivot
+    const coneGeo = new THREE.CylinderGeometry(0.03, 0.8, 1.6, 12, 1, true);
+    coneGeo.translate(0, -0.8, 0);
     const coneUniforms = {
       uColor: { value: new THREE.Color(0xffa04d) },
       uIntensity: { value: 0.0 },
@@ -1024,7 +953,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
           vec3 normal = normalize(vNormal);
           vec3 viewDir = normalize(vViewPosition);
           float edgeFade = pow(1.0 - abs(dot(normal, viewDir)), 2.0);
-          float alpha = verticalFade * edgeFade * uIntensity * 0.35;
+          float alpha = verticalFade * edgeFade * uIntensity * 0.3;
           gl_FragColor = vec4(uColor, alpha);
         }
       `,
@@ -1035,74 +964,9 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       side: THREE.DoubleSide,
     });
     const lightCone = new THREE.Mesh(coneGeo, coneMat);
-    lightCone.position.set(-1.8, 0.82, 1.8);
-    deckGroup.add(lightCone);
-
-    // ─── Phase 4: Deck Foliage planters & accessories ─────────────────────
-    const planterGroupL = new THREE.Group();
-    planterGroupL.position.set(-2.7, -0.87, 3.7);
-    deckGroup.add(planterGroupL);
-
-    const potL = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.5, 12), concreteMat);
-    potL.position.y = 0.25;
-    planterGroupL.add(potL);
-
-    for (let j = 0; j < 5; j++) {
-      const leaf = new THREE.Mesh(leafGeo, leafMaterial);
-      leaf.position.y = 0.5;
-      leaf.rotation.y = (j / 5) * Math.PI * 2;
-      leaf.rotation.x = 0.45 + Math.random() * 0.25;
-      leaf.scale.set(0.6, 0.7, 0.6);
-      planterGroupL.add(leaf);
-    }
-
-    const planterGroupR = new THREE.Group();
-    planterGroupR.position.set(2.7, -0.87, 3.7);
-    deckGroup.add(planterGroupR);
-
-    const potR = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.5, 12), concreteMat);
-    potR.position.y = 0.25;
-    planterGroupR.add(potR);
-
-    for (let j = 0; j < 5; j++) {
-      const leaf = new THREE.Mesh(leafGeo, leafMaterial);
-      leaf.position.y = 0.5;
-      leaf.rotation.y = (j / 5) * Math.PI * 2 + 0.4;
-      leaf.rotation.x = 0.45 + Math.random() * 0.25;
-      leaf.scale.set(0.55, 0.65, 0.55);
-      planterGroupR.add(leaf);
-    }
-
-    const sideTable = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.45, 0.35), concreteMat);
-    sideTable.position.set(2.1, -0.89, 1.6);
-    deckGroup.add(sideTable);
-
-    const vaseGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.18, 8);
-    const vaseMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, transmission: 0.8 });
-    const vase = new THREE.Mesh(vaseGeo, vaseMat);
-    vase.position.set(2.1, -0.58, 1.6);
-    deckGroup.add(vase);
-
-    const petalMat = new THREE.MeshStandardMaterial({
-      color: 0xf5f0e6,
-      side: THREE.DoubleSide,
-      roughness: 0.75,
-    });
-    const flowerCenterMat = new THREE.MeshStandardMaterial({ color: 0xc9a55a, roughness: 0.6 });
-    const flowerGroup = new THREE.Group();
-    flowerGroup.position.set(2.1, -0.48, 1.6);
-    deckGroup.add(flowerGroup);
-
-    const petalGeo = new THREE.PlaneGeometry(0.06, 0.1);
-    for (let p = 0; p < 5; p++) {
-      const petal = new THREE.Mesh(petalGeo, petalMat);
-      petal.rotation.z = (p / 5) * Math.PI * 2;
-      petal.rotation.x = -0.35;
-      flowerGroup.add(petal);
-    }
-    const flowerCenter = new THREE.Mesh(new THREE.CircleGeometry(0.022, 8), flowerCenterMat);
-    flowerCenter.rotation.x = -Math.PI / 2;
-    flowerGroup.add(flowerCenter);
+    lightCone.position.set(0, 0.95, -2.2);
+    lightCone.rotation.x = Math.PI;
+    villaGroup.add(lightCone);
 
     // Foreground lens silhouette leaf
     const foregroundLeafGeo = new THREE.PlaneGeometry(2.2, 4.4);
@@ -1120,14 +984,43 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const landscapeGroup = new THREE.Group();
     scene.add(landscapeGroup);
 
-    const shorelineGeo = new THREE.BoxGeometry(45, 0.4, 3);
+    const shorelineGeo = new THREE.BoxGeometry(28, 0.35, 2.5);
     const shorelineSandMat = new THREE.MeshStandardMaterial({
-      color: 0x8a9e7a,
+      color: 0x9aae88,
       roughness: 0.88,
     });
     const shorelineMesh = new THREE.Mesh(shorelineGeo, shorelineSandMat);
-    shorelineMesh.position.set(0, -1.2, -7.5);
+    shorelineMesh.position.set(-1, -1.2, -12);
     landscapeGroup.add(shorelineMesh);
+
+    const mtnMat = new THREE.MeshStandardMaterial({ color: 0x4a6a62, roughness: 0.95 });
+    const mountainGeo1 = new THREE.ConeGeometry(5.5, 4.2, 8);
+    const mountain1 = new THREE.Mesh(mountainGeo1, mtnMat);
+    mountain1.position.set(-5, 0.6, -14.5);
+    landscapeGroup.add(mountain1);
+
+    const mountainGeo2 = new THREE.ConeGeometry(4.2, 3.4, 8);
+    const mountain2 = new THREE.Mesh(mountainGeo2, mtnMat);
+    mountain2.position.set(4.5, 0.3, -15);
+    landscapeGroup.add(mountain2);
+
+    const forestTrunkMat = new THREE.MeshStandardMaterial({ color: 0x3d4a32, roughness: 0.9 });
+    const forestCrownMat = new THREE.MeshStandardMaterial({ color: 0x2d6a48, roughness: 0.85 });
+    const forestTrunkGeo = new THREE.CylinderGeometry(0.06, 0.1, 1.2, 6);
+    const forestCrownGeo = new THREE.ConeGeometry(0.55, 1.4, 7);
+    for (let f = 0; f < 45; f++) {
+      const tree = new THREE.Group();
+      const tx = -14 + Math.random() * 28;
+      const tz = -15.5 - Math.random() * 4;
+      tree.position.set(tx, -0.5, tz);
+      const trunk = new THREE.Mesh(forestTrunkGeo, forestTrunkMat);
+      trunk.position.y = 0.6;
+      tree.add(trunk);
+      const crown = new THREE.Mesh(forestCrownGeo, forestCrownMat);
+      crown.position.y = 1.5;
+      tree.add(crown);
+      landscapeGroup.add(tree);
+    }
 
     const reedMat = new THREE.MeshStandardMaterial({
       color: 0x5cb87a,
@@ -1136,32 +1029,15 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     });
     const reedGeo = new THREE.PlaneGeometry(0.05, 0.75);
     const reedsData: Array<{ mesh: THREE.Mesh; baseRotZ: number; phase: number }> = [];
-    for (let r = 0; r < 28; r++) {
+    for (let r = 0; r < 24; r++) {
       const reed = new THREE.Mesh(reedGeo, reedMat);
-      const rx = -12 + r * 0.88 + (Math.random() - 0.5) * 0.3;
+      const rx = -4 + r * 0.55 + (Math.random() - 0.5) * 0.3;
       const baseRotZ = (Math.random() - 0.5) * 0.12;
-      reed.position.set(rx, -0.85 + Math.random() * 0.15, -5.0 - Math.random() * 2.8);
+      reed.position.set(rx, -0.85 + Math.random() * 0.12, -10.5 - Math.random() * 1.5);
       reed.rotation.y = (Math.random() - 0.5) * 0.4;
       reed.rotation.z = baseRotZ;
       landscapeGroup.add(reed);
       reedsData.push({ mesh: reed, baseRotZ, phase: Math.random() * Math.PI * 2 });
-    }
-
-    const treelineMat = new THREE.MeshBasicMaterial({
-      color: 0x2d6a58,
-      transparent: true,
-      opacity: 0.92,
-      side: THREE.DoubleSide,
-    });
-    const treelineCrowns: THREE.Mesh[] = [];
-    const crownGeo = new THREE.PlaneGeometry(2.8, 1.4);
-    for (let t = 0; t < 14; t++) {
-      const crown = new THREE.Mesh(crownGeo, treelineMat);
-      const tx = -24 + t * 3.6 + (t % 2 === 0 ? 0.6 : -0.4);
-      crown.position.set(tx, -0.15 + (t % 3) * 0.12, -11.5 - (t % 4) * 0.5);
-      crown.rotation.y = (t % 2 === 0 ? 1 : -1) * 0.08;
-      landscapeGroup.add(crown);
-      treelineCrowns.push(crown);
     }
 
     const rockGeo = new THREE.DodecahedronGeometry(1, 0);
@@ -1172,11 +1048,10 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const rocks: THREE.Mesh[] = [];
 
     const rockPositions = [
-      [-6.0, -1.1, -4.5, 0.8, 1.2, 0.9],
-      [-4.8, -1.1, -5.2, 0.5, 0.6, 0.5],
-      [5.2, -1.1, -4.8, 0.7, 0.9, 0.7],
-      [6.5, -1.1, -3.5, 0.4, 0.5, 0.4],
-      [-2.0, -1.15, -6.5, 1.2, 0.8, 1.0],
+      [-3.5, -1.1, -11.0, 0.7, 1.0, 0.8],
+      [2.0, -1.1, -11.5, 0.5, 0.7, 0.6],
+      [5.0, -1.1, -10.5, 0.6, 0.8, 0.7],
+      [-1.0, -1.15, -12.0, 0.9, 0.6, 0.9],
     ];
 
     rockPositions.forEach(([rx, ry, rz, sx, sy, sz]) => {
@@ -1211,8 +1086,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     for (let i = 0; i < palmsCount; i++) {
       const palmTree = new THREE.Group();
-      const x = -11 + i * 4.4 + (Math.random() - 0.5) * 1.5;
-      const z = -7.5 - Math.random() * 2.5;
+      const x = -10 + i * 4.0 + (Math.random() - 0.5) * 1.5;
+      const z = -11 - Math.random() * 2.0;
       palmTree.position.set(x, -1.2, z);
 
       const leanZ = (Math.random() - 0.5) * 0.18 + (x < 0 ? -0.1 : 0.1);
@@ -1322,18 +1197,28 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     const padData: Array<{ mesh: THREE.Mesh; lotus?: THREE.Group; x: number; z: number; phase: number; scale: number }> = [];
 
-    for (let i = 0; i < 24; i++) {
-      const mesh = new THREE.Mesh(padGeometry, padMaterial);
-      const x = (Math.random() - 0.5) * 8;
-      const z = (Math.random() - 0.5) * 7 - 1.5;
-      const scale = 0.6 + Math.random() * 0.7;
+    const lotusLeafGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.012, 14);
+    const lotusLeafMat = new THREE.MeshStandardMaterial({
+      color: 0x4a9a68,
+      roughness: 0.72,
+      side: THREE.DoubleSide,
+    });
 
+    for (let i = 0; i < 28; i++) {
+      const x = -2 + Math.random() * 7;
+      const z = -6 + Math.random() * 5;
+      const scale = 0.55 + Math.random() * 0.75;
+
+      const mesh = new THREE.Mesh(
+        Math.random() > 0.35 ? padGeometry : lotusLeafGeo,
+        Math.random() > 0.35 ? padMaterial : lotusLeafMat
+      );
       mesh.scale.set(scale, 1, scale);
       mesh.rotation.y = Math.random() * Math.PI;
       padsGroup.add(mesh);
 
       let lotusGroup: THREE.Group | undefined;
-      if (i % 3 === 0) {
+      if (i % 2 === 0) {
         lotusGroup = new THREE.Group();
         const bloom = new THREE.Mesh(lotusGeo, lotusMat);
         bloom.position.y = 0.02;
@@ -1361,6 +1246,42 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       const w3 = Math.cos(x * 1.20 + time * speed * 2.1) * amp * 0.18;
       return w1 + w2 + w3;
     };
+
+    // ─── Lake fish (visible just below surface) ───────────────────────────
+    const fishGeo = new THREE.SphereGeometry(0.05, 6, 4);
+    fishGeo.scale(1.2, 0.45, 2.2);
+    const fishMat = new THREE.MeshStandardMaterial({
+      color: 0xffa040,
+      emissive: 0x442200,
+      emissiveIntensity: 0.35,
+      transparent: true,
+      opacity: 0.82,
+      roughness: 0.4,
+    });
+    const fishData: Array<{
+      mesh: THREE.Mesh;
+      x: number;
+      z: number;
+      phase: number;
+      speed: number;
+      radius: number;
+    }> = [];
+
+    for (let i = 0; i < 16; i++) {
+      const fish = new THREE.Mesh(fishGeo, fishMat);
+      const fx = -1 + Math.random() * 6;
+      const fz = -5 + Math.random() * 4;
+      fish.position.set(fx, -1.28, fz);
+      scene.add(fish);
+      fishData.push({
+        mesh: fish,
+        x: fx,
+        z: fz,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.4 + Math.random() * 0.5,
+        radius: 0.4 + Math.random() * 0.8,
+      });
+    }
 
     // ─── Mist/Fog Particles System (Horizon layer) ───────────────────────
     const mistTexture = (() => {
@@ -1541,17 +1462,18 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       skyMat.uniforms.uGoldenHourBoost.value = computeGoldenHourBoost(timeVal);
       skyMat.uniforms.uIsNight.value = computeIsNight(timeVal);
       skyMat.uniforms.uSunSize.value = computeIsNight(timeVal) > 0.5 ? 0.028 : 0.035;
+      skyMat.uniforms.uWindX.value = computeWindX(timeVal);
 
       // Pin sky dome back to camera position to keep it infinite
       skyMesh.position.copy(camera.position);
 
       // 4. Compute View-Space Position of the warm lantern PointLight
       tempViewPos.copy(bulbSphere.position);
-      tempViewPos.applyMatrix4(deckGroup.matrixWorld);
+      tempViewPos.applyMatrix4(villaGroup.matrixWorld);
       tempViewPos.applyMatrix4(camera.matrixWorldInverse);
 
       tempWorldPos.copy(bulbSphere.position);
-      tempWorldPos.applyMatrix4(deckGroup.matrixWorld);
+      tempWorldPos.applyMatrix4(villaGroup.matrixWorld);
       waterUniforms.uLanternPlanePos.value.set(tempWorldPos.x, -tempWorldPos.z);
 
       // 5. Update water uniforms
@@ -1623,6 +1545,22 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
           reed.baseRotZ + Math.sin(elapsed * 1.1 + reed.phase) * 0.1;
       });
 
+      const windX = computeWindX(timeVal);
+      fishData.forEach((fish, i) => {
+        const swim = elapsed * fish.speed + fish.phase;
+        fish.mesh.position.x = fish.x + Math.sin(swim) * fish.radius + windX * elapsed * 0.02;
+        fish.mesh.position.z = fish.z + Math.cos(swim * 0.8) * fish.radius * 0.6;
+        fish.mesh.position.y =
+          waterMesh.position.y +
+          getWaveHeightAt(fish.mesh.position.x, fish.mesh.position.z, elapsed, currentEnv.waveSpeed, currentEnv.waveAmplitude) -
+          0.06;
+        fish.mesh.rotation.y = Math.atan2(
+          Math.cos(swim * 0.8) * fish.radius * 0.6,
+          Math.cos(swim) * fish.radius
+        );
+        fish.mesh.visible = computeIsNight(timeVal) < 0.5 || currentEnv.lanternIntensity > 0.5;
+      });
+
       // 10. Drift mist particles
       const positions = particleGeo.attributes.position.array as Float32Array;
       for (let i = 0; i < particleCount; i++) {
@@ -1653,16 +1591,16 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       // Foreground leaf parallax depth on scroll
       fgLeafMat.opacity = 0.25 + scroll * 0.08;
 
-      // 12. Camera — lagoon vista (deck tucked to corner, lake fills frame)
-      const targetCamX = mouse.x * 0.35;
-      const targetCamY = 0.55 - mouse.y * 0.12;
-      const targetCamZ = 7.2 - scroll * 4.0;
+      // 12. Camera — field left, lake center, villa right, mountains beyond
+      const targetCamX = 2.5 + mouse.x * 0.3;
+      const targetCamY = 0.65 - mouse.y * 0.1;
+      const targetCamZ = 7.5 - scroll * 4.0;
 
       camera.position.x += (targetCamX - camera.position.x) * 0.05;
       camera.position.y += (targetCamY - camera.position.y) * 0.05;
       camera.position.z += (targetCamZ - camera.position.z) * 0.05;
 
-      camera.lookAt(0, -0.15 - scroll * 0.1, -9.5);
+      camera.lookAt(0, 0.1 - scroll * 0.08, -6);
 
       // 13. Render
       renderer.autoClear = false;
@@ -1683,41 +1621,33 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       // Geometries
       waterGeo.dispose();
       skyGeo.dispose();
-      deckBaseGeo.dispose();
-      mainDeckGeo.dispose();
-      pillarGeo.dispose();
-      bracketGeo.dispose();
-      roofSlabGeo.dispose();
-      beamGeo.dispose();
-      glassRailGeo.dispose();
-      handrailGeo.dispose();
-      postGeo.dispose();
-      frameGeo.dispose();
-      cushionSeatGeo.dispose();
-      cushionBackGeo.dispose();
-      suspensionRodGeo.dispose();
-      cageGeo.dispose();
+      fieldGeo.dispose();
+      roadGeo.dispose();
+      groundFloorGeo.dispose();
+      guestFloorGeo.dispose();
+      villaRoofGeo.dispose();
+      balconyGeo.dispose();
+      windowGeo.dispose();
       bulbGeo.dispose();
       coneGeo.dispose();
-      potL.geometry.dispose();
-      potR.geometry.dispose();
-      petalGeo.dispose();
-      flowerCenter.geometry.dispose();
       foregroundLeafGeo.dispose();
-      sideTable.geometry.dispose();
-      vaseGeo.dispose();
+      mountainGeo1.dispose();
+      mountainGeo2.dispose();
+      forestTrunkGeo.dispose();
+      forestCrownGeo.dispose();
       wingGeo.dispose();
       heronBodyGeo.dispose();
       heronNeckGeo.dispose();
-      crownGeo.dispose();
       reedGeo.dispose();
       shorelineGeo.dispose();
       rockGeo.dispose();
       leafGeo.dispose();
       trunkGeo.dispose();
       padGeometry.dispose();
+      lotusLeafGeo.dispose();
       lotusGeo.dispose();
       lotusCenterGeo.dispose();
+      fishGeo.dispose();
       particleGeo.dispose();
       fireflyGeo.dispose();
 
@@ -1727,26 +1657,30 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       skyMat.dispose();
       woodPlankMat.dispose();
       concreteMat.dispose();
+      fieldMat.dispose();
+      roadMat.dispose();
+      wallMat.dispose();
+      roofMat.dispose();
+      windowMat.dispose();
       leafMaterial.dispose();
       slimPillarMat.dispose();
       luxuryGlassMat.dispose();
-      cushionMat.dispose();
-      lanternCageMat.dispose();
       bulbMat.dispose();
       coneMat.dispose();
-      vaseMat.dispose();
-      petalMat.dispose();
-      flowerCenterMat.dispose();
       fgLeafMat.dispose();
+      mtnMat.dispose();
+      forestTrunkMat.dispose();
+      forestCrownMat.dispose();
       shorelineSandMat.dispose();
       reedMat.dispose();
-      treelineMat.dispose();
       rockMat.dispose();
       trunkMaterial.dispose();
       birdSilhouetteMat.dispose();
       padMaterial.dispose();
+      lotusLeafMat.dispose();
       lotusMat.dispose();
       lotusCenterMat.dispose();
+      fishMat.dispose();
       particleMat.dispose();
       fireflyMat.dispose();
 
