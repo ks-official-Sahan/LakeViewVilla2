@@ -44,7 +44,7 @@ export async function GET(req) {
             inset: 0,
             background: bgDataUrl
               ? `url(${bgDataUrl}) center/cover no-repeat`
-              : "linear-gradient(135deg,#0ea5e9,#06b6d4)",
+              : "linear-gradient(135deg,#0b2027,#1a5c5e)",
           }}
         />
         <div
@@ -52,7 +52,7 @@ export async function GET(req) {
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,.55))",
+              "linear-gradient(180deg,rgba(11,32,39,0.3),rgba(11,32,39,0.75))",
           }}
         />
         <div
@@ -70,8 +70,8 @@ export async function GET(req) {
             Private villa on a serene lagoon • A/C rooms • Fast Wi-Fi • Chef
             services
           </div>
-          <div style={{ fontSize: 24, marginTop: 22, opacity: 0.9 }}>
-            lakeviewvillatangalle.com
+          <div style={{ fontSize: 24, marginTop: 22, color: "#c9a55a", fontWeight: 700, letterSpacing: "0.05em" }}>
+            LAKEVIEWVILLATANGALLE.COM
           </div>
         </div>
       </div>

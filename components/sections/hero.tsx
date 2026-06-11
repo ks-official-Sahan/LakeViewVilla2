@@ -51,6 +51,30 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
 
   const [canvasProgress, setCanvasProgress] = useState(0);
 
+  // Initialize timeOfDay dynamically to actual client local hour
+  const [time, setTime] = useState(() => {
+    if (typeof window !== "undefined") {
+      const date = new Date();
+      return date.getHours() + date.getMinutes() / 60;
+    }
+    return 12; // default to noon for SSR
+  });
+
+  const formatTime = (t: number) => {
+    const h = Math.floor(t);
+    const m = Math.floor((t - h) * 60);
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+  };
+
+  const getTimeLabel = (t: number) => {
+    if (t >= 5 && t < 9) return "Dawn";
+    if (t >= 9 && t < 15) return "Morning";
+    if (t >= 15 && t < 18) return "Afternoon";
+    if (t >= 18 && t < 20) return "Sunset";
+    if (t >= 20 || t < 5) return "Night";
+    return "Midnight";
+  };
+
   const handleBook = useCallback(() => {
     const url = buildWhatsAppUrl(
       SITE_CONFIG.whatsappNumber,
@@ -126,8 +150,8 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
       className="relative select-none bg-[var(--color-background)]"
     >
       {/* ════════════════════════════════════════════════════════════════════
-          HERO SECTION — Full viewport, WebGL background, centered text
-          ════════════════════════════════════════════════════════════════════ */}
+           HERO SECTION — Full viewport, WebGL background, centered text
+           ════════════════════════════════════════════════════════════════════ */}
       <section
         ref={heroRef}
         id="home"
@@ -137,7 +161,7 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
         {/* WebGL canvas background */}
         <div ref={canvasWrapRef} className="absolute inset-0">
           <Suspense fallback={null}>
-            <HeroCanvas scrollProgress={canvasProgress} />
+            <HeroCanvas scrollProgress={canvasProgress} timeOfDay={time} />
           </Suspense>
 
           {/* Cinematic vignette — stronger in light mode for text contrast */}
@@ -160,6 +184,31 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
           <div
             aria-hidden
             className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,rgba(201,165,90,0.06)_0%,transparent_60%)]"
+          />
+        </div>
+
+        {/* Floating Time of Day Controller */}
+        <div 
+          className="absolute bottom-28 md:bottom-10 right-6 md:right-12 z-20 bg-card/75 border border-border/60 backdrop-blur-md p-4 rounded-sm shadow-xl w-60 text-foreground"
+          style={{ transition: "background 0.3s ease, border-color 0.3s ease" }}
+        >
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[9px] font-sans font-bold uppercase tracking-widest text-foreground/50">
+              Interactive Time
+            </span>
+            <span className="text-xs font-mono font-bold text-accent">
+              {formatTime(time)} <span className="opacity-60 text-[10px]">({getTimeLabel(time)})</span>
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={23.9}
+            step={0.1}
+            value={time}
+            onChange={(e) => setTime(parseFloat(e.target.value))}
+            className="w-full accent-accent bg-foreground/10 h-1 rounded-sm appearance-none cursor-pointer focus:outline-none"
+            aria-label="Adjust time of day"
           />
         </div>
 

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, Compass } from "lucide-react";
 import { SectionReveal } from "@/components/motion/section-reveal";
 
 type Img = { src: string; alt: string; w: number; h: number };
@@ -27,6 +26,25 @@ function inferCategory(alt: string, src: string): string {
   }
   return "Gallery";
 }
+
+// Custom Premium SVGs for Lightbox controls
+const CloseIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-6 w-6" aria-hidden="true">
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+);
+
+const PrevIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-8 w-8" aria-hidden="true">
+    <path d="M15 19l-7-7 7-7" />
+  </svg>
+);
+
+const NextIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-8 w-8" aria-hidden="true">
+    <path d="M9 5l7 7-7 7" />
+  </svg>
+);
 
 export default function GalleryClient({ images }: { images: Img[] }) {
   const [selected, setSelected] = useState<number | null>(null);
@@ -103,7 +121,7 @@ export default function GalleryClient({ images }: { images: Img[] }) {
   return (
     <>
       {/* Category segmented pills */}
-      <div className="mb-12 flex flex-wrap justify-center gap-3">
+      <div className="mb-16 flex flex-wrap justify-center gap-3">
         {categories.map((cat) => {
           const isActive = activeCategory === cat;
           return (
@@ -114,14 +132,15 @@ export default function GalleryClient({ images }: { images: Img[] }) {
                 setActiveCategory(cat);
                 setSelected(null);
               }}
-              className={`rounded-full px-6 py-2.5 text-xs font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer ${
+              className={[
+                "px-5 py-2.5 text-xs font-display font-bold uppercase tracking-wider transition-all duration-300 rounded-sm border cursor-pointer",
                 isActive
-                  ? "bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-gold)] text-white shadow-md shadow-[var(--color-primary)]/10 scale-102"
-                  : "border border-[var(--color-border)]/50 bg-[var(--color-surface)] text-[var(--color-muted)] hover:border-[var(--color-gold)]/40 hover:text-[var(--color-gold)]"
-              }`}
+                  ? "bg-accent border-accent text-background shadow-md"
+                  : "border-border/60 bg-card text-foreground/75 hover:border-accent/30 hover:text-accent"
+              ].join(" ")}
             >
               <span>{cat}</span>
-              <span className="ml-1.5 opacity-60 font-semibold font-mono">
+              <span className="ml-2 opacity-65 font-mono text-[10px]">
                 ({cat !== "All" ? enriched.filter((x) => x.category === cat).length : enriched.length})
               </span>
             </button>
@@ -138,34 +157,34 @@ export default function GalleryClient({ images }: { images: Img[] }) {
           <motion.div
             key={image.src + i}
             className="break-inside-avoid group cursor-pointer"
-            whileHover={{ scale: 1.02, y: -4 }}
-            transition={{ duration: 0.3 }}
+            whileHover={{ scale: 1.012, y: -4 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             onMouseDown={onMouseDown}
             onMouseMove={onMouseMove}
             onMouseUp={() => onMouseUp(i)}
           >
             <SectionReveal>
               <div
-                className="relative overflow-hidden rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)]/50 shadow-md transition-all duration-500 hover:border-[var(--color-gold)]/30"
+                className="relative overflow-hidden rounded-sm bg-card border border-border/60 shadow-sm transition-all duration-500 hover:border-accent/20 hover:shadow-lg"
               >
                 <Image
                   src={image.src || "/placeholder.svg"}
                   alt={image.alt || "Lake View Villa photo"}
                   width={image.w}
                   height={image.h}
-                  className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-103"
+                  className="h-auto w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                   placeholder="blur"
                   blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
                 
                 {/* Visual Image Info overlays */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-90" />
-                <div className="absolute bottom-4 left-5 right-5 text-white z-10 opacity-0 transform translate-y-3 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
-                  <p className="text-xs font-bold uppercase tracking-widest text-[var(--color-gold)] mb-0.5">
+                <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
+                <div className="absolute bottom-4 left-5 right-5 text-foreground z-10 opacity-0 transform translate-y-3 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 pointer-events-none">
+                  <p className="text-[9px] font-sans font-bold uppercase tracking-[0.25em] text-accent mb-1">
                     {image.category}
                   </p>
-                  <p className="text-xs text-white/90 font-medium tracking-wide">
+                  <p className="text-xs text-foreground/80 font-display font-bold tracking-tight">
                     {image.alt}
                   </p>
                 </div>
@@ -182,18 +201,18 @@ export default function GalleryClient({ images }: { images: Img[] }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-6"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-md p-6"
             onClick={() => setSelected(null)}
           >
-            <div className="relative max-w-6xl max-h-[85vh] mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="relative max-w-6xl max-h-[80vh] mx-4" onClick={(e) => e.stopPropagation()}>
               
               {/* Close Button */}
               <button
                 onClick={() => setSelected(null)}
-                className="absolute -top-14 right-0 text-white/60 hover:text-[var(--color-gold)] transition-colors z-10 cursor-pointer"
+                className="absolute -top-16 right-0 text-foreground/60 hover:text-accent transition-colors z-10 cursor-pointer p-2 rounded-sm border border-border/40 bg-card/40 hover:bg-card"
                 aria-label="Close"
               >
-                <X size={32} />
+                <CloseIcon />
               </button>
 
               {/* Prev Button */}
@@ -205,10 +224,10 @@ export default function GalleryClient({ images }: { images: Img[] }) {
                     p == null ? null : p > 0 ? p - 1 : len - 1
                   );
                 }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-[var(--color-gold)] transition-colors z-10 cursor-pointer"
+                className="absolute left-6 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-accent transition-colors z-10 cursor-pointer p-3 rounded-sm border border-border/40 bg-card/40 hover:bg-card"
                 aria-label="Previous photo"
               >
-                <ChevronLeft size={44} />
+                <PrevIcon />
               </button>
 
               {/* Next Button */}
@@ -220,35 +239,35 @@ export default function GalleryClient({ images }: { images: Img[] }) {
                     p == null ? null : p < len - 1 ? p + 1 : 0
                   );
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-[var(--color-gold)] transition-colors z-10 cursor-pointer"
+                className="absolute right-6 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-accent transition-colors z-10 cursor-pointer p-3 rounded-sm border border-border/40 bg-card/40 hover:bg-card"
                 aria-label="Next photo"
               >
-                <ChevronRight size={44} />
+                <NextIcon />
               </button>
 
               {/* Image Frame */}
               <motion.div
-                initial={{ scale: 0.96, opacity: 0 }}
+                initial={{ scale: 0.98, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.96, opacity: 0 }}
+                exit={{ scale: 0.98, opacity: 0 }}
                 transition={{ type: "spring", stiffness: 320, damping: 28 }}
-                className="relative overflow-hidden rounded-2xl border border-white/10 shadow-2xl bg-black"
+                className="relative overflow-hidden rounded-sm border border-border/60 shadow-2xl bg-card"
               >
                 <Image
                   src={filtered[selected].src}
                   alt={filtered[selected].alt}
                   width={filtered[selected].w}
                   height={filtered[selected].h}
-                  className="max-h-[80vh] w-auto max-w-full object-contain"
+                  className="max-h-[75vh] w-auto max-w-full object-contain"
                   priority
                 />
               </motion.div>
 
               {/* Label details bar */}
-              <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 text-white text-xs font-bold uppercase tracking-widest flex items-center gap-3 bg-white/5 border border-white/10 px-5 py-2.5 rounded-full backdrop-blur-md">
+              <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 text-foreground text-[10px] font-sans font-bold uppercase tracking-widest flex items-center gap-3 bg-card border border-border/60 px-5 py-3 rounded-sm shadow-md">
                 <span>{selected + 1} / {filtered.length}</span>
-                <span className="h-1 w-1 rounded-full bg-white/30" />
-                <span className="text-white/80 font-medium tracking-wide normal-case">{filtered[selected].alt}</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                <span className="text-foreground/80 font-medium tracking-normal normal-case">{filtered[selected].alt}</span>
               </div>
             </div>
           </motion.div>
@@ -257,3 +276,4 @@ export default function GalleryClient({ images }: { images: Img[] }) {
     </>
   );
 }
+

@@ -11,14 +11,54 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { generateBlogArticleSchema } from "@/lib/seo/structured-data";
 import { markdownToHtml, estimateReadTime } from "@/lib/blog/markdown";
-import { ArrowLeft, Clock, Calendar, User, Sparkles, ArrowRight } from "lucide-react";
 import { ReadingProgress } from "./reading-progress";
 import { ShareButtons } from "./share-buttons";
+
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
 }
 
+// Custom inline SVG icons
+const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M19 12H5M12 19l-7-7 7-7" />
+  </svg>
+);
 
+const ClockIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 6v6l4 2" />
+  </svg>
+);
+
+const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+    <line x1="16" x2="16" y1="2" y2="6" />
+    <line x1="8" x2="8" y1="2" y2="6" />
+    <line x1="3" x2="21" y1="10" y2="10" />
+  </svg>
+);
+
+const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const SparklesIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275Z" />
+  </svg>
+);
+
+const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </svg>
+);
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
   await connection();
@@ -124,7 +164,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 className="pointer-events-none absolute inset-0"
                 style={{
                   background:
-                    "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(184,147,63,0.07) 0%, transparent 70%)",
+                    "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(201,165,90,0.07) 0%, transparent 70%)",
                 }}
               />
               <div className="relative mx-auto max-w-4xl px-4 md:px-8">
@@ -144,9 +184,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               <Link
                 href="/blog"
                 transitionTypes={["spa-page"]}
-                className="mb-10 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-muted)] transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+                className="mb-10 inline-flex items-center gap-2 rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-muted)] transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
               >
-                <ArrowLeft className="h-4 w-4" /> Back to Blog
+                <ArrowLeftIcon className="h-4 w-4" /> Back to Blog
               </Link>
 
               {/* Markdown content */}
@@ -156,10 +196,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   prose-p:text-[var(--color-muted)] prose-p:leading-relaxed
                   prose-a:text-[var(--color-primary)] prose-a:no-underline hover:prose-a:underline
                   prose-strong:text-[var(--color-foreground)]
-                  prose-blockquote:border-l-[var(--color-gold)] prose-blockquote:bg-[var(--color-surface)] prose-blockquote:rounded-r-xl prose-blockquote:py-1 prose-blockquote:not-italic
-                  prose-code:bg-[var(--color-surface)] prose-code:text-[var(--color-primary)] prose-code:rounded prose-code:px-1 prose-code:py-0.5
+                  prose-blockquote:border-l-[var(--color-gold)] prose-blockquote:bg-[var(--color-surface)] prose-blockquote:rounded-r-sm prose-blockquote:py-1 prose-blockquote:not-italic
+                  prose-code:bg-[var(--color-surface)] prose-code:text-[var(--color-primary)] prose-code:rounded-sm prose-code:px-1 prose-code:py-0.5
                   prose-pre:bg-[#1e1e1e] prose-pre:border prose-pre:border-[var(--color-border)]
-                  prose-img:rounded-2xl prose-img:shadow-lg
+                  prose-img:rounded-sm prose-img:shadow-md
                   prose-hr:border-[var(--color-border)]"
                 dangerouslySetInnerHTML={{ __html: contentHtml }}
               />
@@ -171,7 +211,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   {post.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-semibold text-[var(--color-muted)] hover:border-[var(--color-gold)] hover:text-[var(--color-foreground)] transition-colors cursor-default"
+                      className="rounded-sm border border-[var(--color-border)] px-3 py-1 text-xs font-semibold text-[var(--color-muted)] hover:border-[var(--color-gold)] hover:text-[var(--color-foreground)] transition-colors cursor-default"
                     >
                       {tag}
                     </span>
@@ -189,12 +229,12 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <aside className="hidden lg:block">
               <div className="sticky top-24 space-y-6">
                 {/* Author card */}
-                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                <div className="rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
                   <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[var(--color-muted)]">
                     Written by
                   </p>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/15 text-base font-bold text-[var(--color-primary)]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-[var(--color-primary)]/15 text-base font-bold text-[var(--color-primary)]">
                       {(post.author.name ?? "LVV")[0].toUpperCase()}
                     </div>
                     <div>
@@ -207,13 +247,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 </div>
 
                 {/* Article meta */}
-                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 space-y-3">
+                <div className="rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] p-5 space-y-3">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-muted)]">
                     Article Info
                   </p>
                   {post.publishedAt && (
                     <div className="flex items-center gap-2.5 text-sm text-[var(--color-muted)]">
-                      <Calendar className="h-4 w-4 shrink-0" />
+                      <CalendarIcon className="h-4 w-4 shrink-0" />
                       <time dateTime={post.publishedAt.toISOString()}>
                         {post.publishedAt.toLocaleDateString("en-US", {
                           month: "long",
@@ -224,19 +264,19 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                     </div>
                   )}
                   <div className="flex items-center gap-2.5 text-sm text-[var(--color-muted)]">
-                    <Clock className="h-4 w-4 shrink-0" />
+                    <ClockIcon className="h-4 w-4 shrink-0" />
                     <span>{readTime} minute read</span>
                   </div>
                   {post.generatedByAI && (
                     <div className="flex items-center gap-2.5 text-sm text-amber-600 dark:text-amber-400">
-                      <Sparkles className="h-4 w-4 shrink-0" />
+                      <SparklesIcon className="h-4 w-4 shrink-0" />
                       <span>AI-Assisted Content</span>
                     </div>
                   )}
                 </div>
 
                 {/* Share */}
-                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                <div className="rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
                   <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[var(--color-muted)]">
                     Share
                   </p>
@@ -258,7 +298,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   transitionTypes={["spa-page"]}
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary)] hover:gap-2.5 transition-all"
                 >
-                  All posts <ArrowRight className="h-4 w-4" />
+                  All posts <ArrowRightIcon className="h-4 w-4" />
                 </Link>
               </div>
 
@@ -268,7 +308,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                     key={p.id}
                     href={`/blog/${p.slug}`}
                     transitionTypes={["spa-page"]}
-                    className="group flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] transition-all hover:border-[var(--color-gold)]/30 hover:shadow-md hover:-translate-y-0.5"
+                    className="group flex flex-col overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] transition-all hover:border-[var(--color-gold)]/30 hover:shadow-sm hover:-translate-y-0.5"
                   >
                     {p.featuredImage && (
                       <div className="relative aspect-[16/9] overflow-hidden">
@@ -335,7 +375,7 @@ function PostHeroContent({
           {post.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
+              className={`rounded-sm px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
                 hasBg
                   ? "bg-white/15 text-white backdrop-blur-sm border border-white/20"
                   : "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
@@ -345,7 +385,7 @@ function PostHeroContent({
             </span>
           ))}
           {post.generatedByAI && (
-            <span className="rounded-full bg-amber-500/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300 border border-amber-500/30 backdrop-blur-sm">
+            <span className="rounded-sm bg-amber-500/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300 border border-amber-500/30 backdrop-blur-sm">
               AI-Assisted
             </span>
           )}
@@ -377,7 +417,7 @@ function PostHeroContent({
       >
         {post.author.name && (
           <span className="inline-flex items-center gap-1.5 font-medium">
-            <User className="h-4 w-4" />
+            <UserIcon className="h-4 w-4" />
             {post.author.name}
           </span>
         )}
@@ -388,7 +428,7 @@ function PostHeroContent({
               dateTime={post.publishedAt.toISOString()}
               className="inline-flex items-center gap-1.5"
             >
-              <Calendar className="h-4 w-4" />
+              <CalendarIcon className="h-4 w-4" />
               {post.publishedAt.toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
@@ -399,11 +439,10 @@ function PostHeroContent({
         )}
         <span className="opacity-50">·</span>
         <span className="inline-flex items-center gap-1.5">
-          <Clock className="h-4 w-4" />
+          <ClockIcon className="h-4 w-4" />
           {readTime} min read
         </span>
       </div>
     </div>
   );
 }
-

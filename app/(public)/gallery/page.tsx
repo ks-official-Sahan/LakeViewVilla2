@@ -12,7 +12,7 @@ import { Compass } from "lucide-react";
 const GalleryClient = dynamic(() => import("./gallery-client"), {
   loading: () => (
     <div
-      className="min-h-[45vh] animate-pulse rounded-3xl bg-[var(--color-surface)]/50 border border-[var(--color-border)]/50"
+      className="min-h-[45vh] animate-pulse rounded-sm bg-[var(--color-surface)]/50 border border-[var(--color-border)]/50"
       aria-hidden
     />
   ),
@@ -159,7 +159,7 @@ export default async function Page() {
                 <p className="text-base md:text-lg text-[var(--color-muted)] max-w-2xl mx-auto leading-relaxed">
                   {heroBlock.subheadline}
                 </p>
-                <div className="mt-6 rounded-full border border-[var(--color-border)]/50 bg-[var(--color-surface)] px-5 py-2 text-xs font-bold uppercase tracking-widest text-[var(--color-gold)] shadow-sm">
+                <div className="mt-6 rounded-sm border border-[var(--color-border)]/50 bg-[var(--color-surface)] px-5 py-2 text-xs font-bold uppercase tracking-widest text-[var(--color-gold)] shadow-sm">
                   {images.length} Premium Photos
                 </div>
               </div>

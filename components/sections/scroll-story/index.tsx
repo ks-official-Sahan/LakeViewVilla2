@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, useCallback, Suspense } from "react";
+import { useRef, useState, useEffect, useCallback, Suspense } from "react";
 import dynamic from "next/dynamic";
+import { Sun, Moon, Sunrise, Sunset } from "lucide-react";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import { buildWhatsAppUrl } from "@/lib/utils";
 import { SITE_CONFIG } from "@/data/content";
@@ -34,6 +35,24 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
   const heroTextRef = useRef<HTMLDivElement>(null);
 
   const [canvasProgress, setCanvasProgress] = useState(0);
+
+  // Time-of-day states
+  const getLocalTime = () => {
+    const now = new Date();
+    return now.getHours() + now.getMinutes() / 60;
+  };
+
+  const [timeOfDay, setTimeOfDay] = useState(getLocalTime());
+  const [isAutoTime, setIsAutoTime] = useState(true);
+
+  // Auto time sync loop
+  useEffect(() => {
+    if (!isAutoTime) return;
+    const interval = setInterval(() => {
+      setTimeOfDay(getLocalTime());
+    }, 20000); // sync every 20s
+    return () => clearInterval(interval);
+  }, [isAutoTime]);
 
   const handleBook = useCallback(() => {
     const url = buildWhatsAppUrl(
@@ -102,6 +121,23 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
     { scope: wrapperRef }
   );
 
+  // UI helpers for time indicators
+  const getTimeIcon = (h: number) => {
+    if (h >= 5.0 && h < 7.5) return <Sunrise className="size-4 text-orange-400 animate-pulse" />;
+    if (h >= 7.5 && h < 16.5) return <Sun className="size-4 text-[var(--color-gold)]" />;
+    if (h >= 16.5 && h < 19.0) return <Sunset className="size-4 text-orange-400" />;
+    return <Moon className="size-4 text-sky-200" />;
+  };
+
+  const formatTimeLabel = (h: number) => {
+    const hours = Math.floor(h);
+    const minutes = Math.floor((h - hours) * 60);
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 === 0 ? 12 : hours % 12;
+    const displayMinutes = minutes.toString().padStart(2, "0");
+    return `${displayHours}:${displayMinutes} ${ampm}`;
+  };
+
   return (
     <div ref={wrapperRef} className="relative select-none bg-[var(--color-background)]">
       {/* Hero Section */}
@@ -113,8 +149,9 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
       >
         <div ref={canvasWrapRef} className="absolute inset-0">
           <Suspense fallback={null}>
-            <HeroCanvas scrollProgress={canvasProgress} />
+            <HeroCanvas scrollProgress={canvasProgress} timeOfDay={timeOfDay} />
           </Suspense>
+          
           {/* Premium luxury vignette */}
           <div
             aria-hidden
@@ -128,6 +165,49 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
 
         <div ref={heroTextRef} className="relative z-10 w-full h-full">
           <HeroText headline={headline} subheadline={subheadline} onBook={handleBook} />
+        </div>
+
+        {/* Floating Time-of-Day Controller (Premium UX overlay) */}
+        <div className="absolute bottom-6 right-6 md:right-8 z-20 flex items-center gap-3 bg-[var(--glass-2-bg)] backdrop-blur-xl border border-[var(--glass-2-border)] rounded-full px-4 py-2.5 shadow-2xl hover:scale-[1.01] transition-transform duration-300">
+          <button
+            onClick={() => {
+              if (!isAutoTime) {
+                setIsAutoTime(true);
+                setTimeOfDay(getLocalTime());
+              } else {
+                setIsAutoTime(false);
+              }
+            }}
+            className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full transition-all duration-300 ${
+              isAutoTime
+                ? "bg-[var(--color-gold)] text-[var(--color-charcoal)] shadow-[0_2px_10px_rgba(201,165,90,0.3)]"
+                : "bg-white/10 text-white/70 hover:text-white"
+            }`}
+          >
+            Auto
+          </button>
+          
+          <div className="flex items-center gap-2 border-l border-white/10 pl-3">
+            {getTimeIcon(timeOfDay)}
+            <span className="text-[10px] font-bold text-white/90 min-w-[70px]">
+              {formatTimeLabel(timeOfDay)}
+            </span>
+            <input
+              type="range"
+              min="0"
+              max="23.9"
+              step="0.1"
+              value={timeOfDay}
+              onChange={(e) => {
+                setIsAutoTime(false);
+                setTimeOfDay(parseFloat(e.target.value));
+              }}
+              className="w-20 md:w-28 h-1 rounded-full bg-white/20 accent-[var(--color-gold)] appearance-none cursor-pointer outline-none hover:bg-white/30 transition-colors"
+              style={{
+                WebkitAppearance: "none",
+              }}
+            />
+          </div>
         </div>
       </section>
 

@@ -19,6 +19,20 @@ interface BelowFoldProps {
   faqBlock?: any;
 }
 
+// Minimalist, premium pulse skeleton for CLS mitigation
+function SectionSkeleton({ className = "h-96" }: { className?: string }) {
+  return (
+    <div className="lv-container py-12">
+      <div 
+        className={[
+          "w-full bg-foreground/[0.02] dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 rounded-sm animate-pulse",
+          className
+        ].join(" ")}
+      />
+    </div>
+  );
+}
+
 export function BelowFold({
   experiencesBlock,
   galleryTeaserBlock,
@@ -28,14 +42,41 @@ export function BelowFold({
   faqBlock,
 }: BelowFoldProps) {
   return (
-    <Suspense fallback={null}>
-      <ExperiencesReel cmsData={experiencesBlock} />
-      <GalleryTeaser cmsData={galleryTeaserBlock} />
-      <FacilitiesSection cmsData={facilitiesBlock} />
-      <StaysTeaser cmsData={staysTeaserBlock} />
-      <MapDirections />
-      <ValuesSection cmsData={valuesBlock} />
-      <FAQ cmsData={faqBlock} />
-    </Suspense>
+    <div className="w-full relative">
+      {/* 1. Experiences Cinema Reel (Interest) */}
+      <Suspense fallback={<SectionSkeleton className="h-[80vh] md:h-[90vh]" />}>
+        <ExperiencesReel cmsData={experiencesBlock} />
+      </Suspense>
+
+      {/* 2. Photo Gallery Teaser (Desire) */}
+      <Suspense fallback={<SectionSkeleton className="h-[75vh]" />}>
+        <GalleryTeaser cmsData={galleryTeaserBlock} />
+      </Suspense>
+
+      {/* 3. Luxury Comforts & Facilities (Desire) */}
+      <Suspense fallback={<SectionSkeleton className="h-[60vh]" />}>
+        <FacilitiesSection cmsData={facilitiesBlock} />
+      </Suspense>
+
+      {/* 4. Stay Options Preview (Desire/Action) */}
+      <Suspense fallback={<SectionSkeleton className="h-[80vh]" />}>
+        <StaysTeaser cmsData={staysTeaserBlock} />
+      </Suspense>
+
+      {/* 5. Map & Navigation Guide (Action) */}
+      <Suspense fallback={<SectionSkeleton className="h-[55vh]" />}>
+        <MapDirections />
+      </Suspense>
+
+      {/* 6. Hospitality Values & Social Proof (Trust) */}
+      <Suspense fallback={<SectionSkeleton className="h-[50vh]" />}>
+        <ValuesSection cmsData={valuesBlock} />
+      </Suspense>
+
+      {/* 7. Frequently Asked Questions (Friction Elimination) */}
+      <Suspense fallback={<SectionSkeleton className="h-[45vh]" />}>
+        <FAQ cmsData={faqBlock} />
+      </Suspense>
+    </div>
   );
 }

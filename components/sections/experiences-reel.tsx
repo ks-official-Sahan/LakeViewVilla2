@@ -1,17 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import Image from "next/image";
 import { useGSAP } from "@/lib/gsap";
-import { gsap, EASE, DURATION } from "@/lib/gsap";
-import { ChevronLeft, ChevronRight, MapPin, Compass, ArrowUpRight } from "lucide-react";
+import { gsap } from "@/lib/gsap";
+import { Compass, ArrowUpRight } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/utils";
 import { SITE_CONFIG } from "@/data/site";
 
 type Experience = {
   name: string;
   image: string;
-  thumb?: string;
   description: string;
   ctaHref: string;
 };
@@ -23,14 +22,42 @@ const sendMsg = (loc: string) =>
   );
 
 const EXPERIENCES: Experience[] = [
-  { name: "Rekawa Turtle Beach", image: "/images/optimized/rekawa.webp", description: "One of Sri Lanka's most important turtle nesting sites — witness nature's oldest ritual at dusk.", ctaHref: sendMsg("Rekawa Turtle Beach") },
-  { name: "Hiriketiya Beach", image: "/images/optimized/hiriketiya.webp", description: "A crescent bay beloved by surfers and yogis alike — crystal water, golden sand, zero crowds.", ctaHref: sendMsg("Hiriketiya Beach") },
-  { name: "Lagoon Kayaking", image: "/images/optimized/kayaking.webp", description: "Paddle through mirror-calm waters flanked by mangroves, birds, and absolute silence.", ctaHref: sendMsg("Tangalle Lagoon Kayaking") },
-  { name: "Kalamatiya Sanctuary", image: "/images/optimized/kalamatiya.webp", description: "A coastal wetland where flamingoes, pelicans, and painted storks make their seasonal home.", ctaHref: sendMsg("Kalamatiya Bird Sanctuary") },
-  { name: "Mulkirigala Rock Temple", image: "/images/optimized/mulkirigala.webp", description: "An ancient Buddhist monastery carved into a dramatic rock face — 2,200 years of living history.", ctaHref: sendMsg("Mulkirigala Rock Temple") },
-  { name: "Yala National Park", image: "/images/optimized/yala.webp", description: "Leopards, elephants, sloth bears — the world's densest leopard population in raw Sri Lankan wilderness.", ctaHref: sendMsg("Yala National Park") },
-  { name: "Hummanaya Blowhole", image: "/images/optimized/blowhole.webp", description: "Sri Lanka's largest blowhole shoots seawater 18 metres into the air — a geological spectacle.", ctaHref: sendMsg("Hummanaya Blowhole") },
-  { name: "Sigiriya Rock Fortress", image: "/images/optimized/sigiriya.webp", description: "A UNESCO World Heritage Site — an ancient palace city perched atop a towering volcanic rock.", ctaHref: sendMsg("Sigiriya Rock Fortress") },
+  { 
+    name: "Rekawa Turtle Beach", 
+    image: "/villa/optimized/beach_img_01.webp", 
+    description: "Witness nesting sea turtles at dusk on a protected, wild coastal sanctuary.", 
+    ctaHref: sendMsg("Rekawa Turtle Beach") 
+  },
+  { 
+    name: "Hiriketiya Beach", 
+    image: "/villa/optimized/villa_img_02.webp", 
+    description: "A gorgeous horseshoe bay offering world-class surfing waves and beach yoga vibes.", 
+    ctaHref: sendMsg("Hiriketiya Beach") 
+  },
+  { 
+    name: "Lagoon Kayaking", 
+    image: "/villa/optimized/lake_img_02.webp", 
+    description: "Paddle mirror-like waters through dense, quiet mangrove forests.", 
+    ctaHref: sendMsg("Tangalle Lagoon Kayaking") 
+  },
+  { 
+    name: "Kalamatiya Sanctuary", 
+    image: "/villa/optimized/lake_img_01.webp", 
+    description: "Discover a birder's dream lagoon hosting vibrant seasonal flocks.", 
+    ctaHref: sendMsg("Kalamatiya Bird Sanctuary") 
+  },
+  { 
+    name: "Mulkirigala Rock Temple", 
+    image: "/villa/optimized/garden_img_04.webp", 
+    description: "Climb steps up a massive rock cave monastery containing 2,000 years of painted murals.", 
+    ctaHref: sendMsg("Mulkirigala Rock Temple") 
+  },
+  { 
+    name: "Yala Safari Excursion", 
+    image: "/villa/optimized/drone_view_villa.webp", 
+    description: "Track leopards and wild elephants in Sri Lanka's prime national wildlife park.", 
+    ctaHref: sendMsg("Yala National Park") 
+  },
 ];
 
 function normalize(items: any[]): Experience[] {
@@ -38,37 +65,29 @@ function normalize(items: any[]): Experience[] {
     const name = it.name || it.label || `Excursion ${i + 1}`;
     const description = it.description || "";
     
-    // Find matching fallback properties based on the name keywords
     const lowerName = name.toLowerCase();
     let image = "";
     let ctaHref = "";
 
     if (lowerName.includes("rekawa")) {
-      image = "/images/optimized/rekawa.webp";
+      image = "/villa/optimized/beach_img_01.webp";
       ctaHref = sendMsg("Rekawa Turtle Beach");
     } else if (lowerName.includes("hiriketiya")) {
-      image = "/images/optimized/hiriketiya.webp";
+      image = "/villa/optimized/villa_img_02.webp";
       ctaHref = sendMsg("Hiriketiya Beach");
     } else if (lowerName.includes("kayak") || lowerName.includes("lagoon")) {
-      image = "/images/optimized/kayaking.webp";
+      image = "/villa/optimized/lake_img_02.webp";
       ctaHref = sendMsg("Tangalle Lagoon Kayaking");
     } else if (lowerName.includes("kalamatiya")) {
-      image = "/images/optimized/kalamatiya.webp";
+      image = "/villa/optimized/lake_img_01.webp";
       ctaHref = sendMsg("Kalamatiya Bird Sanctuary");
     } else if (lowerName.includes("mulkirigala")) {
-      image = "/images/optimized/mulkirigala.webp";
+      image = "/villa/optimized/garden_img_04.webp";
       ctaHref = sendMsg("Mulkirigala Rock Temple");
     } else if (lowerName.includes("yala")) {
-      image = "/images/optimized/yala.webp";
+      image = "/villa/optimized/drone_view_villa.webp";
       ctaHref = sendMsg("Yala National Park");
-    } else if (lowerName.includes("hummanaya") || lowerName.includes("blowhole")) {
-      image = "/images/optimized/blowhole.webp";
-      ctaHref = sendMsg("Hummanaya Blowhole");
-    } else if (lowerName.includes("sigiriya")) {
-      image = "/images/optimized/sigiriya.webp";
-      ctaHref = sendMsg("Sigiriya Rock Fortress");
     } else {
-      // Find a safe fallback from our static EXPERIENCES array
       const fallbackIndex = i % EXPERIENCES.length;
       const fallback = EXPERIENCES[fallbackIndex];
       image = fallback.image;
@@ -77,7 +96,7 @@ function normalize(items: any[]): Experience[] {
 
     return {
       name,
-      image: it.image || image || "/images/placeholder.jpg",
+      image: it.image || image || "/villa/optimized/villa_img_02.webp",
       description,
       ctaHref: it.ctaHref || ctaHref || sendMsg(name),
     };
@@ -91,271 +110,229 @@ export function ExperiencesReel({ cmsData }: { cmsData?: { eyebrow?: string; tit
       : EXPERIENCES;
   }, [cmsData]);
 
-  const wrap = useCallback((i: number) => ((i % itemsList.length) + itemsList.length) % itemsList.length, [itemsList]);
-
   const sectionRef = useRef<HTMLElement>(null);
-  const headingRef = useRef<HTMLDivElement>(null);
-  const reelRef = useRef<HTMLDivElement>(null);
-  const slideRef = useRef<HTMLDivElement>(null);
-  const infoRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
 
-  const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const [isChanging, setIsChanging] = useState(false);
-  const autoRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-
-  const eyebrow = cmsData?.eyebrow || "Surroundings & Activities";
+  const eyebrow = cmsData?.eyebrow || "Surroundings & Excursions";
   const title = cmsData?.title || "Lagoon Life & Coastal Safaris";
-  const descriptionText = cmsData?.description || "Wander beyond the gates to find ancient temples, protected turtle beaches, and Sri Lanka's finest wildlife reserves.";
+  const descriptionText = cmsData?.description || "Wander beyond the gates of Lake View Villa to uncover hidden beaches, nature sanctuaries, and historical heritage.";
 
-  const prefersReduced = useMemo(
-    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    []
-  );
-
-  useEffect(() => {
-    if (paused || prefersReduced) return;
-    autoRef.current = setInterval(() => setIndex((i) => wrap(i + 1)), 6000);
-    return () => clearInterval(autoRef.current);
-  }, [paused, prefersReduced, wrap]);
-
-  const go = useCallback((dir: 1 | -1) => {
-    if (isChanging) return;
-    setIsChanging(true);
-    setIndex((i) => wrap(i + dir));
-    clearInterval(autoRef.current);
-    setPaused(false);
-    setTimeout(() => setIsChanging(false), 900);
-  }, [isChanging, wrap]);
-
-  // Section entrance reveal
   useGSAP(
     () => {
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (prefersReduced) return;
-      gsap.fromTo(headingRef.current, { opacity: 0, y: 50 }, {
-        opacity: 1, y: 0, duration: DURATION.reveal, ease: EASE.premium,
-        scrollTrigger: { trigger: headingRef.current, start: "top 85%", once: true },
+
+      const mm = gsap.matchMedia();
+
+      mm.add("(min-width: 768px)", () => {
+        const track = trackRef.current;
+        if (!track) return;
+
+        // Calculate scroll width
+        const scrollWidth = track.scrollWidth;
+        const windowWidth = window.innerWidth;
+        const scrollAmount = scrollWidth - windowWidth + (windowWidth * 0.1);
+
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            pin: true,
+            scrub: 1.0,
+            start: "top top",
+            end: () => `+=${scrollAmount * 1.2}`,
+            invalidateOnRefresh: true,
+          },
+        });
+
+        // Horizontal translate
+        tl.to(track, {
+          x: -scrollAmount,
+          ease: "none",
+        }, 0);
+
+        // Progress bar scale
+        if (progressRef.current) {
+          tl.fromTo(
+            progressRef.current,
+            { scaleX: 0 },
+            { scaleX: 1, ease: "none" },
+            0
+          );
+        }
+
+        // Apply visual image parallax inside horizontally moving cards
+        const cards = track.querySelectorAll("[data-card]");
+        cards.forEach((card) => {
+          const img = card.querySelector("[data-parallax-img]");
+          if (img) {
+            tl.fromTo(
+              img,
+              { xPercent: -15 },
+              { xPercent: 15, ease: "none" },
+              0
+            );
+          }
+        });
       });
-      gsap.fromTo(reelRef.current, { opacity: 0, scale: 0.96, filter: "blur(10px)" }, {
-        opacity: 1, scale: 1, filter: "blur(0px)", duration: 1.4, ease: EASE.premium,
-        scrollTrigger: { trigger: reelRef.current, start: "top 80%", once: true },
-      });
+
+      return () => mm.revert();
     },
-    { scope: sectionRef }
+    { scope: sectionRef, dependencies: [itemsList] }
   );
-
-  // Stagger reveal slide content
-  useEffect(() => {
-    if (!slideRef.current || !infoRef.current || prefersReduced) return;
-    const tl = gsap.timeline();
-    
-    tl.fromTo(
-      slideRef.current, 
-      { filter: "brightness(0.45) contrast(1.15)", scale: 1.12 }, 
-      { filter: "brightness(1) contrast(1)", scale: 1, duration: 1.4, ease: "power4.out" }
-    );
-    
-    tl.fromTo(
-      infoRef.current.children, 
-      { opacity: 0, y: 40, filter: "blur(6px)" }, 
-      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.9, ease: "power3.out", stagger: 0.12 }, 
-      "-=1.1"
-    );
-  }, [index, prefersReduced]);
-
-  const prev = wrap(index - 1);
-  const next = wrap(index + 1);
-  const cur = itemsList[index] || itemsList[0];
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      go(-1);
-    }
-    if (e.key === "ArrowRight") {
-      e.preventDefault();
-      go(1);
-    }
-    if (e.key === " " || e.code === "Space") {
-      e.preventDefault();
-      setPaused((p) => !p);
-    }
-  };
-
-  if (!cur) return null;
 
   return (
     <section
       ref={sectionRef}
       id="experiences"
       aria-labelledby="experiences-heading"
-      className="relative overflow-hidden py-24 md:py-36 bg-[var(--color-background)] border-t border-[var(--color-border)]/50"
+      className="relative overflow-hidden bg-lagoon text-white border-t border-white/5"
     >
-      <div aria-hidden className="pointer-events-none absolute inset-0 opacity-10 mix-blend-overlay"
-        style={{ backgroundImage: "url('/noise.svg')" }} />
-      <div aria-hidden className="pointer-events-none absolute inset-0"
-        style={{ background: "radial-gradient(ellipse at 80% 20%, rgba(var(--color-gold-rgb), 0.04) 0%, transparent 60%)" }} />
+      {/* Subtle background noise overlay */}
+      <div 
+        aria-hidden="true" 
+        className="pointer-events-none absolute inset-0 opacity-[0.02] mix-blend-overlay"
+        style={{ backgroundImage: "url('/noise.svg')" }} 
+      />
 
-      <div className="relative mx-auto max-w-[1400px] px-6 md:px-8">
-        {/* Title Block */}
-        <div ref={headingRef} className="mb-16 flex flex-col items-center md:items-start text-center md:text-left">
-          <p className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-gold)]">
-            <Compass className="h-4 w-4 text-[var(--color-gold)]" /> 
-            <span>{eyebrow}</span>
-          </p>
-          <h2 id="experiences-heading"
-            className="font-serif text-[clamp(2.5rem,5.5vw,4.5rem)] font-black tracking-tight text-[var(--color-foreground)] leading-[1.05] max-w-3xl">
-            {title}
-          </h2>
-          <p className="mt-6 max-w-xl text-base text-[var(--color-muted)] leading-relaxed">
+      {/* ──────────────────────────────────────────────────────────────────
+          DESKTOP: Horizontal Scroll Cinema (Screen size md and up)
+          ────────────────────────────────────────────────────────────────── */}
+      <div className="hidden md:flex sticky top-0 h-screen w-screen overflow-hidden py-20 flex-col justify-between">
+        
+        {/* Header bar */}
+        <div className="lv-container flex justify-between items-end mb-4 z-10">
+          <div>
+            <span className="text-[10px] font-sans font-bold uppercase tracking-[0.25em] text-accent mb-4 block flex items-center gap-2">
+              <Compass className="size-4 animate-spin-slow" /> {eyebrow}
+            </span>
+            <h2 
+              id="experiences-heading"
+              className="font-display text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.05] max-w-2xl"
+            >
+              {title}
+            </h2>
+          </div>
+          <p className="max-w-md text-sm text-white/60 font-sans leading-relaxed text-right pb-1 text-wrap-balance">
             {descriptionText}
           </p>
         </div>
-
-        {/* Cinematic Slider */}
-        <div
-          ref={reelRef}
-          className="relative mx-auto w-full select-none focus-visible:outline-none"
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
-          onKeyDown={handleKeyDown}
-          tabIndex={0}
-          role="region"
-          aria-label="Experiences slideshow"
+        
+        {/* Horizontal track containing cards */}
+        <div 
+          ref={trackRef} 
+          className="flex flex-row gap-8 pl-[10vw] pr-[20vw] items-center h-[58vh] w-max z-10"
         >
-          {/* Left arrow background preview button */}
-          <button
-            type="button"
-            onClick={() => go(-1)}
-            disabled={isChanging}
-            aria-label={`Previous: ${itemsList[prev]?.name}`}
-            className="group absolute left-0 top-0 bottom-0 z-20 hidden md:block w-[14%] overflow-hidden rounded-l-3xl border-r border-white/5 transition-all hover:w-[16%] cursor-pointer"
-          >
-            <div className="absolute inset-0">
-              <Image src={itemsList[prev]?.image || "/images/placeholder.jpg"} alt={`Previous excursion: ${itemsList[prev]?.name || ""}`} aria-hidden fill className="object-cover transition-transform duration-[1.5s] group-hover:scale-108 saturate-50 brightness-[0.4]" sizes="15vw" />
-              <div className="absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:bg-black/30" />
-            </div>
-            <div className="absolute inset-y-0 right-6 flex items-center text-white/40 group-hover:text-white transition-all group-hover:-translate-x-2">
-              <ChevronLeft className="h-10 w-10 border border-white/10 rounded-full p-2 bg-white/5 backdrop-blur-md" />
-            </div>
-          </button>
- 
-          {/* Right arrow background preview button */}
-          <button
-            type="button"
-            onClick={() => go(1)}
-            disabled={isChanging}
-            aria-label={`Next: ${itemsList[next]?.name}`}
-            className="group absolute right-0 top-0 bottom-0 z-20 hidden md:block w-[14%] overflow-hidden rounded-r-3xl border-l border-white/5 transition-all hover:w-[16%] cursor-pointer"
-          >
-            <div className="absolute inset-0">
-              <Image src={itemsList[next]?.image || "/images/placeholder.jpg"} alt={`Next excursion: ${itemsList[next]?.name || ""}`} aria-hidden fill className="object-cover transition-transform duration-[1.5s] group-hover:scale-108 saturate-50 brightness-[0.4]" sizes="15vw" />
-              <div className="absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:bg-black/30" />
-            </div>
-            <div className="absolute inset-y-0 left-6 flex items-center text-white/40 group-hover:text-white transition-all group-hover:translate-x-2">
-              <ChevronRight className="h-10 w-10 border border-white/10 rounded-full p-2 bg-white/5 backdrop-blur-md" />
-            </div>
-          </button>
- 
-          {/* Core frame */}
-          <div
-            aria-label={cur.name}
-            className="relative mx-0 md:mx-[14%] overflow-hidden rounded-3xl bg-[#0a0f10] shadow-[0_24px_60px_rgba(0,0,0,0.35)] border border-[var(--color-border)]/50"
-            style={{ height: "clamp(32rem, 58vw, 44rem)" }}
-          >
-            <div ref={slideRef} className="absolute inset-0">
-              <Image
-                key={index}
-                src={cur.image || "/images/placeholder.jpg"}
-                alt={cur.name || "Excursion Detail"}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 75vw"
-                priority
-              />
-            </div>
-
-            {/* Visual Scrim Overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent" />
-
-            {/* Mobile navigation overlays */}
-            <div className="absolute top-1/2 left-4 right-4 flex justify-between -translate-y-1/2 md:hidden z-20">
-              <button onClick={() => go(-1)} className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md border border-white/10">
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <button onClick={() => go(1)} className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md border border-white/10">
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Slide Information */}
-            <div ref={infoRef} className="absolute inset-x-0 bottom-0 p-8 md:p-14 text-white z-10 max-w-3xl">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-[var(--color-gold)] backdrop-blur-md">
-                <MapPin className="h-3.5 w-3.5" />
-                <span>Excursion</span>
+          {itemsList.map((exp, idx) => (
+            <div 
+              key={idx}
+              data-card
+              className="w-[500px] lg:w-[580px] h-full p-[1px] rounded-sm bg-gradient-to-b from-white/10 to-transparent shrink-0"
+            >
+              <div className="relative w-full h-full rounded-[3px] overflow-hidden shadow-[0_24px_50px_rgba(0,0,0,0.5)] border border-white/5 group">
+                <div className="absolute inset-0 overflow-hidden">
+                  <Image 
+                    src={exp.image} 
+                    alt={exp.name} 
+                    fill 
+                    className="object-cover h-full w-[130%] -left-[15%]" 
+                    data-parallax-img 
+                    sizes="(max-width: 1024px) 50vw, 40vw"
+                    priority={idx < 2}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent transition-opacity duration-300 group-hover:via-black/20" />
+                </div>
+                
+                {/* Text card content overlay */}
+                <div className="absolute inset-0 p-10 flex flex-col justify-end z-10">
+                  <span className="text-[9px] font-sans font-bold uppercase tracking-[0.25em] text-accent mb-3 block">
+                    Tangalle, Sri Lanka
+                  </span>
+                  <h3 className="font-display text-2xl lg:text-3xl font-bold text-white mb-3 tracking-tight">
+                    {exp.name}
+                  </h3>
+                  <p className="text-sm text-white/75 font-sans max-w-md mb-8 leading-relaxed">
+                    {exp.description}
+                  </p>
+                  
+                  <a 
+                    href={exp.ctaHref} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[10px] font-sans font-bold uppercase tracking-widest text-accent hover:text-white transition-colors group/link"
+                  >
+                    <span>Inquire Excursion</span>
+                    <ArrowUpRight className="size-3.5 transition-transform duration-300 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
+                  </a>
+                </div>
               </div>
-              <h3 className="mb-4 font-serif text-3xl font-bold tracking-tight md:text-5xl lg:text-6xl text-white">
-                {cur.name}
-              </h3>
-              <p className="mb-8 max-w-xl text-sm leading-relaxed text-white/70 md:text-base">
-                {cur.description}
-              </p>
-              <a
-                href={cur.ctaHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group inline-flex items-center gap-3 rounded-full bg-white px-8 py-3.5 text-xs font-bold uppercase tracking-widest text-[#0f1011] shadow-lg transition-all hover:bg-[var(--color-gold)] hover:text-white"
-              >
-                <span>Inquire & Plan Excursion</span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-white transition-transform duration-300 group-hover:bg-white group-hover:text-[var(--color-gold)] group-hover:translate-x-1">
-                  <ArrowUpRight className="h-4 w-4" />
-                </span>
-              </a>
             </div>
+          ))}
+        </div>
+        
+        {/* Progress bar pagination track */}
+        <div className="lv-container flex justify-between items-center z-10 text-[9px] font-sans uppercase tracking-[0.25em] text-white/40 font-bold">
+          <span>Scroll to Explore</span>
+          <div className="w-80 h-px bg-white/10 relative">
+            <div 
+              ref={progressRef} 
+              className="absolute left-0 top-0 h-full w-full bg-accent origin-left scale-x-0" 
+            />
+          </div>
+          <span>{itemsList.length} Excursions</span>
+        </div>
+      </div>
 
-            {/* Sweep progress timeline tracker */}
-            <div className="absolute inset-x-0 top-0 flex h-1.5 w-full bg-black/35">
-              {!paused && !prefersReduced && (
-                <div
-                  key={`${index}-bar`}
-                  className="h-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-gold)]"
-                  style={{ animation: "progressBar 6s linear forwards" }}
-                />
-              )}
+      {/* ──────────────────────────────────────────────────────────────────
+          MOBILE: Horizontal Native Swipe Layout (Screen size below md)
+          ────────────────────────────────────────────────────────────────── */}
+      <div className="md:hidden py-24 px-6 z-10 relative">
+        <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-accent mb-3 block flex items-center gap-2">
+          <Compass className="size-4 animate-spin-slow" /> {eyebrow}
+        </span>
+        <h2 className="font-display text-3xl font-black tracking-tight text-white mb-4 leading-tight">
+          {title}
+        </h2>
+        <p className="text-sm text-white/60 font-sans leading-relaxed mb-8">
+          {descriptionText}
+        </p>
+        
+        {/* Touch Horizontal scroll wrapper */}
+        <div className="flex flex-row gap-6 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-4">
+          {itemsList.map((exp, idx) => (
+            <div 
+              key={idx}
+              className="w-[290px] aspect-[4/5] p-[1px] rounded-sm bg-gradient-to-b from-white/10 to-transparent shrink-0 snap-start"
+            >
+              <div className="relative w-full h-full rounded-[3px] overflow-hidden shadow-xl border border-white/5">
+                <Image src={exp.image} alt={exp.name} fill className="object-cover" sizes="80vw" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-transparent" />
+                <div className="absolute inset-0 p-6 flex flex-col justify-end">
+                  <span className="text-[8px] font-sans font-bold uppercase tracking-widest text-accent mb-2">
+                    Tangalle
+                  </span>
+                  <h3 className="font-display text-xl font-bold text-white mb-2 tracking-tight">
+                    {exp.name}
+                  </h3>
+                  <p className="text-xs text-white/70 font-sans mb-5 leading-relaxed">
+                    {exp.description}
+                  </p>
+                  <a 
+                    href={exp.ctaHref} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[9px] font-sans font-bold uppercase tracking-widest text-accent"
+                  >
+                    <span>Inquire</span>
+                    <ArrowUpRight className="size-3" />
+                  </a>
+                </div>
+              </div>
             </div>
-          </div>
-
-          {/* Minimal Dot Indicators */}
-          <div className="mt-8 flex items-center justify-center gap-3" role="tablist" aria-label="Slide indicators">
-            {itemsList.map((exp, i) => (
-              <button
-                key={i}
-                role="tab"
-                aria-selected={i === index}
-                aria-label={`Select: ${exp.name}`}
-                onClick={() => { setIndex(i); clearInterval(autoRef.current); }}
-                className={`relative h-1.5 rounded-full transition-all duration-500 overflow-hidden cursor-pointer ${
-                  i === index
-                    ? "w-14 bg-transparent"
-                    : "w-3.5 bg-[var(--color-border)] hover:bg-[var(--color-gold)]/40"
-                }`}
-              >
-                {i === index && (
-                  <>
-                    <div className="absolute inset-0 bg-[var(--color-border)]/30" />
-                    <div 
-                      key={`progress-${index}`}
-                      className="absolute inset-y-0 left-0 bg-[var(--color-gold)]" 
-                      style={!paused && !prefersReduced ? { animation: "progressBar 6s linear forwards" } : { width: '100%' }}
-                    />
-                  </>
-                )}
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
     </section>
   );
 }
+

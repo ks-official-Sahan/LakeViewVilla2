@@ -1,18 +1,9 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { useGSAP } from "@/lib/gsap";
-import { gsap, EASE, DURATION } from "@/lib/gsap";
+import { gsap } from "@/lib/gsap";
 import { FACILITIES } from "@/data/content";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
-import Image from "next/image";
 
 interface FacilitiesSectionProps {
   cmsData?: {
@@ -23,39 +14,140 @@ interface FacilitiesSectionProps {
   };
 }
 
+// Custom Premium Vector SVGs
+const BedroomIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" className="h-4.5 w-4.5" aria-hidden="true">
+    <path d="M2 19h20M2 15v4M22 15v4M2 11h20M4 11V7a2 2 0 012-2h12a2 2 0 012 2v4" />
+    <path d="M6 11V9a1 1 0 011-1h3a1 1 0 011 1v2M13 11V9a1 1 0 011-1h3a1 1 0 011 1v2" className="stroke-accent" />
+  </svg>
+);
+
+const KitchenIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" className="h-4.5 w-4.5" aria-hidden="true">
+    <path d="M3 14h18M3 18h18M4 14V6a2 2 0 012-2h12a2 2 0 012 2v8" />
+    <circle cx="7" cy="9" r="1.5" className="stroke-accent" />
+    <circle cx="17" cy="9" r="1.5" className="stroke-accent" />
+  </svg>
+);
+
+const OutdoorIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" className="h-4.5 w-4.5" aria-hidden="true">
+    <path d="M12 2L3 18h18L12 2z" />
+    <path d="M12 8l-6 10h12L12 8z" className="stroke-accent" />
+    <path d="M12 18v3" />
+  </svg>
+);
+
+const ShowerIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" className="h-4.5 w-4.5" aria-hidden="true">
+    <path d="M4 4h16v3H4zM7 7v13a2 2 0 002 2h6a2 2 0 002-2V7" />
+    <circle cx="12" cy="11" r="1" className="fill-accent" />
+    <circle cx="12" cy="15" r="1" className="fill-accent" />
+  </svg>
+);
+
+const CotIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" className="h-4.5 w-4.5" aria-hidden="true">
+    <path d="M3 5h18v12H3zM3 11h18M7 5v12M17 5v12" />
+    <path d="M3 17a2 2 0 002 2h14a2 2 0 002-2" className="stroke-accent" />
+  </svg>
+);
+
+const BalconyIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" className="h-4.5 w-4.5" aria-hidden="true">
+    <path d="M12 2v2M5.2 5.2l1.4 1.4M18.8 5.2l-1.4 1.4M2 12h20" />
+    <path d="M12 8a4 4 0 00-4 4h8a4 4 0 00-4-4z" className="stroke-accent" fill="currentColor" />
+  </svg>
+);
+
+const FallbackIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" className="h-4.5 w-4.5" aria-hidden="true">
+    <path d="M12 3v18M3 12h18M12 3l4 4M12 21l-4-4" className="stroke-accent" />
+  </svg>
+);
+
+// Icon mapping based on ID key
+const ICON_MAP: Record<string, React.ComponentType> = {
+  "bedroom-1": BedroomIcon,
+  "bedroom-2": BedroomIcon,
+  kitchen: KitchenIcon,
+  outdoor: OutdoorIcon,
+  "bathroom-1": ShowerIcon,
+  "bathroom-2": ShowerIcon,
+  cot: CotIcon,
+  balcony: BalconyIcon,
+};
+
 export default function FacilitiesSection({ cmsData }: FacilitiesSectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
-  const headingRef = useRef<HTMLDivElement>(null);
-  const carouselRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
-  const eyebrow = cmsData?.eyebrow || "Best Choice";
-  const title = cmsData?.title || "Villa Facilities";
-  const descriptionText = cmsData?.description || "Swipe on mobile or use the arrows to browse every amenity.";
+  const eyebrow = cmsData?.eyebrow || "Villa Conveniences";
+  const title = cmsData?.title || "Every comfort, considered.";
+  const descriptionText =
+    cmsData?.description ||
+    "Curated amenities designed to deliver a seamless, relaxing stay beside the Tangalle lagoon.";
 
-  const facilitiesList = Array.isArray(cmsData?.items) && cmsData.items.length > 0
-    ? cmsData.items
-    : FACILITIES;
+  // Group facilities into 3 columns for editorial structure
+  const categorizedFacilities = useMemo(() => {
+    const rawList = Array.isArray(cmsData?.items) && cmsData.items.length > 0
+      ? cmsData.items
+      : FACILITIES;
+
+    const categories = [
+      {
+        title: "Suites & Comfort",
+        items: [] as any[],
+      },
+      {
+        title: "Living & Dining",
+        items: [] as any[],
+      },
+      {
+        title: "Outdoors & Spaces",
+        items: [] as any[],
+      },
+    ];
+
+    rawList.forEach((fac) => {
+      const icon = ICON_MAP[fac.id] || FallbackIcon;
+      const normalizedItem = { ...fac, icon };
+
+      if (fac.id.includes("bedroom") || fac.id === "cot") {
+        categories[0].items.push(normalizedItem);
+      } else if (fac.id === "kitchen" || fac.id === "balcony") {
+        categories[1].items.push(normalizedItem);
+      } else {
+        categories[2].items.push(normalizedItem);
+      }
+    });
+
+    return categories;
+  }, [cmsData]);
 
   useGSAP(
     () => {
       const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (prefersReduced) return;
 
-      gsap.fromTo(
-        headingRef.current,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1, y: 0, duration: DURATION.reveal, ease: EASE.premium,
-          scrollTrigger: { trigger: headingRef.current, start: "top 85%", once: true },
-        }
-      );
+      const columns = gridRef.current?.querySelectorAll("[data-category-col]");
+      if (!columns?.length) return;
 
+      // Columns fade and slide up staggered
       gsap.fromTo(
-        carouselRef.current,
-        { opacity: 0, y: 50, scale: 0.98 },
+        columns,
+        { opacity: 0, y: 50 },
         {
-          opacity: 1, y: 0, scale: 1, duration: 1.2, ease: EASE.premium, delay: 0.15,
-          scrollTrigger: { trigger: carouselRef.current, start: "top 82%", once: true },
+          opacity: 1,
+          y: 0,
+          duration: 1.2,
+          stagger: 0.12,
+          ease: "cubic-bezier(0.16, 1, 0.3, 1)",
+          scrollTrigger: {
+            trigger: gridRef.current,
+            start: "top 85%",
+            once: true,
+          },
         }
       );
     },
@@ -65,112 +157,88 @@ export default function FacilitiesSection({ cmsData }: FacilitiesSectionProps) {
   return (
     <section
       ref={sectionRef}
+      id="facilities"
       aria-labelledby="facilities-heading"
-      className="relative overflow-hidden py-24 md:py-36 bg-[var(--color-background)] border-t border-[var(--color-border)]/50"
+      className="relative overflow-hidden py-24 md:py-32 bg-background border-t border-border/40"
     >
-      {/* Background glow overlay */}
+      {/* Background radial glow */}
       <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[30rem]"
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[35rem]"
         style={{
-          background:
-            "radial-gradient(ellipse 60% 40% at 75% 0%, rgba(var(--color-gold-rgb), 0.05) 0%, transparent 65%)",
+          background: "radial-gradient(ellipse 60% 40% at 75% 0%, var(--color-gold-muted) 0%, transparent 65%)",
+          opacity: 0.03
         }}
       />
 
-      <div className="relative mx-auto max-w-[1400px] px-6 md:px-8">
+      <div className="lv-container relative">
         {/* Title Heading */}
-        <div ref={headingRef} className="mb-16 flex flex-col items-center md:items-start md:text-left text-center">
-          <p className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-gold)]">
+        <div className="mb-20 flex flex-col items-center md:items-start text-center md:text-left">
+          <span className="text-[10px] font-sans font-bold uppercase tracking-[0.25em] text-accent mb-4 block">
             {eyebrow}
-          </p>
-          <div className="flex items-center gap-3">
-            <h2
-              id="facilities-heading"
-              className="font-serif text-[clamp(2.5rem,5.5vw,4.5rem)] font-black tracking-tight text-[var(--color-foreground)] leading-tight"
-            >
-              {title}
-            </h2>
-            <Sparkles className="h-6 w-6 text-[var(--color-gold)] animate-pulse hidden md:block" />
-          </div>
-          <p className="mt-4 max-w-xl text-base text-[var(--color-muted)] leading-relaxed">
+          </span>
+          <h2
+            id="facilities-heading"
+            className="font-display text-4xl md:text-5xl font-black tracking-tight text-foreground leading-[1.08]"
+          >
+            {title}
+          </h2>
+          <p className="mt-6 max-w-xl font-sans text-sm leading-relaxed text-foreground/70 dark:text-foreground/80">
             {descriptionText}
           </p>
         </div>
 
-        {/* Draggable Carousel */}
-        <div ref={carouselRef} className="relative">
-          <Carousel
-            opts={{ align: "start", loop: true }}
-            className="w-full select-none"
-          >
-            <CarouselContent className="-ml-6">
-              {facilitiesList.map((f, i) => (
-                <CarouselItem
-                  key={f.id || i}
-                  className="pl-6 basis-full sm:basis-1/2 lg:basis-1/3"
-                >
-                  <article className="group relative flex h-full min-h-[25rem] flex-col justify-end overflow-hidden rounded-3xl border border-[var(--color-border)]/50 bg-[var(--color-surface)] p-6 shadow-md transition-all duration-500 hover:border-[var(--color-gold)]/40 hover:shadow-[0_12px_40px_rgba(201,165,90,0.08)]">
-                    
-                    {/* Facility Card Media */}
-                    <div className="absolute inset-0 z-0">
-                      <Image
-                        src={f.image}
-                        alt={f.alt || f.title}
-                        fill
-                        className="object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      />
-                      
-                      {/* Dark Overlay vignettes */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent transition-opacity duration-300 group-hover:opacity-95" />
-                    </div>
+        {/* 3-Column Categorized Grid */}
+        <div
+          ref={gridRef}
+          className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8"
+        >
+          {categorizedFacilities.map((category, colIdx) => (
+            <div
+              key={colIdx}
+              data-category-col
+              className="flex flex-col gap-8"
+            >
+              {/* Category Title */}
+              <h3 className="font-display text-sm font-bold uppercase tracking-[0.2em] text-accent border-b border-border/60 pb-4">
+                {category.title}
+              </h3>
 
-                    {/* Badge */}
-                    {f.badge && (
-                      <span className="absolute left-6 top-6 z-10 inline-flex items-center justify-center rounded-full border border-white/10 bg-black/40 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white backdrop-blur-md">
-                        {f.badge}
-                      </span>
-                    )}
+              {/* Items List */}
+              <div className="flex flex-col gap-4">
+                {category.items.map((fac) => {
+                  const Icon = fac.icon;
+                  return (
+                    <article
+                      key={fac.id}
+                      className="group p-[1px] rounded-sm bg-gradient-to-b from-foreground/10 to-transparent dark:from-white/5 dark:to-transparent hover:shadow-[0_12px_30px_rgba(11,32,39,0.06)] hover:scale-[1.01] transition-all duration-350"
+                    >
+                      {/* Inner core card */}
+                      <div className="relative w-full h-full rounded-[3px] bg-card p-6 border border-foreground/5 dark:border-white/5 flex gap-5 items-start">
+                        {/* Icon Frame */}
+                        <div className="flex-shrink-0 h-10 w-10 items-center justify-center rounded-sm border border-accent/20 bg-accent/5 text-accent flex transition-all duration-500 group-hover:bg-accent group-hover:text-background group-hover:scale-105 shadow-sm">
+                          <Icon />
+                        </div>
 
-                    {/* Content Details */}
-                    <div className="relative z-10 text-white">
-                      <h3 className="font-serif text-xl font-bold leading-tight tracking-tight text-white mb-2.5 transition-colors duration-300 group-hover:text-[var(--color-gold)]">
-                        {f.title}
-                      </h3>
-                      <p className="text-sm leading-relaxed text-white/70">
-                        {f.description}
-                      </p>
-                    </div>
-
-                    {/* Accent line reveal */}
-                    <span
-                      aria-hidden
-                      className="absolute inset-x-0 bottom-0 h-[3px] origin-left scale-x-0 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-gold)] transition-transform duration-500 group-hover:scale-x-100"
-                    />
-                  </article>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-
-            {/* Custom styled arrow buttons */}
-            <div className="absolute top-[-80px] right-6 hidden items-center gap-3 md:flex">
-              <CarouselPrevious
-                aria-label="Previous facility"
-                className="static translate-y-0 h-11 w-11 border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)] hover:border-[var(--color-gold)] hover:bg-[var(--color-surface)] shadow-md transition-all rounded-full cursor-pointer"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </CarouselPrevious>
-              <CarouselNext
-                aria-label="Next facility"
-                className="static translate-y-0 h-11 w-11 border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)] hover:border-[var(--color-gold)] hover:bg-[var(--color-surface)] shadow-md transition-all rounded-full cursor-pointer"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </CarouselNext>
+                        {/* Title & Description */}
+                        <div className="space-y-1.5">
+                          <h4 className="font-display text-sm font-bold text-foreground transition-colors duration-300 group-hover:text-accent">
+                            {fac.title}
+                          </h4>
+                          <p className="font-sans text-xs leading-relaxed text-foreground/60 dark:text-foreground/75">
+                            {fac.description}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
             </div>
-          </Carousel>
+          ))}
         </div>
       </div>
     </section>
   );
 }
+

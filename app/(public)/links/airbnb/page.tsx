@@ -1,48 +1,78 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Script from "next/script";
-export const metadata = {
-  title: "Lake View Villa — Airbnb listing",
-  description:
-    "Official Airbnb listing for Lake View Villa Tangalle. Click through to view booking availability and photos on Airbnb.",
-  alternates: { canonical: "https://lakeviewvillatangalle.com/links/airbnb" },
-};
 
 export default function AirbnbLinkPage() {
   const url = "https://www.airbnb.com/l/CfK96vPd";
+  const [secondsLeft, setSecondsLeft] = useState(3);
+
+  useEffect(() => {
+    if (secondsLeft <= 0) {
+      window.location.href = url;
+      return;
+    }
+    const timer = setTimeout(() => {
+      setSecondsLeft((s) => s - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [secondsLeft, url]);
+
   return (
-    <main className="prose mx-auto py-12 px-4">
-      <h1>Lake View Villa — Airbnb listing</h1>
-      <p>
-        View our official Airbnb listing for availability, reviews and booking
-        options.
-      </p>
+    <main className="min-h-screen flex items-center justify-center bg-[#0b2027] px-4 relative overflow-hidden isolate">
+      {/* Background ambient radial gradients */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(circle 600px at 50% 30%, rgba(201,165,90,0.08), transparent 80%)",
+        }}
+      />
+      <div className="absolute inset-0 -z-10 opacity-5 bg-[radial-gradient(#1a5c5e_1px,transparent_1px)] [background-size:16px_16px]" />
 
-      <p>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block rounded-md px-4 py-3 bg-red-600 text-white"
-          data-cta="outbound-airbnb"
-        >
-          Open on Airbnb
-        </a>
-      </p>
+      <div className="w-full max-w-md border border-teal-900/40 bg-teal-950/20 p-8 text-center rounded-sm backdrop-blur-md relative">
+        {/* Brand Accent Line */}
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#c9a55a] to-transparent" />
 
-      <p className="text-sm text-slate-600">
-        If you prefer, message us directly for best rates and immediate
-        confirmation.
-      </p>
+        <span className="font-[var(--font-display)] text-xs font-bold tracking-[0.3em] uppercase text-[#c9a55a] block mb-2">
+          Redirecting
+        </span>
+        <h1 className="font-[var(--font-display)] text-2xl font-black text-[#f5f2e8] mb-4">
+          Lake View Villa — Airbnb
+        </h1>
+        <p className="text-sm text-[#7ba38c] mb-6 leading-relaxed">
+          You are being redirected to our official listing on Airbnb. If the page
+          does not load in {secondsLeft}s, click the button below.
+        </p>
 
-      <Link href="/" transitionTypes={["spa-page"]} className="text-blue-600 underline mt-6 inline-block">
-        ← Return to Lake View Villa
-      </Link>
+        {/* Geometric progress bar */}
+        <div className="w-full h-[3px] bg-teal-950 rounded-full overflow-hidden mb-8 max-w-[200px] mx-auto">
+          <div
+            className="h-full bg-[#c9a55a] transition-all duration-1000 ease-linear"
+            style={{ width: `${((3 - secondsLeft) / 3) * 100}%` }}
+          />
+        </div>
 
-      <Script
-        id="link-schema"
-        type="application/ld+json"
-        strategy="afterInteractive"
-      >
+        <div className="space-y-4">
+          <a
+            href={url}
+            className="inline-flex w-full justify-center items-center px-6 py-3 border border-[#c9a55a] text-[#c9a55a] hover:bg-[#c9a55a] hover:text-[#0b2027] text-xs uppercase font-bold tracking-widest rounded-sm transition-all duration-300"
+            data-cta="outbound-airbnb"
+          >
+            Open Airbnb Immediately
+          </a>
+
+          <Link
+            href="/"
+            className="inline-block text-xs uppercase tracking-widest text-[#7ba38c] hover:text-[#f5f2e8] transition-colors"
+          >
+            ← Back to website
+          </Link>
+        </div>
+      </div>
+
+      <Script id="link-schema" type="application/ld+json">
         {JSON.stringify({
           "@context": "https://schema.org",
           "@type": "WebPage",

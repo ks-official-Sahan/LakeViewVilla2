@@ -3,88 +3,98 @@
 import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { gsap, useGSAP, EASE } from "@/lib/gsap";
+import { gsap, useGSAP } from "@/lib/gsap";
 import { Star, ArrowRight } from "lucide-react";
 
 const STATS = [
   { value: "4.9", label: "Guest rating", star: true },
   { value: "100%", label: "Privacy" },
-  { value: "2 min", label: "To beach" },
-  { value: "24/7", label: "On-call support" },
+  { value: "2 Min", label: "To Beach" },
+  { value: "24/7", label: "Support" },
 ];
 
-/**
- * StoryReveal — Editorial section below hero
- *
- * Split layout: left text, right image.
- * Scroll-driven reveal with clip-path + parallax.
- * Stats strip with staggered entrance.
- */
 export function StoryReveal() {
   const revealRef = useRef<HTMLDivElement>(null);
   const storyHeadRef = useRef<HTMLDivElement>(null);
+  const storyBodyRef = useRef<HTMLDivElement>(null);
   const storyImageRef = useRef<HTMLDivElement>(null);
-  const parallaxBgRef = useRef<HTMLDivElement>(null);
   const statsRowRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
     () => {
-      const prefersReduced = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (prefersReduced) return;
 
-      // Story heading reveal
+      // Left column heading reveal
       if (storyHeadRef.current) {
         gsap.fromTo(
           storyHeadRef.current,
-          { opacity: 0, y: 50, filter: "blur(8px)" },
+          { opacity: 0, x: -30, filter: "blur(6px)" },
           {
             opacity: 1,
-            y: 0,
+            x: 0,
             filter: "blur(0px)",
-            duration: 1.2,
-            ease: "expo.out",
+            duration: 1.0,
+            ease: "power3.out",
             scrollTrigger: {
               trigger: storyHeadRef.current,
-              start: "top 85%",
+              start: "top 80%",
               once: true,
             },
           }
         );
       }
 
-      // Image clip-path reveal
-      const imgInner =
-        storyImageRef.current?.querySelector<HTMLElement>("[data-story-img]");
+      // Right column body reveal
+      if (storyBodyRef.current) {
+        gsap.fromTo(
+          storyBodyRef.current,
+          { opacity: 0, x: 30, filter: "blur(6px)" },
+          {
+            opacity: 1,
+            x: 0,
+            filter: "blur(0px)",
+            duration: 1.0,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: storyBodyRef.current,
+              start: "top 80%",
+              once: true,
+            },
+          }
+        );
+      }
+
+      // Image split-curtain clip-path reveal
+      const imgInner = storyImageRef.current?.querySelector<HTMLElement>("[data-story-img]");
       if (imgInner) {
         gsap.fromTo(
           imgInner,
           {
-            clipPath: "inset(100% 0% 0% 0%)",
-            scale: 1.12,
-            filter: "brightness(0.6)",
+            clipPath: "inset(0% 50% 0% 50%)",
+            scale: 1.15,
+            filter: "brightness(0.65)",
           },
           {
             clipPath: "inset(0% 0% 0% 0%)",
             scale: 1.0,
             filter: "brightness(1)",
-            duration: 1.4,
-            ease: "power4.out",
+            duration: 1.6,
+            ease: "power4.inOut",
             scrollTrigger: {
               trigger: storyImageRef.current,
-              start: "top 85%",
+              start: "top 78%",
               once: true,
             },
           }
         );
 
-        // Image parallax
+        // Parallax scroll on image inside its mask
         gsap.fromTo(
           imgInner,
-          { yPercent: -8 },
+          { yPercent: -12 },
           {
-            yPercent: 8,
+            yPercent: 12,
             ease: "none",
             scrollTrigger: {
               trigger: storyImageRef.current,
@@ -96,37 +106,22 @@ export function StoryReveal() {
         );
       }
 
-      // Parallax background text
-      if (parallaxBgRef.current) {
-        gsap.to(parallaxBgRef.current, {
-          yPercent: -30,
-          ease: "none",
-          scrollTrigger: {
-            trigger: revealRef.current,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: 1.2,
-          },
-        });
-      }
-
       // Stats row reveal
-      const statItems =
-        statsRowRef.current?.querySelectorAll<HTMLElement>("[data-stat]");
+      const statItems = statsRowRef.current?.querySelectorAll<HTMLElement>("[data-stat]");
       if (statItems?.length) {
         gsap.fromTo(
           statItems,
-          { opacity: 0, y: 32, scale: 0.96 },
+          { opacity: 0, y: 30, scale: 0.95 },
           {
             opacity: 1,
             y: 0,
             scale: 1,
             duration: 0.9,
-            stagger: 0.1,
+            stagger: 0.12,
             ease: "power3.out",
             scrollTrigger: {
               trigger: statsRowRef.current,
-              start: "top 88%",
+              start: "top 85%",
               once: true,
             },
           }
@@ -141,65 +136,47 @@ export function StoryReveal() {
       <section
         id="villa-story"
         aria-labelledby="story-heading"
-        className="relative overflow-hidden py-20 md:py-32 bg-[var(--color-background)]"
+        className="relative overflow-hidden py-24 md:py-36 bg-[var(--color-background)]"
       >
-        {/* Parallax Background Text */}
-        <div
-          ref={parallaxBgRef}
-          className="pointer-events-none select-none absolute inset-x-0 top-8 z-0 text-center"
-          style={{ willChange: "transform" }}
-        >
-          <span
-            className="block font-[var(--font-display)] font-black text-[var(--color-foreground)]/[0.02] leading-none"
-            style={{
-              fontSize: "clamp(6rem, 20vw, 20rem)",
-              letterSpacing: "-0.04em",
-            }}
-          >
-            PARADISE
-          </span>
-        </div>
-
         <div className="relative z-10 lv-container">
-          <div className="flex flex-col lg:flex-center gap-12 lg:gap-20">
-            {/* Left: Typography Block */}
-            <div ref={storyHeadRef} className="lg:w-1/2">
+          
+          {/* Split Header/Body Layout: Heading Left, Description Right */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start mb-20">
+            
+            {/* Left Block: Heading */}
+            <div ref={storyHeadRef} className="lg:col-span-6">
               <p className="flex items-center gap-3 mb-5">
                 <span className="h-px w-6 bg-[var(--color-gold)]" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-gold)]">
-                  The Legacy
+                <span className="text-[10px] font-[var(--font-sans)] font-bold uppercase tracking-[0.2em] text-[var(--color-gold)]">
+                  The Sanctuary
                 </span>
               </p>
               <h2
                 id="story-heading"
-                className="font-[var(--font-display)] font-black leading-[1.05] tracking-tight text-[var(--color-foreground)] mb-6"
-                style={{ fontSize: "clamp(2.25rem, 4.5vw, 3.5rem)" }}
+                className="font-[var(--font-display)] font-bold leading-[1.05] tracking-tight text-foreground"
+                style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)" }}
               >
                 Where the lagoon{" "}
-                <span className="italic text-[var(--color-gold)] font-[var(--font-serif)]">
+                <span className="italic text-[var(--color-gold)] font-[var(--font-serif)] font-normal">
                   meets
                 </span>
                 <br />
                 uncompromising luxury.
               </h2>
-              <div className="space-y-5 text-[var(--color-muted)] text-base leading-relaxed max-w-[56ch]">
-                <p>
-                  Lake View Villa merges bespoke tropical architecture with the
-                  silent, majestic beauty of Tangalle Lagoon. Designed as a deep
-                  retreat from friction, it offers total privacy and direct access
-                  to pristine Sri Lankan nature.
-                </p>
-                <p>
-                  Every detail, from the curated interiors to the private gardens,
-                  is engineered to erase stress and deliver serenity — from the
-                  moment you arrive until the moment you reluctantly depart.
-                </p>
-              </div>
+            </div>
 
-              <div className="mt-8">
+            {/* Right Block: Content Body */}
+            <div ref={storyBodyRef} className="lg:col-span-6 space-y-6 text-foreground/70 font-[var(--font-sans)] text-base leading-relaxed lg:pt-8">
+              <p className="text-wrap-balance">
+                Lake View Villa merges bespoke tropical architecture with the silent, majestic beauty of Tangalle Lagoon. Designed as a deep retreat from friction, it offers total privacy and direct access to pristine Sri Lankan nature.
+              </p>
+              <p className="text-wrap-balance">
+                Every detail, from the curated interiors to the private gardens, is engineered to erase stress and deliver serenity — from the moment you arrive until the moment you reluctantly depart.
+              </p>
+              <div className="pt-4">
                 <Link
                   href="/stays"
-                  className="group inline-flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-foreground)] transition-colors hover:text-[var(--color-gold)]"
+                  className="group inline-flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-foreground transition-colors hover:text-[var(--color-gold)]"
                 >
                   <span className="border-b border-[var(--color-gold)]/25 group-hover:border-[var(--color-gold)] pb-0.5 transition-colors">
                     Discover Our Suites
@@ -208,70 +185,65 @@ export function StoryReveal() {
                 </Link>
               </div>
             </div>
+          </div>
 
-            {/* Right: Signature Image */}
-            <div className="w-full lg:w-1/2 flex justify-center lg:justify-end">
-              <div
-                ref={storyImageRef}
-                className="relative w-full max-w-[560px] aspect-[3/4] rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.12)] border border-[var(--color-border)]/40"
-              >
-                <div className="absolute inset-0 bg-[var(--color-surface)]">
-                  <div
-                    data-story-img
-                    className="relative w-full h-[120%] -top-[10%]"
-                  >
-                    <Image
-                      src="/villa/optimized/drone_view_villa.webp"
-                      alt="Aerial view of Lake View Villa and Tangalle lagoon"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      quality={90}
-                    />
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f10]/70 via-transparent to-transparent mix-blend-multiply" />
-
-                  {/* Decorative corner accent */}
-                  <div className="absolute bottom-6 left-6">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/20 backdrop-blur-md">
-                      <Star className="h-4 w-4 text-[var(--color-gold)] fill-[var(--color-gold)]" />
-                    </div>
-                  </div>
+          {/* Full-width Panoramic Image with Double Bezel Frame */}
+          <div ref={storyImageRef} className="w-full flex justify-center mb-24">
+            <div 
+              className="w-full max-w-[1120px] aspect-[16/9] md:aspect-[21/9] p-2 rounded-[2.5rem] bg-foreground/[0.02] dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10"
+              style={{ viewTransitionName: "story-featured-image" }}
+            >
+              {/* Inner Core */}
+              <div className="relative w-full h-full rounded-[calc(2.5rem-0.5rem)] overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] bg-card border border-foreground/5 dark:border-white/5">
+                <div
+                  data-story-img
+                  className="relative w-full h-[130%] -top-[15%]"
+                >
+                  <Image
+                    src="/villa/optimized/villa_img_02.webp"
+                    alt="Scenic view of Lake View Villa and Tangalle lagoon"
+                    fill
+                    className="object-cover"
+                    sizes="90vw"
+                    quality={95}
+                  />
                 </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-transparent pointer-events-none" />
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Stats Strip */}
-        <div
-          ref={statsRowRef}
-          className="relative z-10 lv-container mt-20 border-t border-[var(--color-border)]/40 pt-12"
-        >
-          <div className="grid grid-cols-2 gap-y-10 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--color-border)]/40">
-            {STATS.map((s) => (
-              <div
-                key={s.label}
-                data-stat
-                className="flex flex-col items-center justify-center px-4 py-3 sm:py-0 text-center"
-              >
-                <div className="flex items-baseline gap-1">
-                  <p
-                    className="font-[var(--font-display)] font-black text-[var(--color-foreground)] leading-none"
-                    style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.5rem)" }}
-                  >
-                    {s.value}
+          {/* Stats Strip */}
+          <div
+            ref={statsRowRef}
+            className="relative z-10 lv-container border-t border-foreground/10 pt-16"
+          >
+            <div className="grid grid-cols-2 gap-y-10 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-foreground/10">
+              {STATS.map((s) => (
+                <div
+                  key={s.label}
+                  data-stat
+                  className="flex flex-col items-center justify-center px-4 py-3 sm:py-0 text-center first:border-t-0"
+                >
+                  <div className="flex items-baseline gap-1">
+                    <p
+                      className="font-[var(--font-display)] font-bold text-foreground leading-none"
+                      style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.5rem)" }}
+                    >
+                      {s.value}
+                    </p>
+                    {s.star && (
+                      <Star className="h-4 w-4 fill-[var(--color-gold)] text-[var(--color-gold)]" />
+                    )}
+                  </div>
+                  <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/45">
+                    {s.label}
                   </p>
-                  {s.star && (
-                    <Star className="h-4 w-4 fill-[var(--color-gold)] text-[var(--color-gold)]" />
-                  )}
                 </div>
-                <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-                  {s.label}
-                </p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+
         </div>
       </section>
     </div>

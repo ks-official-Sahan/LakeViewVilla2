@@ -1,16 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { motion } from "framer-motion";
+import { Star, Users, Phone, ArrowRight, Check } from "lucide-react";
 import Image from "next/image";
-import { Check, Star, Users, Phone, ArrowRight } from "lucide-react";
 import { SectionReveal } from "@/components/motion/section-reveal";
-import { RATES, OFFERS, SITE_CONFIG, BOOKING_FACTS } from "@/data/content";
+import { RATES, SITE_CONFIG, BOOKING_FACTS } from "@/data/content";
 import { buildWhatsAppUrl } from "@/lib/utils";
-import { Controller } from "react-hook-form";
 import { GuestsSelect } from "@/components/ui2/guests-select";
 import { trackContact } from "@/lib/analytics";
 
@@ -36,16 +34,10 @@ function todayISO() {
   d.setHours(0, 0, 0, 0);
   return d.toISOString().slice(0, 10);
 }
-const WhatsappIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 32 32" aria-hidden="true" {...props}>
-    <path
-      fill="#25D366"
-      d="M16 3C9.373 3 4 8.373 4 15a11.9 11.9 0 0 0 1.77 6.23L4 29l7.95-1.74A11.93 11.93 0 0 0 16 27c6.627 0 12-5.373 12-12S22.627 3 16 3Z"
-    />
-    <path
-      fill="#fff"
-      d="M23.2 19.43c-.19.53-.94.96-1.52 1.08-.41.09-.94.16-2.73-.56-2.29-.95-3.76-3.28-3.88-3.43-.12-.15-.93-1.24-.93-2.37s.57-1.68.77-1.92c.2-.24.44-.3.58-.3.14 0 .29 0 .42.01.13.01.31-.05.48.37.19.46.64 1.6.69 1.71.05.11.08.23.01.38-.07.15-.11.23-.22.36-.11.13-.23.29-.33.4-.11.11-.22.24-.1.46.12.22.54.89 1.17 1.44.81.72 1.5.95 1.72 1.06.22.11.35.1.49-.06.14-.16.56-.64.71-.86.15-.22.31-.18.52-.11.21.07 1.34.63 1.57.74.23.11.38.17.43.27.05.1.05.58-.14 1.11Z"
-    />
+
+const WhatsappIcon = () => (
+  <svg viewBox="0 0 32 32" className="h-5 w-5 fill-current" aria-hidden="true">
+    <path d="M16 3C9.373 3 4 8.373 4 15a11.9 11.9 0 0 0 1.77 6.23L4 29l7.95-1.74A11.93 11.93 0 0 0 16 27c6.627 0 12-5.373 12-12S22.627 3 16 3Z" />
   </svg>
 );
 
@@ -67,9 +59,7 @@ export default function StaysPage({
   room2Images = [],
 }: StaysPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<
-    "idle" | "success" | "error"
-  >("idle");
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
 
   const {
     register,
@@ -134,49 +124,39 @@ export default function StaysPage({
   const subheadline = cmsHero?.subheadline || "Experience tranquility on a serene lagoon—best rates via direct WhatsApp.";
   const pricingList = Array.isArray(cmsPricing) ? cmsPricing : (Array.isArray(RATES) ? RATES : []);
   const roomsList = Array.isArray(cmsRooms) ? cmsRooms : (Array.isArray(BOOKING_FACTS.rooms) ? BOOKING_FACTS.rooms : []);
-  const amenitiesList = Array.isArray(cmsAmenities) ? cmsAmenities : (Array.isArray(BOOKING_FACTS.amenities) ? BOOKING_FACTS.amenities : []);
 
   return (
-    <div className="min-h-screen relative overflow-hidden text-[var(--color-foreground)] bg-[var(--color-background)]">
+    <div className="min-h-screen relative overflow-hidden text-foreground bg-background">
       {/* Ambient background */}
       <div
-        aria-hidden
+        aria-hidden="true"
         className="pointer-events-none absolute inset-0"
         style={{
-          background: "radial-gradient(60% 40% at 20% 10%, rgba(14,165,233,0.08), transparent 70%), radial-gradient(50% 30% at 80% 20%, rgba(201,165,90,0.06), transparent 70%)"
-        }}
-      />
-      <motion.div
-        aria-hidden
-        className="absolute inset-0 mix-blend-overlay opacity-30 dark:mix-blend-screen dark:opacity-75"
-        animate={{ backgroundPosition: ["0px 0px", "36px 24px", "0px 0px"] }}
-        transition={{ duration: 16, repeat: Infinity, ease: "linear" }}
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(0deg,rgba(255,255,255,0.03) 0 1px,transparent 1px 6px),repeating-linear-gradient(90deg,rgba(255,255,255,0.03) 0 1px,transparent 1px 6px)",
-          backgroundSize: "18px 18px, 18px 18px",
+          background: "radial-gradient(60% 40% at 20% 10%, var(--color-primary) 0%, transparent 70%), radial-gradient(50% 30% at 80% 20%, var(--color-gold-muted) 0%, transparent 70%)",
+          opacity: 0.05
         }}
       />
 
       {/* Header */}
-      <div className="relative z-10 pt-24 pb-12">
-        <div className="container mx-auto px-4">
+      <div className="relative z-10 pt-36 pb-12">
+        <div className="container mx-auto px-6">
           <SectionReveal>
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                <span className="bg-gradient-to-r from-[#0ea5e9] to-[#22d3ee] bg-clip-text text-transparent">
-                  {headline}
-                </span>
+            <div className="text-center flex flex-col items-center">
+              <span className="text-[10px] font-sans font-bold uppercase tracking-[0.25em] text-accent mb-4 block">
+                Lagoon Sanctuary
+              </span>
+              <h1 className="font-display text-4xl md:text-6xl font-black tracking-tight leading-[1.05] mb-6">
+                {headline}
               </h1>
-              <p className="text-lg md:text-xl text-[var(--color-muted)] max-w-2xl mx-auto">
+              <p className="text-sm md:text-base text-foreground/70 dark:text-foreground/80 max-w-2xl mx-auto leading-relaxed">
                 {subheadline}
               </p>
+              
               {(rating || ratingCount) && (
-                <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 ring-1 ring-white/15 backdrop-blur-md">
-                  <Star className="h-4 w-4 text-yellow-300" />
-                  <span className="text-sm font-medium">
-                    {rating ? `${rating.toFixed(1)}/10` : ""} ·{" "}
-                    {ratingCount ?? 0} reviews
+                <div className="mt-8 inline-flex items-center gap-3 border border-border/60 bg-card px-5 py-2.5 shadow-sm rounded-sm">
+                  <Star className="h-3.5 w-3.5 fill-accent text-accent" />
+                  <span className="text-xs font-sans font-bold">
+                    {rating ? `${rating.toFixed(1)}/10` : ""} · {ratingCount ?? 0} verified reviews
                   </span>
                 </div>
               )}
@@ -185,51 +165,54 @@ export default function StaysPage({
         </div>
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 pb-20">
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Rates + Room listings */}
-          <div className="space-y-8">
+      {/* Body Content */}
+      <div className="relative z-10 container mx-auto px-6 pb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+          
+          {/* Left Block: Rates + Room listings (Spans 7 columns) */}
+          <div className="lg:col-span-7 flex flex-col gap-12">
+            
+            {/* Rates Table Block */}
             <SectionReveal>
-              <div className="glass-premium rounded-2xl p-8 shadow-2xl">
-                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                  <Star className="text-yellow-500 dark:text-yellow-300" size={22} />
-                  Rates & Availability
+              <div className="bg-card border border-border/60 rounded-sm p-8 shadow-sm">
+                <h2 className="font-display text-xl font-bold mb-6 tracking-tight text-foreground flex items-center gap-3">
+                  Rates & Seasons
                 </h2>
 
-                <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]/50">
-                  <table className="w-full text-sm md:text-base text-[var(--color-foreground)]/90">
-                    <thead className="bg-[var(--color-primary)]/8">
+                <div className="overflow-x-auto rounded-sm border border-border/60">
+                  <table className="w-full text-xs md:text-sm text-foreground">
+                    <thead className="bg-foreground/[0.02] border-b border-border/60">
                       <tr>
-                        <th className="text-left py-3 px-3 font-semibold">
+                        <th className="text-left py-3.5 px-4 font-display font-bold uppercase tracking-wider">
                           Season
                         </th>
-                        <th className="text-left py-3 px-3 font-semibold">
+                        <th className="text-left py-3.5 px-4 font-display font-bold uppercase tracking-wider">
                           Period
                         </th>
-                        <th className="text-left py-3 px-3 font-semibold">
-                          Rate
+                        <th className="text-left py-3.5 px-4 font-display font-bold uppercase tracking-wider">
+                          Nightly Rate
                         </th>
-                        <th className="text-left py-3 px-3 font-semibold">
-                          Min Nights
+                        <th className="text-left py-3.5 px-4 font-display font-bold uppercase tracking-wider">
+                          Min Stay
                         </th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-border/40">
                       {pricingList.map((r, i) => (
-                        <tr key={i} className="border-t border-[var(--color-border)]/50">
-                          <td className="py-4 px-3 font-medium text-[var(--color-foreground)]">
+                        <tr key={i} className="hover:bg-foreground/[0.01]">
+                          <td className="py-4 px-4 font-display font-bold text-foreground">
                             {r.season}
                           </td>
-                          <td className="py-4 px-3 text-[var(--color-muted)]">
+                          <td className="py-4 px-4 text-foreground/60">
                             {r.period}
                           </td>
-                          <td className="py-4 px-3">
-                            <span className="inline-flex items-center rounded-md px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300 ring-1 ring-emerald-300/30">
+                          <td className="py-4 px-4">
+                            <span className="inline-flex items-center bg-accent/5 border border-accent/25 px-2.5 py-1 text-xs font-bold text-accent">
                               {r.nightly}
                             </span>
                           </td>
-                          <td className="py-4 px-3 text-[var(--color-muted)]">
-                            {r.minNights}
+                          <td className="py-4 px-4 text-foreground/60">
+                            {r.minNights} {r.minNights === 1 ? "Night" : "Nights"}
                           </td>
                         </tr>
                       ))}
@@ -237,16 +220,16 @@ export default function StaysPage({
                   </table>
                 </div>
 
-                {pricingList[0]?.notes ? (
-                  <p className="text-xs md:text-sm text-[var(--color-muted)] mt-4">
-                    {pricingList[0].notes}
+                {pricingList[0]?.notes && (
+                  <p className="text-xs text-foreground/50 mt-4 leading-relaxed">
+                    * {pricingList[0].notes}
                   </p>
-                ) : null}
+                )}
               </div>
             </SectionReveal>
 
-            {/* Dynamic Room Cards with Images (PUBLIC-05) */}
-            <div className="grid gap-6">
+            {/* Room listing cards with sharp geometries */}
+            <div className="flex flex-col gap-8">
               {roomsList.map((room, i) => {
                 const roomImg =
                   i === 0
@@ -257,40 +240,43 @@ export default function StaysPage({
 
                 return (
                   <SectionReveal key={room.name}>
-                    <article className="group overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl transition-all duration-300 hover:border-[var(--color-primary)]/30 hover:shadow-[0_8px_32px_rgba(14,165,233,.10)]">
+                    <article className="group overflow-hidden rounded-sm border border-border/60 bg-card p-6 shadow-sm hover:shadow-xl hover:border-accent/20 transition-all duration-350">
                       {/* Room dynamic image */}
                       {roomImg && (
-                        <div className="relative -mx-6 -mt-6 mb-5 aspect-[16/10] overflow-hidden rounded-t-2xl">
+                        <div className="relative -mx-6 -mt-6 mb-6 aspect-[16/10] overflow-hidden">
                           <Image
                             src={roomImg}
                             alt={room.name}
                             fill
                             priority={i === 0}
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+                            sizes="(max-width: 768px) 100vw, 40vw"
                           />
                         </div>
                       )}
 
-                      {/* Room properties */}
-                      <div className="mb-4 flex items-start justify-between">
+                      {/* Room details header */}
+                      <div className="mb-6 flex items-start justify-between">
                         <div>
-                          <h3 className="text-xl font-bold text-[var(--color-foreground)]">{room.name}</h3>
-                          <div className="mt-1 flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
-                            <Users className="h-4 w-4" />
-                            <span>Sleeps {room.sleeps}</span>
+                          <h3 className="font-display text-2xl font-bold tracking-tight text-foreground transition-colors duration-300 group-hover:text-accent">
+                            {room.name}
+                          </h3>
+                          <div className="mt-2 flex items-center gap-1.5 text-xs text-foreground/50 font-sans font-medium">
+                            <Users className="h-4 w-4 text-accent" />
+                            <span>Accommodates up to {room.sleeps} guests</span>
                           </div>
                         </div>
-                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#22d3ee] text-xs font-bold text-white shadow-md">
+                        <span className="flex h-9 w-9 items-center justify-center border border-accent/20 bg-accent/5 text-xs font-display font-bold text-accent">
                           0{i + 1}
                         </span>
                       </div>
 
-                      <ul className="space-y-2">
+                      {/* Amenities checklist */}
+                      <ul className="space-y-3 pt-4 border-t border-border/40">
                         {room.features.slice(0, 5).map((f, fi) => (
-                          <li key={fi} className="flex items-center gap-2.5 text-sm text-[var(--color-muted)]">
-                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500" />
-                            {f}
+                          <li key={fi} className="flex items-center gap-3 text-xs text-foreground/75 dark:text-foreground/80 font-sans">
+                            <Check className="h-4 w-4 text-accent shrink-0" />
+                            <span>{f}</span>
                           </li>
                         ))}
                       </ul>
@@ -301,188 +287,198 @@ export default function StaysPage({
             </div>
           </div>
 
-          {/* WhatsApp enquiry form */}
-          <SectionReveal>
-            <div className="glass-premium rounded-2xl p-8 shadow-2xl">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                <WhatsappIcon className="h-5 w-5" />
-                WhatsApp Enquiry
-              </h2>
+          {/* Right Block: Direct Booking / Inquiry Form (Spans 5 columns) */}
+          <div className="lg:col-span-5 lg:sticky lg:top-24">
+            <SectionReveal>
+              <div className="bg-card border border-border/60 rounded-sm p-8 md:p-10 shadow-lg">
+                <h2 className="font-display text-2xl font-bold mb-6 tracking-tight text-foreground flex items-center gap-3 border-b border-border/60 pb-4">
+                  <Phone className="h-5 w-5 text-accent" /> Direct Reservation
+                </h2>
 
-              {/* Live summary chip */}
-              <div className="mb-5 text-[var(--color-muted)] text-sm">
-                <span className="mr-2">Preview:</span>
-                <span className="rounded-full bg-[var(--color-primary)]/8 px-3 py-1 ring-1 ring-[var(--color-border)]">
-                  {name || "Your name"} • {checkIn || "Check-in"} →{" "}
-                  {checkOut || "Check-out"} • {guests ?? 2}{" "}
-                  {guests === 1 ? "guest" : "guests"}
-                </span>
-              </div>
-
-              <form
-                onSubmit={handleSubmit(onSubmit)}
-                className="space-y-6"
-                noValidate
-                aria-busy={isSubmitting}
-              >
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
-                      htmlFor="s-name"
-                    >
-                      Full Name *
-                    </label>
-                    <input
-                      id="s-name"
-                      {...register("name")}
-                      className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
-                      placeholder="Your full name"
-                      autoComplete="name"
-                      aria-invalid={!!errors.name}
-                    />
-                    {errors.name && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.name.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label
-                      className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
-                      htmlFor="s-phone"
-                    >
-                      Phone Number *
-                    </label>
-                    <input
-                      id="s-phone"
-                      {...register("phone")}
-                      className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
-                      placeholder="+94717448391"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      aria-invalid={!!errors.phone}
-                    />
-                    {errors.phone && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.phone.message}
-                      </p>
-                    )}
-                  </div>
+                {/* Live preview banner card */}
+                <div className="mb-8 p-4 bg-background border border-border/60 rounded-sm text-xs font-sans leading-relaxed text-foreground/70">
+                  <span className="font-display font-bold uppercase tracking-wider text-accent block mb-1">
+                    Booking Request Preview
+                  </span>
+                  <span>
+                    {name || "Your Name"} • {checkIn || "Arrival"} → {checkOut || "Departure"} • {guests ?? 2} {guests === 1 ? "Guest" : "Guests"}
+                  </span>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
-                      htmlFor="s-in"
-                    >
-                      Check-in *
-                    </label>
-                    <input
-                      id="s-in"
-                      {...register("checkIn")}
-                      type="date"
-                      min={todayISO()}
-                      className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
-                      aria-invalid={!!errors.checkIn}
-                    />
-                    {errors.checkIn && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.checkIn.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label
-                      className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
-                      htmlFor="s-out"
-                    >
-                      Check-out *
-                    </label>
-                    <input
-                      id="s-out"
-                      {...register("checkOut")}
-                      type="date"
-                      min={minCheckout}
-                      className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent"
-                      aria-invalid={!!errors.checkOut}
-                    />
-                    {errors.checkOut && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.checkOut.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <Controller
-                  name="guests"
-                  control={control}
-                  render={({ field }) => (
-                    <GuestsSelect
-                      id="stays-guests"
-                      label="Guests *"
-                      value={field.value ?? 2}
-                      onChange={field.onChange}
-                      error={errors.guests?.message}
-                      min={1}
-                      max={4}
-                    />
-                  )}
-                />
-
-                <div>
-                  <label
-                    className="block text-sm font-medium text-[var(--color-foreground)] mb-2"
-                    htmlFor="s-msg"
-                  >
-                    Additional Message
-                  </label>
-                  <textarea
-                    id="s-msg"
-                    {...register("message")}
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)] placeholder-[var(--color-muted)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-transparent resize-none"
-                    placeholder="Any special requests or questions…"
-                  />
-                </div>
-
-                <motion.button
-                  type="submit"
-                  disabled={isSubmitting}
-                  whileHover={{ y: -1, scale: 1.01 }}
-                  whileTap={{ scale: 0.985 }}
-                  className="w-full py-4 px-6 rounded-xl font-semibold shadow-xl disabled:opacity-60 disabled:cursor-not-allowed bg-[var(--color-primary)] text-[var(--color-primary-foreground)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50 inline-flex items-center justify-center gap-2 transition-all"
+                <form
+                  onSubmit={handleSubmit(onSubmit)}
+                  className="space-y-6"
+                  noValidate
+                  aria-busy={isSubmitting}
                 >
-                  <WhatsappIcon className="h-5 w-5" />
-                  {isSubmitting ? "Sending…" : "Send WhatsApp Enquiry"}
-                </motion.button>
+                  <div className="flex flex-col gap-6">
+                    {/* Full Name */}
+                    <div>
+                      <label
+                        className="block text-xs font-display font-bold uppercase tracking-widest text-foreground/80 mb-2"
+                        htmlFor="s-name"
+                      >
+                        Full Name *
+                      </label>
+                      <input
+                        id="s-name"
+                        {...register("name")}
+                        className="w-full px-4 py-3.5 rounded-sm bg-background border border-border/60 text-foreground placeholder:text-foreground/40 text-sm focus:outline-none focus:border-accent"
+                        placeholder="Your full name"
+                        autoComplete="name"
+                        aria-invalid={!!errors.name}
+                      />
+                      {errors.name && (
+                        <p className="text-red-500 text-xs mt-1 font-sans font-medium">
+                          {errors.name.message}
+                        </p>
+                      )}
+                    </div>
 
-                {submitStatus === "success" && (
-                  <div
-                    className="text-emerald-400 text-center"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    Enquiry sent! We’ll reply on WhatsApp soon.
+                    {/* Phone Number */}
+                    <div>
+                      <label
+                        className="block text-xs font-display font-bold uppercase tracking-widest text-foreground/80 mb-2"
+                        htmlFor="s-phone"
+                      >
+                        Phone Number *
+                      </label>
+                      <input
+                        id="s-phone"
+                        {...register("phone")}
+                        className="w-full px-4 py-3.5 rounded-sm bg-background border border-border/60 text-foreground placeholder:text-foreground/40 text-sm focus:outline-none focus:border-accent"
+                        placeholder="+94717448391"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        aria-invalid={!!errors.phone}
+                      />
+                      {errors.phone && (
+                        <p className="text-red-500 text-xs mt-1 font-sans font-medium">
+                          {errors.phone.message}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Check-in / Check-out Dates */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          className="block text-xs font-display font-bold uppercase tracking-widest text-foreground/80 mb-2"
+                          htmlFor="s-in"
+                        >
+                          Check-in *
+                        </label>
+                        <input
+                          id="s-in"
+                          {...register("checkIn")}
+                          type="date"
+                          min={todayISO()}
+                          className="w-full px-4 py-3.5 rounded-sm bg-background border border-border/60 text-foreground text-sm focus:outline-none focus:border-accent"
+                          aria-invalid={!!errors.checkIn}
+                        />
+                        {errors.checkIn && (
+                          <p className="text-red-500 text-xs mt-1 font-sans font-medium">
+                            {errors.checkIn.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label
+                          className="block text-xs font-display font-bold uppercase tracking-widest text-foreground/80 mb-2"
+                          htmlFor="s-out"
+                        >
+                          Check-out *
+                        </label>
+                        <input
+                          id="s-out"
+                          {...register("checkOut")}
+                          type="date"
+                          min={minCheckout}
+                          className="w-full px-4 py-3.5 rounded-sm bg-background border border-border/60 text-foreground text-sm focus:outline-none focus:border-accent"
+                          aria-invalid={!!errors.checkOut}
+                        />
+                        {errors.checkOut && (
+                          <p className="text-red-500 text-xs mt-1 font-sans font-medium">
+                            {errors.checkOut.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Guests Select */}
+                    <Controller
+                      name="guests"
+                      control={control}
+                      render={({ field }) => (
+                        <GuestsSelect
+                          id="stays-guests"
+                          label="Guests *"
+                          value={field.value ?? 2}
+                          onChange={field.onChange}
+                          error={errors.guests?.message}
+                          min={1}
+                          max={4}
+                        />
+                      )}
+                    />
+
+                    {/* Message */}
+                    <div>
+                      <label
+                        className="block text-xs font-display font-bold uppercase tracking-widest text-foreground/80 mb-2"
+                        htmlFor="s-msg"
+                      >
+                        Special Requirements
+                      </label>
+                      <textarea
+                        id="s-msg"
+                        {...register("message")}
+                        rows={4}
+                        className="w-full px-4 py-3.5 rounded-sm bg-background border border-border/60 text-foreground placeholder:text-foreground/40 text-sm focus:outline-none focus:border-accent resize-none"
+                        placeholder="Dietary preferences, transport, etc..."
+                      />
+                    </div>
                   </div>
-                )}
-                {submitStatus === "error" && (
-                  <div
-                    className="text-red-400 text-center"
-                    role="status"
-                    aria-live="polite"
+
+                  {/* Submission Button */}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="group relative inline-flex w-full items-center justify-between border border-accent bg-accent/5 px-8 py-5 text-xs font-bold uppercase tracking-widest text-accent transition-all duration-500 hover:bg-accent hover:text-background hover:scale-[1.01] active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    Something went wrong. Please try again.
-                  </div>
-                )}
-              </form>
-            </div>
-          </SectionReveal>
+                    <span className="relative z-10 flex items-center gap-2">
+                      <WhatsappIcon /> {isSubmitting ? "Sending..." : "Submit to WhatsApp"}
+                    </span>
+                    <ArrowRight className="h-4.5 w-4.5 transition-transform duration-300 group-hover:translate-x-1" />
+                  </button>
+
+                  {submitStatus === "success" && (
+                    <div
+                      className="text-emerald-500 text-center text-xs font-sans font-bold mt-4"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      Inquiry composed! We will follow up with you on WhatsApp shortly.
+                    </div>
+                  )}
+                  {submitStatus === "error" && (
+                    <div
+                      className="text-red-500 text-center text-xs font-sans font-bold mt-4"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      Something went wrong. Please check fields and try again.
+                    </div>
+                  )}
+                </form>
+              </div>
+            </SectionReveal>
+          </div>
+
         </div>
       </div>
     </div>
   );
 }
+

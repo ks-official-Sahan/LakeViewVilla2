@@ -4,25 +4,43 @@
 import * as React from "react";
 import { useMantineColorScheme } from "@mantine/core";
 import { useTheme } from "next-themes";
-import { Monitor, Moon, Sun } from "lucide-react";
 
-// Stable options (no re-creation)
+/* ---------- custom inline SVGs ---------- */
+const SunIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4" aria-hidden="true">
+    <circle cx="12" cy="12" r="4" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41m12.72-12.72l-1.41 1.41" />
+  </svg>
+);
+
+const MoonIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+  </svg>
+);
+
+const MonitorIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4" aria-hidden="true">
+    <rect x="2" y="3" width="20" height="13" rx="0.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 20h8m-4-3v3" />
+  </svg>
+);
+
 const OPTIONS = [
-  { key: "light", icon: Sun, label: "Light" },
-  { key: "system", icon: Monitor, label: "System" },
-  { key: "dark", icon: Moon, label: "Dark" },
+  { key: "light", icon: SunIcon, label: "Light" },
+  { key: "system", icon: MonitorIcon, label: "System" },
+  { key: "dark", icon: MoonIcon, label: "Dark" },
 ] as const;
+
 type Key = (typeof OPTIONS)[number]["key"];
 
 export default function ThemeSwitch() {
-  // ── 1) Hooks: order is fixed and never conditional
   const { theme, setTheme, systemTheme, resolvedTheme } = useTheme();
   const { setColorScheme } = useMantineColorScheme({ keepTransitions: true });
-
   const [mounted, setMounted] = React.useState(false);
+
   React.useEffect(() => setMounted(true), []);
 
-  // Keep next-themes & Mantine in lockstep
   const applyTheme = React.useCallback(
     (t: Key) => {
       setTheme(t);
@@ -31,7 +49,6 @@ export default function ThemeSwitch() {
     [setTheme, setColorScheme]
   );
 
-  // Update <meta name="theme-color"> AFTER mount (avoids SSR diffs)
   React.useEffect(() => {
     if (!mounted) return;
     const eff: "light" | "dark" =
@@ -39,11 +56,8 @@ export default function ThemeSwitch() {
         ? (systemTheme as "light" | "dark" | undefined)
         : (resolvedTheme as "light" | "dark" | undefined)) ?? "dark";
 
-    const meta = document.querySelector(
-      'meta[name="theme-color"]'
-    ) as HTMLMetaElement | null;
-
-    const fallback = eff === "dark" ? "#0a0f10" : "#f4f7f6";
+    const meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    const fallback = eff === "dark" ? "#0b2027" : "#f5f0e6";
     let color = fallback;
     try {
       const root = getComputedStyle(document.documentElement);
@@ -53,7 +67,6 @@ export default function ThemeSwitch() {
     if (meta) meta.setAttribute("content", color);
   }, [mounted, theme, systemTheme, resolvedTheme]);
 
-  // Refs & handlers are defined unconditionally (so hook order never changes)
   const btnRefs = React.useRef<HTMLButtonElement[]>([]);
   const setRef = React.useCallback(
     (el: HTMLButtonElement | null, i: number) => {
@@ -99,37 +112,33 @@ export default function ThemeSwitch() {
     [currentKey, applyTheme]
   );
 
-  // ── 2) Render: SSR-safe placeholder until `mounted` is true
-  const renderPlaceholder = !mounted;
-
-  if (renderPlaceholder) {
+  if (!mounted) {
     return (
       <div
         aria-hidden
         role="presentation"
-        className="inline-flex h-10 items-center gap-1 rounded-full border border-border/80 bg-card/40 px-1.5 py-1 backdrop-blur-sm"
+        className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-border/60 bg-card/65 px-1.5 py-1 backdrop-blur-sm"
         data-mounted="false"
       >
-        <div className="grid size-7 place-items-center rounded-full opacity-80">
-          <Sun size={16} />
+        <div className="grid size-7 place-items-center opacity-40">
+          <SunIcon />
         </div>
-        <div className="grid size-7 place-items-center rounded-full opacity-80">
-          <Monitor size={16} />
+        <div className="grid size-7 place-items-center opacity-40">
+          <MonitorIcon />
         </div>
-        <div className="grid size-7 place-items-center rounded-full opacity-80">
-          <Moon size={16} />
+        <div className="grid size-7 place-items-center opacity-40">
+          <MoonIcon />
         </div>
       </div>
     );
   }
 
-  // ── 3) Interactive UI (client)
   return (
     <div
       role="radiogroup"
       aria-label="Theme"
       onKeyDown={onKeyDown}
-      className="inline-flex h-10 items-center gap-1 rounded-full border border-border/80 bg-card/40 px-1.5 py-1 backdrop-blur-sm"
+      className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-border/60 bg-card/65 px-1.5 py-1 backdrop-blur-sm"
       data-mounted="true"
     >
       {OPTIONS.map(({ key, icon: Icon, label }, i) => {
@@ -146,162 +155,22 @@ export default function ThemeSwitch() {
             onClick={() => applyTheme(key)}
             title={label}
             className={[
-              "relative grid size-7 place-items-center rounded-full outline-none transition-[transform,background,box-shadow] duration-150",
-              "hover:bg-foreground/10 focus-visible:ring-2 focus-visible:ring-primary/60",
+              "relative grid size-7 place-items-center rounded-sm outline-none transition-all duration-300",
               checked
-                ? "bg-sky-500/30 shadow-[0_1px_0_rgba(0,0,0,0.06),0_6px_18px_rgba(0,0,0,0.10)]"
-                : "bg-transparent",
-              "data-[state=unchecked]:hover:-translate-y-0.5",
+                ? "bg-accent/15 border border-accent/30 text-accent font-bold shadow-sm"
+                : "bg-transparent text-foreground/60 border border-transparent hover:bg-foreground/5 hover:text-foreground",
             ].join(" ")}
             data-state={checked ? "checked" : "unchecked"}
           >
-            <Icon size={16} className="opacity-90" />
+            <Icon />
             <span className="sr-only">{label}</span>
           </button>
         );
       })}
 
-      {/* Live announcement (client only) */}
       <span className="sr-only" aria-live="polite" role="status">
         Theme set to {theme}.
       </span>
     </div>
   );
 }
-
-// "use client";
-
-// import { useMantineColorScheme } from "@mantine/core";
-// import { Monitor, Moon, Sun } from "lucide-react";
-// import { useTheme } from "next-themes";
-// import React from "react";
-
-// export default function ThemeSwitch() {
-//   const { theme, setTheme, systemTheme } = useTheme();
-//   const { setColorScheme } = useMantineColorScheme({ keepTransitions: true });
-//   const [mounted, setMounted] = React.useState(false);
-//   React.useEffect(() => setMounted(true), []);
-//   if (!mounted) return null;
-
-//   const setBoth = (t: "light" | "dark" | "system") => {
-//     setTheme(t);
-//     setColorScheme(t === "system" ? "auto" : t);
-//   };
-
-//   const current =
-//     theme === "system" ? (systemTheme as "light" | "dark") : theme;
-
-//   return (
-//     <div
-//       role="toolbar"
-//       aria-label="Theme switcher"
-//       className="h-[41px] backdrop-blur-sm flex items-center px-1.5 py-1 rounded-full border border-border"
-//     >
-//       <button
-//         type="button"
-//         onClick={() => setBoth("light")}
-//         aria-label="Use light theme"
-//         aria-pressed={current === "light"}
-//         className={`w-7 h-7 rounded-full grid place-items-center mx-0.5 ${
-//           current === "light" ? "bg-muted/40" : "hover:bg-muted/20"
-//         }`}
-//       >
-//         <Sun size={16} />
-//       </button>
-//       <button
-//         type="button"
-//         onClick={() => setBoth("system")}
-//         aria-label="Use system theme"
-//         aria-pressed={theme === "system"}
-//         className={`w-7 h-7 rounded-full grid place-items-center mx-0.5 ${
-//           theme === "system" ? "bg-muted/40" : "hover:bg-muted/20"
-//         }`}
-//       >
-//         <Monitor size={16} />
-//       </button>
-//       <button
-//         type="button"
-//         onClick={() => setBoth("dark")}
-//         aria-label="Use dark theme"
-//         aria-pressed={current === "dark"}
-//         className={`w-7 h-7 rounded-full grid place-items-center mx-0.5 ${
-//           current === "dark" ? "bg-muted/40" : "hover:bg-muted/20"
-//         }`}
-//       >
-//         <Moon size={16} />
-//       </button>
-//     </div>
-//   );
-// }
-
-// "use client";
-
-// import { useMantineColorScheme } from "@mantine/core";
-// import { Monitor, Moon, Sun } from "lucide-react";
-// import { useTheme } from "next-themes";
-// import React, { useEffect, useState } from "react";
-
-// type themeProps = {
-//   t: "light" | "dark" | "system";
-// };
-
-// const ThemeSwitch = () => {
-//   const { theme, setTheme } = useTheme();
-//   const { setColorScheme } = useMantineColorScheme({
-//     keepTransitions: true,
-//   });
-
-//   const [mounted, setMounted] = useState(false);
-
-//   useEffect(() => {
-//     setMounted(true);
-//   }, []);
-
-//   const handleChangeTheme = ({ t }: themeProps) => {
-//     if (mounted) {
-//       if (t === "light") {
-//         setTheme("light");
-//         setColorScheme("light");
-//       } else if (t === "dark") {
-//         setTheme("dark");
-//         setColorScheme("dark");
-//       } else if (t === "system") {
-//         setTheme("system");
-//         setColorScheme("auto");
-//       }
-//     }
-//   };
-
-//   if (!mounted) return null;
-
-//   return (
-//     <div className="h-[41px] backdrop-blur-sm flex items-center px-[6px] py-[4px] rounded-full border border-evision_border_primary w-fit">
-//       <div
-//         onClick={() => handleChangeTheme({ t: "light" })}
-//         className={`w-[28px] h-[28px] rounded-full flex justify-center items-center cursor-pointer ${
-//           theme === "light" ? "bg-[#f7f7f7] dark:bg-[#1A1A1A80]" : ""
-//         } `}
-//       >
-//         <Sun size={16} />
-//       </div>
-//       <div
-//         onClick={() => handleChangeTheme({ t: "system" })}
-//         className={`w-[28px] h-[28px] rounded-full flex justify-center items-center cursor-pointer ${
-//           theme === "system" ? "bg-[#f7f7f7] dark:bg-[#1A1A1A80]" : ""
-//         } `}
-//       >
-//         <Monitor size={16} />
-//       </div>
-//       <div
-//         onClick={() => handleChangeTheme({ t: "dark" })}
-//         className={`w-[28px] h-[28px] rounded-full flex justify-center items-center cursor-pointer ${
-//           theme === "dark" ? "bg-[#f7f7f7] dark:bg-[#1A1A1A80]" : ""
-//         } `}
-//       >
-//         <Moon size={16} />
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default ThemeSwitch;
