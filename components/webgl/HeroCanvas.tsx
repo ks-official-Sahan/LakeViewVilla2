@@ -1211,35 +1211,63 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     lakeFieldMesh.position.set(-6.5, 0, -3);
     scene.add(lakeFieldMesh);
 
-    // ─── Far Shore & Shoreline ───────────────────────────────────────────
+    // ─── Far Shore & Shoreline (organic sloped plane) ───────────────────
     const landscapeGroup = new THREE.Group();
     scene.add(landscapeGroup);
 
-    const shorelineGeo = new THREE.BoxGeometry(30, 0.35, 2.5);
-    const shorelineSandMat = new THREE.MeshStandardMaterial({
-      color: 0x9aae88,
-      roughness: 0.88,
-    });
-    const shorelineMesh = new THREE.Mesh(shorelineGeo, shorelineSandMat);
-    shorelineMesh.position.set(-1, WATER_Y - 0.05, -18);
-    landscapeGroup.add(shorelineMesh);
+    const farTerrainGeo = new THREE.PlaneGeometry(50, 16, 40, 20);
+    farTerrainGeo.rotateX(-Math.PI / 2);
 
-    // Mountains
+    const ftPositions = farTerrainGeo.attributes.position;
+    for (let i = 0; i < ftPositions.count; i++) {
+      const x = ftPositions.getX(i);
+      const z = ftPositions.getZ(i); // local Z goes from -8 to 8
+      
+      // t goes from 0 (lake side / near) to 1 (mountains side / far)
+      const t = (z + 8) / 16;
+      
+      // Slope upward from water level to create a hill/embankment in the background
+      const slopeY = WATER_Y + 0.05 + t * 2.5;
+      
+      // Wavy shoreline along X axis (near t = 0)
+      const shoreCurve = Math.sin(x * 0.15) * 0.45 + Math.cos(x * 0.08) * 0.25;
+      
+      // Fine-grained detail noise for bumpy grassy ground
+      const detailNoise = Math.sin(x * 1.0 + z * 1.3) * 0.12 + Math.cos(x * 2.2) * 0.06;
+      
+      // Shoreline curve fades out as we go further back
+      const finalY = slopeY + detailNoise + shoreCurve * Math.max(0, 1 - t * 1.5);
+      
+      ftPositions.setY(i, finalY);
+    }
+    farTerrainGeo.computeVertexNormals();
+
+    const farTerrainMat = new THREE.MeshStandardMaterial({
+      color: 0x3d5a42, // beautiful deep forest green
+      roughness: 0.95,
+      metalness: 0.02,
+    });
+    const farTerrainMesh = new THREE.Mesh(farTerrainGeo, farTerrainMat);
+    // Center it at z = -22. It spans from z = -14 to z = -30
+    farTerrainMesh.position.set(0, 0, -22);
+    landscapeGroup.add(farTerrainMesh);
+
+    // Mountains (positioned smoothly on the sloped terrain)
     const mtnMat = new THREE.MeshStandardMaterial({ color: 0x4a6a62, roughness: 0.95 });
     const mountainGeo1 = new THREE.ConeGeometry(6.5, 5.5, 10);
     const mountain1 = new THREE.Mesh(mountainGeo1, mtnMat);
-    mountain1.position.set(-7, 0.5, -22);
+    mountain1.position.set(-7, 0.4, -22);
     landscapeGroup.add(mountain1);
 
     const mtnMat2 = new THREE.MeshStandardMaterial({ color: 0x3d5e55, roughness: 0.92 });
     const mountainGeo2 = new THREE.ConeGeometry(5.0, 4.2, 10);
     const mountain2 = new THREE.Mesh(mountainGeo2, mtnMat2);
-    mountain2.position.set(5, 0.1, -23);
+    mountain2.position.set(5, 0.2, -23);
     landscapeGroup.add(mountain2);
 
     const mountainGeo3 = new THREE.ConeGeometry(4.0, 3.5, 8);
     const mountain3 = new THREE.Mesh(mountainGeo3, mtnMat);
-    mountain3.position.set(0, -0.2, -24);
+    mountain3.position.set(0, 0.0, -24);
     landscapeGroup.add(mountain3);
 
     // ─── Forest Trees along far shore (enhanced multi-layer crowns) ──────
@@ -1264,7 +1292,16 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       const tx = -14 + Math.random() * 28;
       const tz = -17 - Math.random() * 5;
       const treeHeight = 0.8 + Math.random() * 1.2;
-      tree.position.set(tx, WATER_Y - 0.3, tz);
+      
+      // Calculate Y position dynamically based on farTerrain height at (tx, tz)
+      const localZ = tz - (-22);
+      const t = THREE.MathUtils.clamp((localZ + 8) / 16, 0, 1);
+      const slopeY = WATER_Y + 0.05 + t * 2.5;
+      const shoreCurve = Math.sin(tx * 0.15) * 0.45 + Math.cos(tx * 0.08) * 0.25;
+      const detailNoise = Math.sin(tx * 1.0 + localZ * 1.3) * 0.12 + Math.cos(tx * 2.2) * 0.06;
+      const treeY = slopeY + detailNoise + shoreCurve * Math.max(0, 1 - t * 1.5);
+      
+      tree.position.set(tx, treeY - 0.05, tz);
       tree.scale.y = treeHeight;
 
       const trunk = new THREE.Mesh(forestTrunkGeo, forestTrunkMat);
@@ -1366,18 +1403,17 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       roughness: 0.82,
     });
     const roofMat = new THREE.MeshStandardMaterial({ color: 0x4a5c62, roughness: 0.75 });
-    const windowMat = new THREE.MeshPhysicalMaterial({
-      color: 0xa8dce8,
+    const windowMat = new THREE.MeshStandardMaterial({
+      color: 0x8ec2d0,
+      roughness: 0.1,
+      metalness: 0.85,
       transparent: true,
-      opacity: 0.55,
-      roughness: 0.08,
-      metalness: 0.1,
-      transmission: 0.65,
+      opacity: 0.65,
     });
     const windowFrameMat = new THREE.MeshStandardMaterial({
-      color: 0x2a3a3e,
-      roughness: 0.3,
-      metalness: 0.7,
+      color: 0x5a4d44,
+      roughness: 0.2,
+      metalness: 0.8,
     });
 
     // Ground floor
@@ -1565,9 +1601,14 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     for (let i = 0; i < palmsCount; i++) {
       const palmTree = new THREE.Group();
-      const x = -9 + i * 3.5 + (Math.random() - 0.5) * 1.5;
-      const z = -5.5 - Math.random() * 2.5;
-      const palmY = WATER_Y + 0.1;
+      const x = -8 + i * 3.3 + (Math.random() - 0.5) * 1.2;
+      const z = -1.8 - Math.random() * 2.0; // on the grass strip
+      
+      // Calculate palm Y height based on the grass slope height at that Z
+      const localZ = z - (-3.0);
+      const t = THREE.MathUtils.clamp((localZ + 1.75) / 3.5, 0, 1);
+      const palmY = THREE.MathUtils.lerp(WATER_Y + 0.08, ROAD_Y - 0.02, t * t);
+      
       palmTree.position.set(x, palmY, z);
 
       const leanZ = (Math.random() - 0.5) * 0.18 + (x < 0 ? -0.1 : 0.1);
@@ -2019,6 +2060,13 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       // Adjust fill light based on time
       fillLight.intensity = currentEnv.ambientIntensity * 0.15;
 
+      // 2b. Update villa window emissive glow based on night
+      if (windowMat) {
+        const nightVal = computeNightSmooth(timeVal);
+        windowMat.emissive.setHex(0xffaa44);
+        windowMat.emissiveIntensity = nightVal * 0.6;
+      }
+
       // 3. Update sky dome
       skyMat.uniforms.uColorTop.value.copy(currentEnv.skyTop);
       skyMat.uniforms.uColorBottom.value.copy(currentEnv.skyBottom);
@@ -2267,7 +2315,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       coneGeo.dispose();
       foregroundLeafGeo.dispose();
       pathGeo.dispose();
-      shorelineGeo.dispose();
+      farTerrainGeo.dispose();
       mountainGeo1.dispose();
       mountainGeo2.dispose();
       mountainGeo3.dispose();
@@ -2318,7 +2366,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       coneMat.dispose();
       bulbMat.dispose();
       pathMat.dispose();
-      shorelineSandMat.dispose();
+      farTerrainMat.dispose();
       mtnMat.dispose();
       mtnMat2.dispose();
       forestTrunkMat.dispose();

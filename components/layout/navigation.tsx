@@ -200,7 +200,7 @@ export function Navigation() {
           <div className="hidden items-center gap-3.5 md:flex">
             <div
               className={[
-                "rounded-full border p-1 transition-colors duration-500",
+                "rounded-full border p-0.5 transition-colors duration-500",
                 scrolled || isOpen
                   ? "border-foreground/10 dark:border-white/[0.06] bg-foreground/[0.02] dark:bg-white/[0.02]"
                   : "border-white/10 bg-white/[0.04]",
@@ -283,7 +283,7 @@ export function Navigation() {
               <div className="h-px w-full bg-foreground/10 dark:bg-white/[0.06] my-2" data-mobile-nav-link />
 
               <div className="flex items-center gap-3 pt-1" data-mobile-nav-link>
-                <div className="rounded-2xl border border-foreground/10 dark:border-white/[0.06] bg-foreground/[0.03] dark:bg-white/[0.03] p-2">
+                <div className="rounded-full border border-foreground/10 dark:border-white/[0.06] bg-foreground/[0.03] dark:bg-white/[0.03] p-0.5">
                   <ThemeSwitch />
                 </div>
                 <a

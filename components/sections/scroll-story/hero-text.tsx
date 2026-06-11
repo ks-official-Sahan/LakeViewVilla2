@@ -77,7 +77,7 @@ export function HeroText({ headline, subheadline, onBook }: HeroTextProps) {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 w-full items-center">
         
         {/* Left Column: Asymmetric Editorial Typography Block */}
-        <div className="col-span-1 md:col-span-7 flex flex-col items-start text-left z-10">
+        <div className="col-span-1 md:col-span-10 lg:col-span-9 flex flex-col items-start text-left z-10">
           
           {/* Eyebrow Pill Badge with Double Bezel */}
           <div
@@ -149,13 +149,13 @@ export function HeroText({ headline, subheadline, onBook }: HeroTextProps) {
           </div>
         </div>
 
-        {/* Right Column: Layered Double-Bezel Card Cascade */}
+        {/* Right Column: Layered Double-Bezel Card Cascade (Commented out based on user feedback) */}
+        {/*
         <div className="col-span-1 md:col-span-5 flex justify-center md:justify-end relative">
           <div 
             className="hero-image-card relative w-full max-w-[380px] aspect-[4/5] md:aspect-[3/4] p-2 rounded-[2.5rem] bg-foreground/[0.02] dark:bg-white/[0.02] border border-foreground/10 dark:border-white/10 transition-transform duration-500 hover:scale-[1.02]"
             style={{ viewTransitionName: "hero-featured-image" }}
           >
-            {/* Inner Core */}
             <div className="relative w-full h-full rounded-[calc(2.5rem-0.5rem)] overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] bg-card border border-foreground/5 dark:border-white/5">
               <Image
                 src="/villa/optimized/drone_view_villa.webp"
@@ -166,11 +166,11 @@ export function HeroText({ headline, subheadline, onBook }: HeroTextProps) {
                 sizes="(max-width: 768px) 100vw, 30vw"
                 quality={90}
               />
-              {/* Elegant overlay to anchor in light/dark themes */}
               <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-transparent pointer-events-none" />
             </div>
           </div>
         </div>
+        */}
 
       </div>
 

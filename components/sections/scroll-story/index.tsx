@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback, Suspense } from "react";
 import dynamic from "next/dynamic";
-import { Sun, Moon, Sunrise, Sunset } from "lucide-react";
+import { Sun, Moon, Sunrise, Sunset, Eye, EyeOff } from "lucide-react";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import { buildWhatsAppUrl } from "@/lib/utils";
 import { SITE_CONFIG } from "@/data/content";
@@ -55,6 +55,24 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
     }, 20000); // sync every 20s
     return () => clearInterval(interval);
   }, [isAutoTime]);
+
+  const [hideUI, setHideUI] = useState(false);
+
+  // Keyboard listener for focus mode toggle ('H' key)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === "h") {
+        if (
+          document.activeElement?.tagName !== "INPUT" &&
+          document.activeElement?.tagName !== "TEXTAREA"
+        ) {
+          setHideUI((prev) => !prev);
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleBook = useCallback(() => {
     const url = buildWhatsAppUrl(
@@ -165,12 +183,27 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
           />
         </div>
 
-        <div ref={heroTextRef} className="relative z-10 w-full h-full">
+        <div 
+          ref={heroTextRef} 
+          className={`relative z-10 w-full h-full transition-opacity duration-700 ${
+            hideUI ? "opacity-0 pointer-events-none" : "opacity-100"
+          }`}
+        >
           <HeroText headline={headline} subheadline={subheadline} onBook={handleBook} />
         </div>
 
-        {/* Floating Time-of-Day Controller (Premium UX overlay) */}
-        <div className="absolute bottom-6 right-6 md:right-8 z-20 flex items-center gap-3 bg-[var(--glass-2-bg)] backdrop-blur-xl border border-[var(--glass-2-border)] rounded-full px-4 py-2.5 shadow-2xl hover:scale-[1.01] transition-transform duration-300">
+        {/* Floating Time-of-Day Controller (Premium UX overlay) - Shifted to bottom-left to avoid FAB overlap */}
+        <div className="absolute bottom-6 left-6 md:left-8 z-20 flex items-center gap-3 bg-[var(--glass-2-bg)] backdrop-blur-xl border border-[var(--glass-2-border)] rounded-full px-4 py-2.5 shadow-2xl hover:scale-[1.01] transition-transform duration-300">
+          {/* Dev focus view toggle button */}
+          <button
+            onClick={() => setHideUI((prev) => !prev)}
+            className="flex items-center justify-center p-1.5 rounded-full bg-white/10 text-white/70 hover:text-white hover:bg-white/20 transition-all duration-300 cursor-pointer"
+            title="Toggle Focus View (Press 'H')"
+            aria-label={hideUI ? "Show UI overlay" : "Hide UI overlay"}
+          >
+            {hideUI ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </button>
+
           <button
             onClick={() => {
               if (!isAutoTime) {
