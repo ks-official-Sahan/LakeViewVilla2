@@ -894,7 +894,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     scene.fog = fog;
 
     const camera = new THREE.PerspectiveCamera(48, w / h, 0.1, 120);
-    camera.position.set(7, 1.4, 5);
+    camera.position.set(6.0, 0.65, 4.0);
     scene.add(camera);
 
     // ─── Lighting ────────────────────────────────────────────────────────
@@ -1921,21 +1921,30 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     scene.add(fireflies);
 
     // ─── Camera Path (Cinematic Scroll-Driven) ───────────────────────────
-    // Option A: Villa porch → sweep forward over road → rise above lake
+    // Option A: Inside villa upper floor → exit through balcony → road → rise above lake
+    // Villa roof is at world y≈1.72, upper floor center at y≈0.85
+    // Villa front face (balcony) is at world z≈0.7
+    // Camera MUST stay below y=0.85 until past z≈0.7 to avoid clipping the roof
     const cameraPath = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(7.0, 1.4, 5.0),    // Inside villa, eye level
-      new THREE.Vector3(5.5, 1.8, 2.5),    // Villa porch, slightly rising
-      new THREE.Vector3(3.5, 2.8, -0.5),   // Over road, rising
-      new THREE.Vector3(1.5, 4.2, -3.5),   // Over grass, ascending
-      new THREE.Vector3(-0.5, 6.0, -6.5),  // Above lake, panoramic
+      new THREE.Vector3(6.0, 0.65, 4.0),     // Inside villa upper floor, eye level standing
+      new THREE.Vector3(6.0, 0.65, 2.8),     // Walking toward the window/balcony, same height
+      new THREE.Vector3(5.8, 0.7, 0.5),      // Exited through balcony, now outside past villa front
+      new THREE.Vector3(5.0, 0.8, -0.8),     // Over the road, still low — no clipping possible
+      new THREE.Vector3(3.5, 1.8, -2.5),     // Now past villa entirely, starting gentle rise
+      new THREE.Vector3(1.5, 3.5, -5.0),     // Rising over grass strip toward lake
+      new THREE.Vector3(0.0, 5.5, -7.5),     // Higher above lake edge
+      new THREE.Vector3(-0.5, 7.5, -10.0),   // Panoramic aerial over lake center
     ]);
 
     const lookAtPath = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(3.0, 0.0, -3.0),   // Looking toward road/lake
-      new THREE.Vector3(1.5, -0.2, -6.0),  // Toward lake
-      new THREE.Vector3(0.0, -0.5, -9.0),  // Lake center
-      new THREE.Vector3(-0.5, -0.8, -12.0), // Far shore
-      new THREE.Vector3(-1.0, -1.0, -16.0), // Mountains
+      new THREE.Vector3(5.5, 0.3, -1.0),     // Looking out through window toward road/lake
+      new THREE.Vector3(4.5, 0.1, -3.0),     // Through balcony toward lake
+      new THREE.Vector3(3.0, -0.1, -5.0),    // Lake shore coming into view
+      new THREE.Vector3(1.5, -0.3, -7.0),    // Lake center
+      new THREE.Vector3(0.5, -0.5, -9.0),    // Deeper into lake
+      new THREE.Vector3(0.0, -0.6, -11.0),   // Far shore
+      new THREE.Vector3(-0.5, -0.8, -14.0),  // Far shore + mountains
+      new THREE.Vector3(-1.0, -1.0, -18.0),  // Mountains panorama
     ]);
 
     // ─── Environment State ───────────────────────────────────────────────
@@ -1980,8 +1989,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const boostedWater = new THREE.Color();
     const camPos = new THREE.Vector3();
     const camLookAt = new THREE.Vector3();
-    const smoothedCamPos = new THREE.Vector3(7, 1.4, 5);
-    const smoothedLookAt = new THREE.Vector3(3, 0, -3);
+    const smoothedCamPos = new THREE.Vector3(6.0, 0.65, 4.0);
+    const smoothedLookAt = new THREE.Vector3(5.5, 0.3, -1.0);
 
     const animate = () => {
       if (!prefersReduced) rafId = requestAnimationFrame(animate);
