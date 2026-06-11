@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { navFade } from "@/lib/navigation/view-transitions";
 
 export default function NotFound() {
   return (
@@ -33,28 +34,28 @@ export default function NotFound() {
         <div className="grid gap-3 sm:grid-cols-2">
           <Link
             href="/"
-            transitionTypes={["spa-page"]}
+            transitionTypes={[...navFade]}
             className="flex items-center justify-center px-4 py-3 bg-[#c9a55a] text-[#0b2027] hover:bg-[#d4b56e] text-xs font-bold uppercase tracking-widest rounded-sm transition-colors"
           >
             Return Home
           </Link>
           <Link
             href="/gallery"
-            transitionTypes={["spa-page"]}
+            transitionTypes={[...navFade]}
             className="flex items-center justify-center px-4 py-3 border border-teal-800 text-[#7ba38c] hover:text-[#f5f2e8] hover:border-teal-700 text-xs font-bold uppercase tracking-widest rounded-sm transition-all"
           >
             View Gallery
           </Link>
           <Link
             href="/stays"
-            transitionTypes={["spa-page"]}
+            transitionTypes={[...navFade]}
             className="flex items-center justify-center px-4 py-3 border border-teal-800 text-[#7ba38c] hover:text-[#f5f2e8] hover:border-teal-700 text-xs font-bold uppercase tracking-widest rounded-sm transition-all"
           >
             See Stays
           </Link>
           <Link
             href="/developer"
-            transitionTypes={["spa-page"]}
+            transitionTypes={[...navFade]}
             className="flex items-center justify-center px-4 py-3 border border-teal-800 text-[#7ba38c] hover:text-[#f5f2e8] hover:border-teal-700 text-xs font-bold uppercase tracking-widest rounded-sm transition-all"
           >
             Developer
@@ -64,11 +65,11 @@ export default function NotFound() {
         {/* Footer shortcuts */}
         <p className="text-xs text-[#7ba38c] border-t border-teal-900/40 pt-6">
           Or visit{" "}
-          <Link href="/faq" transitionTypes={["spa-page"]} className="underline underline-offset-4 hover:text-[#f5f2e8]">
+          <Link href="/faq" transitionTypes={[...navFade]} className="underline underline-offset-4 hover:text-[#f5f2e8]">
             FAQ
           </Link>{" "}
           •{" "}
-          <Link href="/visit" transitionTypes={["spa-page"]} className="underline underline-offset-4 hover:text-[#f5f2e8]">
+          <Link href="/visit" transitionTypes={[...navFade]} className="underline underline-offset-4 hover:text-[#f5f2e8]">
             How to visit
           </Link>
         </p>

@@ -1,7 +1,7 @@
 import { SITE_CONFIG } from "@/data/site";
 
 // lib/indexnow.ts
-const INDEXNOW_KEY = process.env.INDEXNOW_KEY!;
+const INDEXNOW_KEY = process.env.INDEXNOW_KEY;
 
 export async function pingIndexNow(urls: string[]): Promise<void> {
   if (!INDEXNOW_KEY) {

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { ViewTransition } from "react";
 import {
   getCachedBlogPostMeta,
   getCachedBlogPostFull,
@@ -13,6 +14,9 @@ import { generateBlogArticleSchema } from "@/lib/seo/structured-data";
 import { markdownToHtml, estimateReadTime } from "@/lib/blog/markdown";
 import { ReadingProgress } from "./reading-progress";
 import { ShareButtons } from "./share-buttons";
+import { DirectionalTransition } from "@/components/motion/directional-transition";
+import { SuspenseReveal } from "@/components/motion/suspense-reveal";
+import { navBack, navForward } from "@/lib/navigation/view-transitions";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -131,20 +135,26 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       {/* Reading progress bar */}
       <ReadingProgress />
 
+      <DirectionalTransition>
+        <SuspenseReveal>
       <main>
         {/* ── Cinematic Hero ───────────────────────────────────────────── */}
         <div className="relative overflow-hidden">
           {post.featuredImage ? (
             /* Hero with featured image */
             <div className="relative h-[50dvh] min-h-[360px] md:h-[65dvh]">
-              <Image
-                src={post.featuredImage.url}
-                alt={post.featuredImage.alt ?? post.title}
-                fill
-                className="object-cover"
-                priority
-                sizes="100vw"
-              />
+              <ViewTransition name={`blog-featured-${post.id}`} share="morph">
+                <div className="relative h-full w-full">
+                  <Image
+                    src={post.featuredImage.url}
+                    alt={post.featuredImage.alt ?? post.title}
+                    fill
+                    className="object-cover"
+                    priority
+                    sizes="100vw"
+                  />
+                </div>
+              </ViewTransition>
               {/* Multi-layer scrim for text contrast */}
               <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-black/40 to-black/20" />
               <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-background)]/60 via-transparent to-transparent" />
@@ -183,7 +193,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               {/* Back navigation */}
               <Link
                 href="/blog"
-                transitionTypes={["spa-page"]}
+                transitionTypes={[...navBack]}
                 className="mb-10 inline-flex items-center gap-2 rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-muted)] transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
               >
                 <ArrowLeftIcon className="h-4 w-4" /> Back to Blog
@@ -295,7 +305,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 </h2>
                 <Link
                   href="/blog"
-                  transitionTypes={["spa-page"]}
+                  transitionTypes={[...navBack]}
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary)] hover:gap-2.5 transition-all"
                 >
                   All posts <ArrowRightIcon className="h-4 w-4" />
@@ -307,19 +317,25 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   <Link
                     key={p.id}
                     href={`/blog/${p.slug}`}
-                    transitionTypes={["spa-page"]}
+                    transitionTypes={[...navForward]}
                     className="group flex flex-col overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] transition-all hover:border-[var(--color-gold)]/30 hover:shadow-sm hover:-translate-y-0.5"
                   >
                     {p.featuredImage && (
-                      <div className="relative aspect-[16/9] overflow-hidden">
-                        <Image
-                          src={p.featuredImage.url}
-                          alt={p.featuredImage.alt ?? p.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          sizes="(max-width: 640px) 100vw, 33vw"
-                        />
-                      </div>
+                      <ViewTransition
+                        name={`blog-featured-${p.id}`}
+                        share="morph"
+                        default="none"
+                      >
+                        <div className="relative aspect-[16/9] overflow-hidden">
+                          <Image
+                            src={p.featuredImage.url}
+                            alt={p.featuredImage.alt ?? p.title}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            sizes="(max-width: 640px) 100vw, 33vw"
+                          />
+                        </div>
+                      </ViewTransition>
                     )}
                     <div className="p-5">
                       <p className="text-xs text-[var(--color-muted)] mb-2">
@@ -340,6 +356,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           )}
         </div>
       </main>
+        </SuspenseReveal>
+      </DirectionalTransition>
 
       {/* JSON-LD Structured Data */}
       <script

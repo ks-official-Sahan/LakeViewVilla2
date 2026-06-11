@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import VisitPage from "./client";
+import { DirectionalTransition } from "@/components/motion/directional-transition";
+import { SuspenseReveal } from "@/components/motion/suspense-reveal";
 import { DIRECTIONS } from "@/data/content";
 import { getContentBlock } from "@/lib/cms/get-content-block";
 
@@ -68,12 +70,16 @@ export default async function Page() {
           })),
         }}
       />
+      <DirectionalTransition>
+        <SuspenseReveal>
       <VisitPage
         cmsHero={heroBlock}
         cmsMap={mapBlock}
         cmsDirections={directionsBlock}
         cmsNearby={nearbyBlock}
       />
+        </SuspenseReveal>
+      </DirectionalTransition>
     </>
   );
 }

@@ -46,10 +46,17 @@ const PREVIEW_IMAGES = [
   },
 ];
 
+type GalleryImage = (typeof PREVIEW_IMAGES)[number];
+
 export function GalleryTeaser({
   cmsData,
 }: {
-  cmsData?: { eyebrow?: string; title?: string; description?: string };
+  cmsData?: {
+    eyebrow?: string;
+    title?: string;
+    description?: string;
+    items?: GalleryImage[];
+  };
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -59,6 +66,10 @@ export function GalleryTeaser({
   const description =
     cmsData?.description ||
     "A glimpse into the daily rhythm of life beside the lagoon. Captured in still frames of light and shadow.";
+  const images =
+    Array.isArray(cmsData?.items) && cmsData.items.length > 0
+      ? cmsData.items
+      : PREVIEW_IMAGES;
 
   useGSAP(
     () => {
@@ -119,7 +130,7 @@ export function GalleryTeaser({
           className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6 [column-fill:_balance]"
           role="list"
         >
-          {PREVIEW_IMAGES.map((img, i) => (
+          {images.map((img, i) => (
             <div
               key={i}
               data-gallery-item

@@ -12,8 +12,10 @@ const DEFAULT_FALLBACK_MODELS = [
   "google/gemma-4-26b-a4b-it:free",
   "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
   "nvidia/nemotron-3-super-120b-a12b:free",
-  "openrouter/owl-alpha",
 ] as const;
+
+/** Paid models — only used when OPENROUTER_ALLOW_PAID_MODELS=true */
+const PAID_FALLBACK_MODELS = ["openrouter/owl-alpha"] as const;
 
 export type OpenRouterMessage = {
   role: "system" | "user" | "assistant";
@@ -29,8 +31,15 @@ export interface OpenRouterChatOptions {
 
 export function modelChain(): string[] {
   const env = process.env.OPENROUTER_MODEL?.trim();
-  const chain = [env, ...DEFAULT_FALLBACK_MODELS].filter((m): m is string =>
-    Boolean(m),
+  const allowPaid = process.env.OPENROUTER_ALLOW_PAID_MODELS === "true";
+  const paidModels = allowPaid ? [...PAID_FALLBACK_MODELS] : [];
+  if (allowPaid && paidModels.length > 0) {
+    console.warn(
+      "[OpenRouter] OPENROUTER_ALLOW_PAID_MODELS is enabled — paid fallback models may incur charges.",
+    );
+  }
+  const chain = [env, ...DEFAULT_FALLBACK_MODELS, ...paidModels].filter(
+    (m): m is string => Boolean(m),
   );
   return [...new Set(chain)];
 }

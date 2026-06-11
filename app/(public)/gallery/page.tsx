@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { connection } from "next/server";
 import { SectionReveal } from "@/components/motion/section-reveal";
+import { DirectionalTransition } from "@/components/motion/directional-transition";
+import { SuspenseReveal } from "@/components/motion/suspense-reveal";
 import { PROPERTY } from "@/data/content";
 import { breadcrumbSchema } from "@/lib/seo";
 import { serializeJsonLd } from "@/lib/utils";
@@ -132,6 +134,8 @@ export default async function Page() {
         }}
       />
 
+      <DirectionalTransition>
+        <SuspenseReveal>
       <div className="min-h-screen relative overflow-hidden bg-[var(--color-background)]">
         {/* Ambient overlays */}
         <div
@@ -172,6 +176,8 @@ export default async function Page() {
           <GalleryClient images={images} />
         </div>
       </div>
+        </SuspenseReveal>
+      </DirectionalTransition>
     </>
   );
 }

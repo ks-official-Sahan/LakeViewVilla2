@@ -12,7 +12,7 @@ export default function GlobalLoading() {
 
         {/* Geometric progress line */}
         <div className="mt-8 h-[2px] w-32 overflow-hidden bg-teal-950">
-          <div className="h-full w-full bg-[#c9a55a] origin-left animate-[shimmer_1.5s_infinite_linear]" />
+          <div className="h-full w-full bg-[#c9a55a] origin-left animate-[shimmer-translate_1.5s_infinite_linear]" />
         </div>
       </div>
     </div>

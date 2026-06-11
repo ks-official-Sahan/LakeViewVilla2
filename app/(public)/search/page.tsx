@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DirectionalTransition } from "@/components/motion/directional-transition";
+import { SuspenseReveal } from "@/components/motion/suspense-reveal";
+import { navFade } from "@/lib/navigation/view-transitions";
 
 export const metadata: Metadata = {
   title: "Search — Lake View Villa Tangalle",
@@ -25,6 +28,8 @@ export default function SearchPage({
   const suggestions = ["stays", "gallery", "visit", "blog", "tangalle"];
 
   return (
+    <DirectionalTransition>
+      <SuspenseReveal>
     <main className="min-h-screen bg-[var(--color-background)] py-24 md:py-32 flex items-center justify-center">
       {/* Background ambient radial glow */}
       <div
@@ -75,6 +80,7 @@ export default function SearchPage({
             <Link
               key={s}
               href={`/search?q=${s}`}
+              transitionTypes={[...navFade]}
               className="px-2.5 py-1 bg-teal-950/5 text-[var(--color-primary)] hover:bg-teal-950/10 border border-[var(--color-border)] rounded-sm transition-all"
             >
               {s}
@@ -95,12 +101,14 @@ export default function SearchPage({
             <div className="grid gap-3 sm:grid-cols-2">
               <Link
                 href={`/stays?q=${q}`}
+                transitionTypes={[...navFade]}
                 className="p-3 border border-[var(--color-border)] hover:border-[var(--color-gold)] rounded-sm text-xs font-semibold text-[var(--color-primary)] bg-[var(--color-background)]/50 transition-colors"
               >
                 Search in Stays & Rates →
               </Link>
               <Link
                 href={`/blog?q=${q}`}
+                transitionTypes={[...navFade]}
                 className="p-3 border border-[var(--color-border)] hover:border-[var(--color-gold)] rounded-sm text-xs font-semibold text-[var(--color-primary)] bg-[var(--color-background)]/50 transition-colors"
               >
                 Search in Stories & Guides →
@@ -110,5 +118,7 @@ export default function SearchPage({
         )}
       </div>
     </main>
+      </SuspenseReveal>
+    </DirectionalTransition>
   );
 }

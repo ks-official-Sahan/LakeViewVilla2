@@ -1,7 +1,9 @@
+import { SuspenseFallback } from "@/components/motion/suspense-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function GalleryLoading() {
   return (
+    <SuspenseFallback>
     <main className="min-h-screen bg-[var(--color-background)] py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         {/* Gallery Title & Filters */}
@@ -36,5 +38,6 @@ export default function GalleryLoading() {
         </div>
       </div>
     </main>
+    </SuspenseFallback>
   );
 }

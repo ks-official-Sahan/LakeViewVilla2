@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { ViewTransition } from "react";
 import {
   getCachedBlogListPage,
   type BlogListPost,
@@ -9,6 +10,9 @@ import type { Metadata } from "next";
 import { estimateReadTime } from "@/lib/blog/markdown";
 import { serializeJsonLd } from "@/lib/utils";
 import { getContentBlock } from "@/lib/cms/get-content-block";
+import { DirectionalTransition } from "@/components/motion/directional-transition";
+import { SuspenseReveal } from "@/components/motion/suspense-reveal";
+import { navBack, navFade, navForward } from "@/lib/navigation/view-transitions";
 
 export const metadata: Metadata = {
   title: "Stories & Guides — Lake View Villa Tangalle",
@@ -134,6 +138,8 @@ export default async function BlogPage({
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(blogListLd) }}
         />
       ) : null}
+      <DirectionalTransition>
+        <SuspenseReveal>
       <main className="min-h-screen bg-[var(--color-background)]">
         {/* ── Hero ─────────────────────────────────────────────── */}
         <section className="relative overflow-hidden py-24 md:py-32">
@@ -188,7 +194,7 @@ export default async function BlogPage({
               {q && (
                 <Link
                   href="/blog"
-                  transitionTypes={["spa-page"]}
+                  transitionTypes={[...navFade]}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[var(--color-muted)] hover:text-[var(--color-foreground)]"
                 >
                   Clear
@@ -204,7 +210,7 @@ export default async function BlogPage({
                   <Link
                     key={cat}
                     href={`/blog?category=${cat}${q ? `&q=${q}` : ""}`}
-                    transitionTypes={["spa-page"]}
+                    transitionTypes={[...navFade]}
                     className={`rounded-sm px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all border ${
                       isActive
                         ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)] border-[var(--color-primary)] shadow-sm"
@@ -225,7 +231,7 @@ export default async function BlogPage({
                   <Link
                     key={t}
                     href={`/blog?tag=${t}${category !== "All" ? `&category=${category}` : ""}${q ? `&q=${q}` : ""}`}
-                    transitionTypes={["spa-page"]}
+                    transitionTypes={[...navFade]}
                     className={`rounded-sm px-2.5 py-0.5 text-[10px] font-medium transition-all border ${
                       isActive
                         ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30"
@@ -254,7 +260,7 @@ export default async function BlogPage({
               </p>
               <Link
                 href="/"
-                transitionTypes={["spa-page"]}
+                transitionTypes={[...navFade]}
                 className="mt-8 inline-flex items-center gap-2 rounded-sm bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-[var(--color-primary-foreground)] transition-opacity hover:opacity-90"
               >
                 Back to Home <ArrowRightIcon className="h-4 w-4" />
@@ -266,21 +272,29 @@ export default async function BlogPage({
               {featuredPost && (
                 <Link
                   href={`/blog/${featuredPost.slug}`}
-                  transitionTypes={["spa-page"]}
+                  transitionTypes={[...navForward]}
                   className="group mb-12 flex flex-col overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm transition-all duration-500 hover:shadow-md hover:border-[var(--color-gold)]/30 md:flex-row"
                 >
                   {/* Image */}
                   <div className="relative aspect-[16/9] shrink-0 overflow-hidden md:aspect-auto md:w-[52%]">
                     {featuredPost.featuredImage ? (
                       <>
-                        <Image
-                          src={featuredPost.featuredImage.url}
-                          alt={featuredPost.featuredImage.alt ?? featuredPost.title}
-                          fill
-                          className="object-cover transition-transform duration-700 group-hover:scale-105"
-                          sizes="(max-width: 768px) 100vw, 52vw"
-                          priority
-                        />
+                        <ViewTransition
+                          name={`blog-featured-${featuredPost.id}`}
+                          share="morph"
+                          default="none"
+                        >
+                          <div className="relative h-full min-h-[200px] w-full md:absolute md:inset-0">
+                            <Image
+                              src={featuredPost.featuredImage.url}
+                              alt={featuredPost.featuredImage.alt ?? featuredPost.title}
+                              fill
+                              className="object-cover transition-transform duration-700 group-hover:scale-105"
+                              sizes="(max-width: 768px) 100vw, 52vw"
+                              priority
+                            />
+                          </div>
+                        </ViewTransition>
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[var(--color-surface)]/20" />
                       </>
                     ) : (
@@ -371,7 +385,7 @@ export default async function BlogPage({
                   {page > 1 && (
                     <Link
                       href={`/blog?page=${page - 1}${category !== "All" ? `&category=${category}` : ""}${tag ? `&tag=${tag}` : ""}${q ? `&q=${q}` : ""}`}
-                      transitionTypes={["spa-page"]}
+                      transitionTypes={[...navFade]}
                       className="rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-foreground)] hover:border-[var(--color-primary)] transition-colors"
                     >
                       ← Previous
@@ -383,7 +397,7 @@ export default async function BlogPage({
                       <Link
                         key={p}
                         href={`/blog?page=${p}${category !== "All" ? `&category=${category}` : ""}${tag ? `&tag=${tag}` : ""}${q ? `&q=${q}` : ""}`}
-                        transitionTypes={["spa-page"]}
+                        transitionTypes={[...navFade]}
                         className={`h-8 w-8 rounded-sm text-center text-sm font-medium transition-all pt-1.5 ${
                           p === page
                             ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]"
@@ -398,7 +412,7 @@ export default async function BlogPage({
                   {page < totalPages && (
                     <Link
                       href={`/blog?page=${page + 1}${category !== "All" ? `&category=${category}` : ""}${tag ? `&tag=${tag}` : ""}${q ? `&q=${q}` : ""}`}
-                      transitionTypes={["spa-page"]}
+                      transitionTypes={[...navFade]}
                       className="rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-foreground)] hover:border-[var(--color-primary)] transition-colors"
                     >
                       Next →
@@ -410,6 +424,8 @@ export default async function BlogPage({
           )}
         </div>
       </main>
+        </SuspenseReveal>
+      </DirectionalTransition>
     </>
   );
 }
@@ -420,27 +436,33 @@ function PostCard({ post }: { post: BlogListPost }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      transitionTypes={["spa-page"]}
+      transitionTypes={[...navForward]}
       className="group flex flex-col overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm transition-all duration-300 hover:shadow-md hover:border-[var(--color-gold)]/25 hover:-translate-y-0.5"
     >
       {/* Image */}
-      <div className="relative aspect-[16/10] overflow-hidden bg-[var(--color-background)]">
-        {post.featuredImage ? (
-          <Image
-            src={post.featuredImage.url}
-            alt={post.featuredImage.alt ?? post.title}
-            fill
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-gold)]/5">
-            <PenIcon className="h-10 w-10 text-[var(--color-gold)]/20" />
-          </div>
-        )}
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-      </div>
+      <ViewTransition
+        name={`blog-featured-${post.id}`}
+        share="morph"
+        default="none"
+      >
+        <div className="relative aspect-[16/10] overflow-hidden bg-[var(--color-background)]">
+          {post.featuredImage ? (
+            <Image
+              src={post.featuredImage.url}
+              alt={post.featuredImage.alt ?? post.title}
+              fill
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-gold)]/5">
+              <PenIcon className="h-10 w-10 text-[var(--color-gold)]/20" />
+            </div>
+          )}
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+        </div>
+      </ViewTransition>
 
       {/* Content */}
       <div className="flex flex-1 flex-col p-5">
@@ -450,7 +472,7 @@ function PostCard({ post }: { post: BlogListPost }) {
             {post.tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="rounded-sm bg-[var(--color-primary)]/8 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-primary)]"
+                className="rounded-sm bg-[hsl(var(--primary)/0.08)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-primary)]"
               >
                 {tag}
               </span>

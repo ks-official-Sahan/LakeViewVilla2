@@ -281,7 +281,7 @@ export default function RootLayout({
                   <Suspense fallback={null}>
                     <ClientEffects />
                   </Suspense>
-                  <main id="content" className="relative isolate" style={{ viewTransitionName: "main-content" }}>
+                  <main id="content" className="relative isolate">
                     <Suspense fallback={null}>{children}</Suspense>
                   </main>
                   {/* Analytics & tracking components (client-side) */}

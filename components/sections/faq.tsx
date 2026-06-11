@@ -293,10 +293,6 @@ export function FAQ({ cmsData }: { cmsData?: any }) {
                       role="region"
                       aria-labelledby={`faq-question-${idx}`}
                       className="h-0 opacity-0 overflow-hidden"
-                      style={{
-                        height: isOpen ? "auto" : 0,
-                        opacity: isOpen ? 1 : 0,
-                      }}
                     >
                       <div className="px-6 pb-6 pt-0">
                         <div className="h-px w-full bg-border/40 mb-5" />

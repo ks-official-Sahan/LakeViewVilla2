@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { navBack } from "@/lib/navigation/view-transitions";
+import { DirectionalTransition } from "@/components/motion/directional-transition";
 
 // Content pulled/normalized from your PDF + GitHub profile
 const PROFILE = `Software Engineering undergraduate (BSc Hons) with a proven record delivering production-grade web, mobile, and desktop apps. Strengths in Next.js, React Native, NestJS, Prisma, Docker, WebSockets, CI/CD, and scalable system design.`;
 
 export default function CVPage() {
   return (
+    <DirectionalTransition>
     <main className="safe-top min-h-screen bg-[var(--color-background)] text-[var(--color-foreground)] py-12 print:py-0">
       <div className="mx-auto max-w-5xl px-4 print:px-0">
         {/* Toolbar (hidden in print) */}
@@ -21,7 +24,7 @@ export default function CVPage() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" className="rounded-sm border-[var(--color-border)] hover:bg-[var(--color-surface)]" asChild>
-              <Link href="/developer" transitionTypes={["spa-page"]}>
+              <Link href="/developer" transitionTypes={[...navBack]}>
                 Back to Developer
               </Link>
             </Button>
@@ -217,5 +220,6 @@ export default function CVPage() {
         </article>
       </div>
     </main>
+    </DirectionalTransition>
   );
 }

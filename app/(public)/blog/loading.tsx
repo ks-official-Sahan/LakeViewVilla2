@@ -1,7 +1,9 @@
+import { SuspenseFallback } from "@/components/motion/suspense-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function BlogLoading() {
   return (
+    <SuspenseFallback>
     <main className="min-h-screen bg-[var(--color-background)] py-24 md:py-32">
       <div className="mx-auto max-w-6xl px-4 md:px-8">
         {/* Hero Area Skeleton */}
@@ -66,5 +68,6 @@ export default function BlogLoading() {
         </div>
       </div>
     </main>
+    </SuspenseFallback>
   );
 }

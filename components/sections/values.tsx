@@ -58,6 +58,12 @@ const ShowerIcon = () => (
   </svg>
 );
 
+const FallbackIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" className="h-5 w-5" aria-hidden="true">
+    <path d="M12 3v18M3 12h18M12 3l4 4M12 21l-4-4" className="stroke-accent" />
+  </svg>
+);
+
 const iconMap = {
   car: CarIcon,
   waves: WavesIcon,
@@ -243,7 +249,7 @@ export function ValuesSection({ cmsData }: { cmsData?: { eyebrow?: string; title
             {/* Value list detail grids with custom SVG markers */}
             <ul ref={listRef} className="mt-12 space-y-4">
               {itemsList.map((item: any) => {
-                const Icon = iconMap[item.icon as keyof typeof iconMap] ?? CarIcon;
+                const Icon = iconMap[item.icon as keyof typeof iconMap] ?? FallbackIcon;
                 return (
                   <li
                     key={item.id}

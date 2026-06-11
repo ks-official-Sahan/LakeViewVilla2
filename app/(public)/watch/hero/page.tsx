@@ -2,6 +2,8 @@
 import React from "react";
 import Script from "next/script";
 import Link from "next/link";
+import { DirectionalTransition } from "@/components/motion/directional-transition";
+import { navBack, navFade } from "@/lib/navigation/view-transitions";
 
 export const metadata = {
   title: "Lake View Villa — Hero Video",
@@ -57,6 +59,7 @@ export default function WatchHeroPage() {
   };
 
   return (
+    <DirectionalTransition>
     <main className="min-h-screen bg-[var(--color-background)] py-24 md:py-32">
       {/* Background ambient radial glow */}
       <div
@@ -110,14 +113,14 @@ export default function WatchHeroPage() {
           <div className="mt-4 flex flex-wrap justify-center gap-4">
             <Link
               href="/"
-              transitionTypes={["spa-page"]}
+              transitionTypes={[...navBack]}
               className="inline-flex items-center px-6 py-2.5 bg-[var(--color-primary)] text-[var(--color-primary-foreground)] text-xs font-bold uppercase tracking-widest rounded-sm hover:opacity-90 transition-opacity"
             >
               Return to Homepage
             </Link>
             <Link
               href="/stays"
-              transitionTypes={["spa-page"]}
+              transitionTypes={[...navFade]}
               className="inline-flex items-center px-6 py-2.5 border border-[var(--color-border)] text-[var(--color-foreground)] text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-[var(--color-surface)] transition-all"
             >
               View Stays & Rates
@@ -142,5 +145,6 @@ export default function WatchHeroPage() {
         {JSON.stringify(breadcrumb)}
       </Script>
     </main>
+    </DirectionalTransition>
   );
 }

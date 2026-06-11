@@ -3,6 +3,7 @@ import { ScrollStory } from "@/components/sections/ScrollStory";
 import { Highlights } from "@/components/sections/highlights";
 import { Footer } from "@/components/layout/footer";
 import { BelowFold } from "@/components/layout/below-fold";
+import { DirectionalTransition } from "@/components/motion/directional-transition";
 import { FAQ_ITEMS } from "@/data/content";
 import { getContentBlock } from "@/lib/cms/get-content-block";
 
@@ -31,6 +32,7 @@ export default async function HomePage() {
         breadcrumb={[{ name: "Home", url: "https://lakeviewvillatangalle.com" }]}
         faq={homepageFaq}
       />
+      <DirectionalTransition>
       {/* Phase 1–3: WebGL hero + magazine reveal + booking CTA */}
       <ScrollStory cmsHero={heroBlock} />
 
@@ -49,6 +51,7 @@ export default async function HomePage() {
         faqBlock={faqBlock}
       />
       <Footer />
+      </DirectionalTransition>
     </>
   );
 }

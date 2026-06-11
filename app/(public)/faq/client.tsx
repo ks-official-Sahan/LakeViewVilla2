@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, startTransition, ViewTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SectionReveal } from "@/components/motion/section-reveal";
 import { FAQ_ITEMS, SITE_CONFIG } from "@/data/content";
@@ -51,9 +51,11 @@ export default function FAQPage({ cmsHero, cmsQuestions }: FAQClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const toggleItem = (index: number) => {
-    setOpenItems((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
-    );
+    startTransition(() => {
+      setOpenItems((prev) =>
+        prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+      );
+    });
   };
 
   const headline = cmsHero?.headline || "Frequently Asked Questions";
@@ -212,6 +214,7 @@ export default function FAQPage({ cmsHero, cmsQuestions }: FAQClientProps) {
 
                       <AnimatePresence initial={false}>
                         {isOpen && (
+                          <ViewTransition enter="slide-up" exit="slide-down">
                           <motion.div
                             id={`faq-answer-${index}`}
                             initial={{ height: 0, opacity: 0 }}
@@ -228,6 +231,7 @@ export default function FAQPage({ cmsHero, cmsQuestions }: FAQClientProps) {
                               </div>
                             </div>
                           </motion.div>
+                          </ViewTransition>
                         )}
                       </AnimatePresence>
                     </motion.div>

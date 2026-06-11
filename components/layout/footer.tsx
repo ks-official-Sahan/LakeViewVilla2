@@ -6,6 +6,7 @@ import { useRef } from "react";
 import { useGSAP } from "@/lib/gsap";
 import { gsap } from "@/lib/gsap";
 import { PROPERTY, SITE_CONFIG } from "@/data/content";
+import { navFade } from "@/lib/navigation/view-transitions";
 import { buildWhatsAppUrl } from "@/lib/utils";
 import { MapPin, Phone, Mail, ArrowUpRight, ExternalLink } from "lucide-react";
 
@@ -91,6 +92,7 @@ export function Footer() {
           <div data-footer-col className="md:col-span-5 lg:col-span-4">
             <Link
               href="/"
+              transitionTypes={[...navFade]}
               className="inline-flex items-center gap-3 group"
               aria-label="Lake View Villa home"
             >
@@ -196,6 +198,7 @@ export function Footer() {
                   <li key={href}>
                     <Link
                       href={href}
+                      transitionTypes={[...navFade]}
                       className="text-white/60 transition-colors hover:text-[var(--color-gold)]"
                     >
                       {label}
@@ -210,7 +213,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="flex flex-col items-center justify-between gap-4 border-t border-white/5 py-8 font-[var(--font-sans)] text-[10px] tracking-wide text-white/35 md:flex-row">
           <p>
-            <Link href="/" className="transition-colors hover:text-white/60">
+            <Link href="/" transitionTypes={[...navFade]} className="transition-colors hover:text-white/60">
               Sahan Sachintha
             </Link>{" "}
             &copy; {year} Lake View Villa Tangalle. All rights reserved.

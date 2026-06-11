@@ -8,6 +8,7 @@ import { gsap, useGSAP } from "@/lib/gsap";
 import { Menu, X, Phone, Compass } from "lucide-react";
 import ThemeSwitch from "../theme/theme-switch";
 import { SITE_CONFIG } from "@/data/content";
+import { navFade } from "@/lib/navigation/view-transitions";
 import { buildWhatsAppUrl } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -124,6 +125,7 @@ export function Navigation() {
       <header
         ref={headerRef}
         role="banner"
+        style={{ viewTransitionName: "persistent-nav" }}
         className="fixed inset-x-0 top-4 z-50 flex justify-center px-4 transition-all duration-300"
       >
         {/* Floating pill navigation shell */}
@@ -138,6 +140,7 @@ export function Navigation() {
           {/* Logo */}
           <Link
             href="/"
+            transitionTypes={[...navFade]}
             className="group flex items-center gap-2.5 shrink-0"
             aria-label="Lake View Villa — Home"
           >
@@ -173,6 +176,7 @@ export function Navigation() {
                 <Link
                   key={href}
                   href={href}
+                  transitionTypes={[...navFade]}
                   aria-current={active ? "page" : undefined}
                   className={[
                     "relative rounded-full px-4 py-1.5 text-[10px] font-[var(--font-sans)] font-bold uppercase tracking-[0.14em] transition-all duration-300",
@@ -261,6 +265,7 @@ export function Navigation() {
                   <Link
                     key={href}
                     href={href}
+                    transitionTypes={[...navFade]}
                     data-mobile-nav-link
                     aria-current={active ? "page" : undefined}
                     className={[

@@ -1,7 +1,9 @@
+import { SuspenseFallback } from "@/components/motion/suspense-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function StaysLoading() {
   return (
+    <SuspenseFallback>
     <main className="min-h-screen bg-[var(--color-background)] py-24 md:py-32">
       <div className="mx-auto max-w-6xl px-4 md:px-8">
         {/* Title & Eyebrow */}
@@ -56,5 +58,6 @@ export default function StaysLoading() {
         </div>
       </div>
     </main>
+    </SuspenseFallback>
   );
 }

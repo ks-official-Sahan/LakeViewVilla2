@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, startTransition, ViewTransition } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { SectionReveal } from "@/components/motion/section-reveal";
@@ -80,14 +80,18 @@ export default function GalleryClient({ images }: { images: Img[] }) {
     const onKey = (e: KeyboardEvent) => {
       const len = filtered.length;
       if (len === 0) return;
-      if (e.key === "Escape") setSelected(null);
+      if (e.key === "Escape") startTransition(() => setSelected(null));
       if (e.key === "ArrowLeft")
-        setSelected((p) =>
-          p == null ? null : p > 0 ? p - 1 : len - 1
+        startTransition(() =>
+          setSelected((p) =>
+            p == null ? null : p > 0 ? p - 1 : len - 1
+          )
         );
       if (e.key === "ArrowRight")
-        setSelected((p) =>
-          p == null ? null : p < len - 1 ? p + 1 : 0
+        startTransition(() =>
+          setSelected((p) =>
+            p == null ? null : p < len - 1 ? p + 1 : 0
+          )
         );
     };
 
@@ -113,10 +117,14 @@ export default function GalleryClient({ images }: { images: Img[] }) {
     if (dx + dy > 8) setDragging(true);
   };
   const onMouseUp = (index: number) => {
-    if (!dragging) setSelected(index);
+    if (!dragging) {
+      startTransition(() => setSelected(index));
+    }
     dragStart.current = null;
     setDragging(false);
   };
+
+  const galleryImageName = (src: string) => `gallery-${src.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
   return (
     <>
@@ -130,7 +138,7 @@ export default function GalleryClient({ images }: { images: Img[] }) {
               type="button"
               onClick={() => {
                 setActiveCategory(cat);
-                setSelected(null);
+                startTransition(() => setSelected(null));
               }}
               className={[
                 "px-5 py-2.5 text-xs font-display font-bold uppercase tracking-wider transition-all duration-300 rounded-sm border cursor-pointer",
@@ -164,6 +172,11 @@ export default function GalleryClient({ images }: { images: Img[] }) {
             onMouseUp={() => onMouseUp(i)}
           >
             <SectionReveal>
+              <ViewTransition
+                name={galleryImageName(image.src)}
+                share="morph"
+                default="none"
+              >
               <div
                 className="relative overflow-hidden rounded-sm bg-card border border-border/60 shadow-sm transition-all duration-500 hover:border-accent/20 hover:shadow-lg"
               >
@@ -189,6 +202,7 @@ export default function GalleryClient({ images }: { images: Img[] }) {
                   </p>
                 </div>
               </div>
+              </ViewTransition>
             </SectionReveal>
           </motion.div>
         ))}
@@ -202,13 +216,13 @@ export default function GalleryClient({ images }: { images: Img[] }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-md p-6"
-            onClick={() => setSelected(null)}
+            onClick={() => startTransition(() => setSelected(null))}
           >
             <div className="relative max-w-6xl max-h-[80vh] mx-4" onClick={(e) => e.stopPropagation()}>
               
               {/* Close Button */}
               <button
-                onClick={() => setSelected(null)}
+                onClick={() => startTransition(() => setSelected(null))}
                 className="absolute -top-16 right-0 text-foreground/60 hover:text-accent transition-colors z-10 cursor-pointer p-2 rounded-sm border border-border/40 bg-card/40 hover:bg-card"
                 aria-label="Close"
               >
@@ -220,8 +234,10 @@ export default function GalleryClient({ images }: { images: Img[] }) {
                 onClick={(e) => {
                   e.stopPropagation();
                   const len = filtered.length;
-                  setSelected((p) =>
-                    p == null ? null : p > 0 ? p - 1 : len - 1
+                  startTransition(() =>
+                    setSelected((p) =>
+                      p == null ? null : p > 0 ? p - 1 : len - 1
+                    )
                   );
                 }}
                 className="absolute left-6 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-accent transition-colors z-10 cursor-pointer p-3 rounded-sm border border-border/40 bg-card/40 hover:bg-card"
@@ -235,8 +251,10 @@ export default function GalleryClient({ images }: { images: Img[] }) {
                 onClick={(e) => {
                   e.stopPropagation();
                   const len = filtered.length;
-                  setSelected((p) =>
-                    p == null ? null : p < len - 1 ? p + 1 : 0
+                  startTransition(() =>
+                    setSelected((p) =>
+                      p == null ? null : p < len - 1 ? p + 1 : 0
+                    )
                   );
                 }}
                 className="absolute right-6 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-accent transition-colors z-10 cursor-pointer p-3 rounded-sm border border-border/40 bg-card/40 hover:bg-card"
@@ -246,6 +264,10 @@ export default function GalleryClient({ images }: { images: Img[] }) {
               </button>
 
               {/* Image Frame */}
+              <ViewTransition
+                name={galleryImageName(filtered[selected].src)}
+                share="morph"
+              >
               <motion.div
                 initial={{ scale: 0.98, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -262,6 +284,7 @@ export default function GalleryClient({ images }: { images: Img[] }) {
                   priority
                 />
               </motion.div>
+              </ViewTransition>
 
               {/* Label details bar */}
               <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 text-foreground text-[10px] font-sans font-bold uppercase tracking-widest flex items-center gap-3 bg-card border border-border/60 px-5 py-3 rounded-sm shadow-md">

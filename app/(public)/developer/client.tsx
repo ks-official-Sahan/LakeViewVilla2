@@ -3,6 +3,7 @@
 import useSWR from "swr";
 import * as React from "react";
 import Link from "next/link";
+import { navForward } from "@/lib/navigation/view-transitions";
 import {
   motion,
   useReducedMotion,
@@ -390,7 +391,7 @@ export default function DeveloperClient({
                     <Button size="lg" variant="secondary" className="rounded-sm" asChild>
                       <Link
                         href="/developer/cv"
-                        transitionTypes={["spa-page"]}
+                        transitionTypes={[...navForward]}
                         aria-label="Open print-ready CV mode"
                       >
                         <ZapIcon className="mr-2 h-5 w-5" /> CV Mode
