@@ -218,6 +218,7 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
             headline={headline}
             subheadline={subheadline}
             onBook={handleBook}
+            isDark={isDark}
           />
         </div>
       </section>

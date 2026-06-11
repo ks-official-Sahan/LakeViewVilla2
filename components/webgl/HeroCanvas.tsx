@@ -22,7 +22,6 @@ interface EnvConfig {
   lanternIntensity: number; // warm light strength
 }
 
-// Hex configs with corresponding lantern intensities for evening/night mood
 const ENV_PRESETS = [
   {
     time: 0, // Midnight
@@ -43,11 +42,11 @@ const ENV_PRESETS = [
   },
   {
     time: 5.5, // Dawn
-    skyTop: "#1B0B22", // Purple indigo
-    skyBottom: "#D48B6E", // Coral dawn
+    skyTop: "#1B0B22",
+    skyBottom: "#D48B6E",
     ambient: "#1B0E1E",
     ambientIntensity: 0.35,
-    sun: "#E8A87C", // Sunrise glow
+    sun: "#E8A87C",
     sunIntensity: 0.8,
     sunPos: [15, 4, -4],
     fogColor: "#2B1A24",
@@ -60,8 +59,8 @@ const ENV_PRESETS = [
   },
   {
     time: 10, // Morning
-    skyTop: "#1A5C5E", // Lagoon teal
-    skyBottom: "#F5F0E6", // Sand ivory
+    skyTop: "#1A5C5E",
+    skyBottom: "#F5F0E6",
     ambient: "#D6ECEF",
     ambientIntensity: 0.8,
     sun: "#FFF8E7",
@@ -94,11 +93,11 @@ const ENV_PRESETS = [
   },
   {
     time: 18.5, // Sunset
-    skyTop: "#230A03", // Crimson dusk
-    skyBottom: "#C9A55A", // Sunset gold
+    skyTop: "#230A03",
+    skyBottom: "#C9A55A",
     ambient: "#3D241E",
     ambientIntensity: 0.45,
-    sun: "#E8904E", // Sun
+    sun: "#E8904E",
     sunIntensity: 1.6,
     sunPos: [-15, 3, -2],
     fogColor: "#2A140F",
@@ -115,7 +114,7 @@ const ENV_PRESETS = [
     skyBottom: "#0b2027",
     ambient: "#051318",
     ambientIntensity: 0.25,
-    sun: "#769bb0", // Moonrise
+    sun: "#769bb0",
     sunIntensity: 0.5,
     sunPos: [10, 8, -6],
     fogColor: "#02070a",
@@ -145,7 +144,6 @@ const ENV_PRESETS = [
   },
 ];
 
-// Cache parsed values for 60fps performance
 const ENV_KEYFRAMES = ENV_PRESETS.map((p) => ({
   time: p.time,
   skyTop: new THREE.Color(p.skyTop),
@@ -164,7 +162,6 @@ const ENV_KEYFRAMES = ENV_PRESETS.map((p) => ({
   lanternIntensity: p.lanternIntensity,
 }));
 
-// Interpolation loop
 function interpolateEnv(time: number, target: EnvConfig) {
   const tOfDay = Math.max(0, Math.min(23.99, time));
 
@@ -196,22 +193,77 @@ function interpolateEnv(time: number, target: EnvConfig) {
   target.lanternIntensity = THREE.MathUtils.lerp(kf1.lanternIntensity, kf2.lanternIntensity, factor);
 }
 
-// ─── Shaders (Gerstner Wave Formulas & Specular Glint) ──────────────────────────
+// ─── Shaders (FBM Sky Clouds + Wave Proximity Foam + Gerstner Waves) ───────────
 
 const SKY_VERTEX = /* glsl */ `
-  varying vec2 vUv;
+  varying vec3 vWorldPosition;
   void main() {
-    vUv = uv;
-    gl_Position = vec4(position, 1.0);
+    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+    vWorldPosition = worldPosition.xyz;
+    gl_Position = projectionMatrix * viewMatrix * worldPosition;
   }
 `;
 
 const SKY_FRAGMENT = /* glsl */ `
   uniform vec3 uColorTop;
   uniform vec3 uColorBottom;
-  varying vec2 vUv;
+  uniform vec3 uSunDirection;
+  uniform vec3 uSunColor;
+  uniform float uSunSize;
+  uniform float uTime;
+  varying vec3 vWorldPosition;
+
+  float noise(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+
+  float smoothNoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = noise(i);
+    float b = noise(i + vec2(1.0, 0.0));
+    float c = noise(i + vec2(0.0, 1.0));
+    float d = noise(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  }
+
+  float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    for (int i = 0; i < 3; i++) {
+      v += a * smoothNoise(p);
+      p *= 2.0;
+      a *= 0.5;
+    }
+    return v;
+  }
+
   void main() {
-    gl_FragColor = vec4(mix(uColorBottom, uColorTop, vUv.y), 1.0);
+    vec3 direction = normalize(vWorldPosition);
+    
+    // Vertical sky gradient
+    float h = direction.y * 0.5 + 0.5;
+    vec3 skyColor = mix(uColorBottom, uColorTop, h);
+    
+    // Glowing Sun/Moon Disk
+    float sunDot = dot(direction, normalize(uSunDirection));
+    float sunOutline = smoothstep(1.0 - uSunSize * 1.5, 1.0 - uSunSize, sunDot);
+    vec3 sunDisk = uSunColor * sunOutline * 3.2;
+
+    // Drifting clouds above the horizon
+    float cloudVal = 0.0;
+    if (direction.y > -0.05) {
+      vec2 cloudUv = vec2(direction.x, direction.z) / (direction.y + 0.08);
+      cloudUv.x += uTime * 0.006; // horizontal drift
+      float cloudNoise = fbm(cloudUv * 2.2);
+      cloudVal = smoothstep(0.4, 0.7, cloudNoise) * smoothstep(-0.05, 0.25, direction.y);
+    }
+
+    vec3 cloudColor = mix(vec3(0.9, 0.95, 1.0) * (uSunColor + 0.35), vec3(0.05, 0.1, 0.15), 1.0 - clamp(uSunColor.r, 0.0, 1.0));
+    vec3 finalColor = mix(skyColor + sunDisk, cloudColor, cloudVal * 0.25);
+    
+    gl_FragColor = vec4(finalColor, 1.0);
   }
 `;
 
@@ -222,9 +274,9 @@ const WATER_VERTEX = /* glsl */ `
   varying vec2 vUv;
   varying vec3 vNormal;
   varying vec3 vViewPosition;
+  varying vec3 vWorldPos;
   varying float vHeight;
 
-  // Gerstner Wave parameter structure
   struct Wave {
     vec2 dir;
     float amp;
@@ -237,7 +289,6 @@ const WATER_VERTEX = /* glsl */ `
     vUv = uv;
     vec3 pos = position;
 
-    // Define 3 interactive Gerstner waves
     Wave waves[3];
     waves[0] = Wave(normalize(vec2(1.0, 0.4)), uWaveAmplitude * 0.7, 0.35, 0.6, uWaveSpeed * 0.8);
     waves[1] = Wave(normalize(vec2(-0.8, 0.8)), uWaveAmplitude * 0.35, 0.65, 0.45, uWaveSpeed * 1.3);
@@ -261,7 +312,6 @@ const WATER_VERTEX = /* glsl */ `
       float kAmpSin = waves[i].freq * waves[i].amp * s;
       float kAmpCos = waves[i].freq * waves[i].amp * c;
 
-      // Accumulate derivatives for analytical normal computation
       tangent.x -= waves[i].dir.x * waves[i].dir.x * waves[i].steepness * kAmpSin;
       tangent.y -= waves[i].dir.x * waves[i].dir.y * waves[i].steepness * kAmpSin;
       tangent.z += waves[i].dir.x * kAmpCos;
@@ -276,6 +326,7 @@ const WATER_VERTEX = /* glsl */ `
     
     vViewPosition = -mvPosition.xyz;
     vNormal = normalize(cross(tangent, binormal));
+    vWorldPos = displaced;
     vHeight = displaced.z;
   }
 `;
@@ -286,6 +337,7 @@ const WATER_FRAGMENT = /* glsl */ `
   uniform vec3 uSunDirection;
   uniform float uSunIntensity;
   uniform float uScrollProgress;
+  uniform float uTime;
 
   // Uniforms for warm pavilion lantern reflections
   uniform vec3 uLanternViewPosition;
@@ -295,13 +347,14 @@ const WATER_FRAGMENT = /* glsl */ `
   varying vec2 vUv;
   varying vec3 vNormal;
   varying vec3 vViewPosition;
+  varying vec3 vWorldPos;
   varying float vHeight;
 
   void main() {
     vec3 normal = normalize(vNormal);
     vec3 viewDir = normalize(vViewPosition);
     
-    // Depth factor matching waves height
+    // Depth color blend
     float heightFactor = clamp((vHeight + 0.12) * 3.5, 0.0, 1.0);
     vec3 col = mix(uWaterColor * 0.65, uWaterColor * 1.3, heightFactor);
     
@@ -327,6 +380,33 @@ const WATER_FRAGMENT = /* glsl */ `
     float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.5);
     col = mix(col, uWaterSpecularColor * 1.4, fresnel * 0.35);
 
+    // Wave proximity foam calculations near background shoreline (z = -7.5 which is plane y = 7.5)
+    float distToShore = abs(vWorldPos.y - 7.5);
+    float shoreFoam = smoothstep(0.7, 0.0, distToShore) * (0.45 + 0.45 * sin(uTime * 2.8 + vWorldPos.x * 2.0));
+
+    // Rock proximity checks (rocks are fixed on the plane coordinates)
+    vec2 rock1 = vec2(-6.0, 4.5);
+    vec2 rock2 = vec2(-4.8, 5.2);
+    vec2 rock3 = vec2(5.2, 4.8);
+    vec2 rock4 = vec2(6.5, 3.5);
+    vec2 rock5 = vec2(-2.0, 6.5);
+
+    float d1 = distance(vWorldPos.xy, rock1);
+    float d2 = distance(vWorldPos.xy, rock2);
+    float d3 = distance(vWorldPos.xy, rock3);
+    float d4 = distance(vWorldPos.xy, rock4);
+    float d5 = distance(vWorldPos.xy, rock5);
+
+    float minRockDist = min(min(min(d1, d2), min(d3, d4)), d5);
+    float rockFoam = smoothstep(0.48, 0.0, minRockDist) * (0.4 + 0.6 * sin(uTime * 3.4 + vWorldPos.x * 3.5));
+
+    float finalFoam = max(shoreFoam, rockFoam);
+    col = mix(col, vec3(0.92, 0.96, 1.0) * (uSunIntensity * 0.4 + 0.6), finalFoam * 0.62);
+
+    // Shallow shoreline sand gradient blending (shallows look mossy green)
+    float shallowFactor = smoothstep(2.0, 0.0, distToShore);
+    col = mix(col, vec3(0.12, 0.28, 0.24), shallowFactor * 0.45);
+
     // Fade to transparent near the deck position (approx center foreground)
     float distanceToPavilion = distance(vUv, vec2(0.5, 0.7));
     float transparency = smoothstep(0.05, 0.35, distanceToPavilion);
@@ -342,7 +422,7 @@ const WATER_FRAGMENT = /* glsl */ `
   }
 `;
 
-// ─── Procedural Texture Generators (Premium Canvas Utilities) ─────────────────
+// ─── Procedural Texture Generators ───────────────────────────────────────────
 
 const createWoodTexture = () => {
   const canvas = document.createElement("canvas");
@@ -351,11 +431,9 @@ const createWoodTexture = () => {
   const ctx = canvas.getContext("2d");
   if (!ctx) return new THREE.Texture();
 
-  // Base wood color (tropical dark timber)
   ctx.fillStyle = "#0a1417";
   ctx.fillRect(0, 0, 512, 512);
 
-  // Draw wood plank seams
   ctx.strokeStyle = "#04080a";
   ctx.lineWidth = 3;
   const plankWidth = 64;
@@ -365,7 +443,6 @@ const createWoodTexture = () => {
     ctx.lineTo(x, 512);
     ctx.stroke();
 
-    // Wood grain lines
     ctx.strokeStyle = "rgba(255, 255, 255, 0.015)";
     ctx.lineWidth = 1.2;
     for (let j = 0; j < 6; j++) {
@@ -376,7 +453,6 @@ const createWoodTexture = () => {
       ctx.stroke();
     }
 
-    // Individual plank shading variance
     ctx.fillStyle = "rgba(0, 0, 0, 0.09)";
     if (Math.random() > 0.5) {
       ctx.fillRect(x, 0, plankWidth, 512);
@@ -397,7 +473,6 @@ const createConcreteTexture = () => {
   ctx.fillStyle = "#122024";
   ctx.fillRect(0, 0, 256, 256);
 
-  // Pitted noise speckles
   for (let i = 0; i < 4000; i++) {
     const x = Math.random() * 256;
     const y = Math.random() * 256;
@@ -406,7 +481,6 @@ const createConcreteTexture = () => {
     ctx.fillRect(x, y, size, size);
   }
 
-  // Panel seams
   ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -427,7 +501,6 @@ const createPalmLeafTexture = () => {
 
   ctx.clearRect(0, 0, 128, 256);
   
-  // Stem (rachis)
   ctx.strokeStyle = "#02070a";
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -435,27 +508,22 @@ const createPalmLeafTexture = () => {
   ctx.quadraticCurveTo(64, 128, 48, 10);
   ctx.stroke();
 
-  // Leaflets
   ctx.strokeStyle = "#010507";
   ctx.lineWidth = 1.8;
   
   const leafletsCount = 38;
   for (let i = 0; i < leafletsCount; i++) {
     const t = i / leafletsCount;
-    // Coordinates on curve
     const py = 250 - t * 235;
     const px = 64 - t * t * 16;
     
-    // Leaflet length splay
     const length = Math.sin(t * Math.PI) * 48;
     
-    // Left splayed leaflet
     ctx.beginPath();
     ctx.moveTo(px, py);
     ctx.quadraticCurveTo(px - length * 0.7, py + 12, px - length, py + 26);
     ctx.stroke();
 
-    // Right splayed leaflet
     ctx.beginPath();
     ctx.moveTo(px, py);
     ctx.quadraticCurveTo(px + length * 0.7, py + 12, px + length, py + 26);
@@ -514,9 +582,9 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const fog = new THREE.FogExp2(0x0a1f24, 0.015);
     scene.fog = fog;
 
-    // Cinematic low-angle framing pitch
     const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
     camera.position.set(0, 0.4, 7.8);
+    scene.add(camera);
 
     // ─── Lighting Setup ──────────────────────────────────────────────────
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
@@ -525,21 +593,24 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
     scene.add(sunLight);
 
-    // ─── Sky Background ──────────────────────────────────────────────────
-    const skyGeo = new THREE.PlaneGeometry(2, 2);
+    // ─── Sky Dome Background ──────────────────────────────────────────────
+    const skyGeo = new THREE.SphereGeometry(60, 32, 15);
     const skyMat = new THREE.ShaderMaterial({
       vertexShader: SKY_VERTEX,
       fragmentShader: SKY_FRAGMENT,
       uniforms: {
-        uColorTop: { value: new THREE.Color(0x010508) },
-        uColorBottom: { value: new THREE.Color(0x030c10) },
+        uColorTop: { value: new THREE.Color() },
+        uColorBottom: { value: new THREE.Color() },
+        uSunDirection: { value: new THREE.Vector3() },
+        uSunColor: { value: new THREE.Color() },
+        uSunSize: { value: 0.035 },
+        uTime: { value: 0.0 },
       },
+      side: THREE.BackSide,
       depthWrite: false,
     });
     const skyMesh = new THREE.Mesh(skyGeo, skyMat);
-    const skyScene = new THREE.Scene();
-    const skyCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    skyScene.add(skyMesh);
+    scene.add(skyMesh);
 
     // ─── Procedural Textures & Materials ──────────────────────────────────
     const woodTexture = createWoodTexture();
@@ -564,6 +635,10 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       side: THREE.DoubleSide,
       roughness: 0.85,
     });
+
+    const leafGeo = new THREE.PlaneGeometry(0.7, 1.8);
+    leafGeo.translate(0, 0.9, 0);
+
 
     const slimPillarMat = new THREE.MeshStandardMaterial({
       color: 0x030709,
@@ -612,7 +687,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     waterMesh.position.y = -1.2;
     scene.add(waterMesh);
 
-    // ─── Stylistic wireframe layer ───────────────────────────────────────
+    // Wireframe overlay
     const wireMat = new THREE.MeshBasicMaterial({
       color: 0xc9a55a,
       wireframe: true,
@@ -629,19 +704,16 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const deckGroup = new THREE.Group();
     scene.add(deckGroup);
 
-    // 1. Concrete deck foundation slab underneath
     const deckBaseGeo = new THREE.BoxGeometry(6.6, 0.3, 5.6);
     const deckBase = new THREE.Mesh(deckBaseGeo, concreteMat);
     deckBase.position.set(0, -1.25, 1.8);
     deckGroup.add(deckBase);
 
-    // 2. Top wooden deck slab
     const mainDeckGeo = new THREE.BoxGeometry(6.5, 0.16, 5.5);
     const mainDeck = new THREE.Mesh(mainDeckGeo, woodPlankMat);
     mainDeck.position.set(0, -1.12, 1.8);
     deckGroup.add(mainDeck);
 
-    // 3. Slender columns supporting the canopy with base/top brackets
     const pillars: THREE.Mesh[] = [];
     const pillarGeo = new THREE.CylinderGeometry(0.045, 0.045, 2.6, 12);
     const bracketGeo = new THREE.BoxGeometry(0.12, 0.04, 0.12);
@@ -654,30 +726,25 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     ];
 
     pillarPositions.forEach(([px, py, pz]) => {
-      // Cylindrical Column
       const pillar = new THREE.Mesh(pillarGeo, slimPillarMat);
       pillar.position.set(px, py - 1.1, pz);
       deckGroup.add(pillar);
       pillars.push(pillar);
 
-      // Bottom mounting base plate
       const basePlate = new THREE.Mesh(bracketGeo, slimPillarMat);
       basePlate.position.set(px, -1.04, pz);
       deckGroup.add(basePlate);
 
-      // Top capital collar
       const capPlate = new THREE.Mesh(bracketGeo, slimPillarMat);
       capPlate.position.set(px, 1.6 - 1.1 + 1.25, pz);
       deckGroup.add(capPlate);
     });
 
-    // 4. Floating concrete flat-roof canopy
     const roofSlabGeo = new THREE.BoxGeometry(6.7, 0.08, 5.7);
     const roofSlab = new THREE.Mesh(roofSlabGeo, concreteMat);
     roofSlab.position.set(0, 1.6 - 1.1 + 1.3, 1.8);
     deckGroup.add(roofSlab);
 
-    // 5. Canopy structural timber joists (Beams running underneath canopy)
     const beamGeo = new THREE.BoxGeometry(6.6, 0.06, 0.06);
     const structuralBeams: THREE.Mesh[] = [];
     for (let i = 0; i < 5; i++) {
@@ -688,12 +755,10 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       structuralBeams.push(beam);
     }
 
-    // 6. Glass railings with support posts & clamps
     const glassRailGeo = new THREE.BoxGeometry(0.02, 0.7, 4.6);
     const handrailGeo = new THREE.BoxGeometry(0.03, 0.03, 4.6);
     const postGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.8, 8);
 
-    // Left Railing Setup
     const sideGlassL = new THREE.Mesh(glassRailGeo, luxuryGlassMat);
     sideGlassL.position.set(-3.0, -0.68, 1.7);
     deckGroup.add(sideGlassL);
@@ -713,7 +778,6 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       deckGroup.add(post);
     });
 
-    // Right Railing Setup
     const sideGlassR = new THREE.Mesh(glassRailGeo, luxuryGlassMat);
     sideGlassR.position.set(3.0, -0.68, 1.7);
     deckGroup.add(sideGlassR);
@@ -733,13 +797,12 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       deckGroup.add(post);
     });
 
-    // 7. Modern Lounge Chairs (Detailed timber base & soft cushions)
+    // Modern Lounge Chairs
     const frameGeo = new THREE.BoxGeometry(0.72, 0.04, 1.7);
     const cushionSeatGeo = new THREE.BoxGeometry(0.66, 0.08, 1.1);
     const cushionBackGeo = new THREE.BoxGeometry(0.66, 0.08, 0.6);
     const cushionMat = new THREE.MeshStandardMaterial({ color: 0xd6ecef, roughness: 0.9 });
 
-    // Chair 1
     const chairGroup1 = new THREE.Group();
     chairGroup1.position.set(1.4, -1.02, 1.8);
     chairGroup1.rotation.y = -0.12;
@@ -757,7 +820,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     backCushion1.rotation.x = -0.65;
     chairGroup1.add(backCushion1);
 
-    // 8. Warm Hanging Designer Pendant Lantern
+    // Warm Hanging Pendant Light
     const suspensionRodGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.8, 4);
     const suspensionRod = new THREE.Mesh(suspensionRodGeo, slimPillarMat);
     suspensionRod.position.set(-1.8, 1.3, 1.8);
@@ -780,16 +843,96 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     bulbSphere.position.set(-1.8, 0.82, 1.8);
     deckGroup.add(bulbSphere);
 
-    // PointLight casting light path
+    // Dynamic light casting warm glow
     const warmLight = new THREE.PointLight(0xffa04d, 0, 12);
     warmLight.position.set(-1.8, 0.8, 1.8);
     deckGroup.add(warmLight);
 
-    // ─── Shoreline & Landscape Elements (Frame & Organic Depth) ───────────
+    // ─── Phase 2: Volumetric light cone ───────────────────────────────────
+    const coneGeo = new THREE.CylinderGeometry(0.04, 1.4, 2.6, 16, 1, true);
+    coneGeo.translate(0, -1.3, 0); // shift pivot
+    const coneUniforms = {
+      uColor: { value: new THREE.Color(0xffa04d) },
+      uIntensity: { value: 0.0 },
+    };
+    const coneMat = new THREE.ShaderMaterial({
+      vertexShader: /* glsl */ `
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        void main() {
+          vUv = uv;
+          vNormal = normalize(normalMatrix * normal);
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          vViewPosition = -mvPosition.xyz;
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        uniform vec3 uColor;
+        uniform float uIntensity;
+        void main() {
+          float verticalFade = pow(1.0 - vUv.y, 2.0);
+          vec3 normal = normalize(vNormal);
+          vec3 viewDir = normalize(vViewPosition);
+          float edgeFade = pow(1.0 - abs(dot(normal, viewDir)), 2.0);
+          float alpha = verticalFade * edgeFade * uIntensity * 0.35;
+          gl_FragColor = vec4(uColor, alpha);
+        }
+      `,
+      uniforms: coneUniforms,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+    });
+    const lightCone = new THREE.Mesh(coneGeo, coneMat);
+    lightCone.position.set(-1.8, 0.82, 1.8);
+    deckGroup.add(lightCone);
+
+    // ─── Phase 4: Deck Foliage planters & accessories ─────────────────────
+    const planterGroupL = new THREE.Group();
+    planterGroupL.position.set(-2.7, -0.87, 3.7);
+    deckGroup.add(planterGroupL);
+
+    const potL = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.5, 12), concreteMat);
+    potL.position.y = 0.25;
+    planterGroupL.add(potL);
+
+    for (let j = 0; j < 5; j++) {
+      const leaf = new THREE.Mesh(leafGeo, leafMaterial);
+      leaf.position.y = 0.5;
+      leaf.rotation.y = (j / 5) * Math.PI * 2;
+      leaf.rotation.x = 0.45 + Math.random() * 0.25;
+      leaf.scale.set(0.6, 0.7, 0.6);
+      planterGroupL.add(leaf);
+    }
+
+    const sideTable = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.45, 0.35), concreteMat);
+    sideTable.position.set(2.1, -0.89, 1.6);
+    deckGroup.add(sideTable);
+
+    const vaseGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.18, 8);
+    const vaseMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, transmission: 0.8 });
+    const vase = new THREE.Mesh(vaseGeo, vaseMat);
+    vase.position.set(2.1, -0.58, 1.6);
+    deckGroup.add(vase);
+
+    // Foreground lens silhouette leaf
+    const foregroundLeafGeo = new THREE.PlaneGeometry(2.2, 4.4);
+    foregroundLeafGeo.translate(0, 2.2, 0);
+    const fgLeafMesh = new THREE.Mesh(foregroundLeafGeo, leafMaterial);
+    camera.add(fgLeafMesh);
+    fgLeafMesh.position.set(-1.8, -1.8, -2.5);
+    fgLeafMesh.rotation.set(0.5, 0.6, -0.3);
+
+    // ─── Shoreline & Landscape Elements ───────────────────────────────────
     const landscapeGroup = new THREE.Group();
     scene.add(landscapeGroup);
 
-    // Background shoreline sand bank
     const shorelineGeo = new THREE.BoxGeometry(45, 0.4, 3);
     const shorelineSandMat = new THREE.MeshStandardMaterial({
       color: 0x081316,
@@ -799,7 +942,6 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     shorelineMesh.position.set(0, -1.2, -7.5);
     landscapeGroup.add(shorelineMesh);
 
-    // Two distant silhouetted mountain ridges
     const mountainGeo1 = new THREE.PlaneGeometry(60, 8);
     const mountainMat1 = new THREE.MeshBasicMaterial({
       color: 0x030a0d,
@@ -820,7 +962,6 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     mountainMesh2.position.set(8, 0.6, -14.8);
     landscapeGroup.add(mountainMesh2);
 
-    // Organic granite rocks scattered in water
     const rockGeo = new THREE.DodecahedronGeometry(1, 0);
     const rockMat = new THREE.MeshStandardMaterial({
       color: 0x040e11,
@@ -856,8 +997,6 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     const palmsCount = 6;
     const palmsData: Array<{ group: THREE.Group; baseRotationZ: number; index: number }> = [];
-    const leafGeo = new THREE.PlaneGeometry(0.7, 1.8);
-    leafGeo.translate(0, 0.9, 0); // shift pivot to leaflet bottom edge
 
     const trunkGeo = new THREE.CylinderGeometry(0.015, 0.055, 4.0, 8);
 
@@ -867,7 +1006,6 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       const z = -7.5 - Math.random() * 2.5;
       palmTree.position.set(x, -1.2, z);
 
-      // Curved lean
       const leanZ = (Math.random() - 0.5) * 0.18 + (x < 0 ? -0.1 : 0.1);
       palmTree.rotation.z = leanZ;
 
@@ -875,7 +1013,6 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       trunk.position.y = 2.0;
       palmTree.add(trunk);
 
-      // Multi-frond organic leaves
       const leavesGroup = new THREE.Group();
       leavesGroup.position.y = 4.0;
       
@@ -883,7 +1020,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
         const leafMesh = new THREE.Mesh(leafGeo, leafMaterial);
         const angle = (j / 8) * Math.PI * 2;
         leafMesh.rotation.y = angle;
-        leafMesh.rotation.x = 0.52 + Math.random() * 0.14; // downward droop
+        leafMesh.rotation.x = 0.52 + Math.random() * 0.14;
         leafMesh.rotation.z = (Math.random() - 0.5) * 0.1;
         leavesGroup.add(leafMesh);
       }
@@ -897,7 +1034,37 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       });
     }
 
-    // ─── Floating Lily Pads Geometry (Bobbing on waves) ──────────────────
+    // ─── Phase 5: Silhouette lagoon birds ──────────────────────────────────
+    const birdsData: Array<{ group: THREE.Group; wingL: THREE.Mesh; wingR: THREE.Mesh; speed: number; phase: number; radius: number }> = [];
+    const wingGeo = new THREE.PlaneGeometry(0.4, 0.14);
+    wingGeo.translate(-0.2, 0, 0); // shift pivot to inner edge
+
+    for (let i = 0; i < 3; i++) {
+      const birdGroup = new THREE.Group();
+      
+      const wingL = new THREE.Mesh(wingGeo, trunkMaterial);
+      wingL.position.x = -0.02;
+      birdGroup.add(wingL);
+
+      const wingR = new THREE.Mesh(wingGeo, trunkMaterial);
+      wingR.scale.x = -1;
+      wingR.position.x = 0.02;
+      birdGroup.add(wingR);
+
+      birdGroup.position.set(-8 + i * 8, 2.2 + Math.random() * 1.3, -9);
+      scene.add(birdGroup);
+
+      birdsData.push({
+        group: birdGroup,
+        wingL,
+        wingR,
+        speed: 4.5 + Math.random() * 2.5,
+        phase: Math.random() * Math.PI,
+        radius: 3.5 + Math.random() * 4.0,
+      });
+    }
+
+    // ─── Floating Lily Pads Geometry ─────────────────────────────────────
     const padsGroup = new THREE.Group();
     scene.add(padsGroup);
 
@@ -909,7 +1076,6 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     const padData: Array<{ mesh: THREE.Mesh; x: number; z: number; phase: number; scale: number }> = [];
 
-    // Scatter 12 lily pads near the foreground camera view
     for (let i = 0; i < 12; i++) {
       const mesh = new THREE.Mesh(padGeometry, padMaterial);
       const x = (Math.random() - 0.5) * 6;
@@ -929,9 +1095,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       });
     }
 
-    // Formula to calculate wave height locally for pads bobbing
     const getWaveHeightAt = (x: number, z: number, time: number, speed: number, amp: number) => {
-      // Match vertex shader summation frequencies
       const w1 = Math.sin(x * 0.35 + time * speed * 0.8) * amp * 0.7;
       const w2 = Math.sin(-x * 0.65 + time * speed * 1.3) * amp * 0.35;
       const w3 = Math.cos(x * 1.20 + time * speed * 2.1) * amp * 0.18;
@@ -991,6 +1155,56 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     const mistPoints = new THREE.Points(particleGeo, particleMat);
     scene.add(mistPoints);
+
+    // ─── Phase 2: Floating Fireflies/Bioluminescence ─────────────────────
+    const fireflyCount = 30;
+    const fireflyGeo = new THREE.BufferGeometry();
+    const fireflyPositions = new Float32Array(fireflyCount * 3);
+    const fireflyData: Array<{ y: number; phase: number; speed: number }> = [];
+
+    for (let i = 0; i < fireflyCount; i++) {
+      const fx = (Math.random() - 0.5) * 8.0;
+      const fy = -1.0 + Math.random() * 1.5;
+      const fz = -1.0 + Math.random() * 6.0;
+
+      fireflyPositions[i * 3] = fx;
+      fireflyPositions[i * 3 + 1] = fy;
+      fireflyPositions[i * 3 + 2] = fz;
+
+      fireflyData.push({
+        y: fy,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.6 + Math.random() * 0.6,
+      });
+    }
+    fireflyGeo.setAttribute("position", new THREE.BufferAttribute(fireflyPositions, 3));
+
+    const fireflyTexture = (() => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 16;
+      canvas.height = 16;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+        grad.addColorStop(0, "rgba(255, 185, 91, 0.95)");
+        grad.addColorStop(0.4, "rgba(255, 185, 91, 0.3)");
+        grad.addColorStop(1, "rgba(255, 185, 91, 0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 16, 16);
+      }
+      return new THREE.CanvasTexture(canvas);
+    })();
+
+    const fireflyMat = new THREE.PointsMaterial({
+      size: 0.35,
+      map: fireflyTexture,
+      transparent: true,
+      opacity: 0.0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    const fireflies = new THREE.Points(fireflyGeo, fireflyMat);
+    scene.add(fireflies);
 
     // ─── Environment Interpolation Handler ──────────────────────────────
     const currentEnv: EnvConfig = {
@@ -1052,15 +1266,22 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       fog.color.copy(currentEnv.fogColor);
       fog.density = currentEnv.fogDensity * (1.0 - scroll * 0.4);
 
+      // 3. Update Sky dome variables
       skyMat.uniforms.uColorTop.value.copy(currentEnv.skyTop);
       skyMat.uniforms.uColorBottom.value.copy(currentEnv.skyBottom);
+      skyMat.uniforms.uSunDirection.value.copy(currentEnv.sunPos).normalize();
+      skyMat.uniforms.uSunColor.value.copy(currentEnv.sun).multiplyScalar(currentEnv.sunIntensity);
+      skyMat.uniforms.uTime.value = elapsed;
 
-      // 3. Compute View-Space Position of the warm lantern PointLight
+      // Pin sky dome back to camera position to keep it infinite
+      skyMesh.position.copy(camera.position);
+
+      // 4. Compute View-Space Position of the warm lantern PointLight
       tempViewPos.copy(bulbSphere.position);
-      tempViewPos.applyMatrix4(deckGroup.matrixWorld); // Apply deckGroup world transform first
-      tempViewPos.applyMatrix4(camera.matrixWorldInverse); // Transform to view space
+      tempViewPos.applyMatrix4(deckGroup.matrixWorld);
+      tempViewPos.applyMatrix4(camera.matrixWorldInverse);
 
-      // 4. Update water uniforms (including lantern reflection variables)
+      // 5. Update water uniforms
       waterUniforms.uTime.value = elapsed;
       waterUniforms.uWaveSpeed.value = currentEnv.waveSpeed;
       waterUniforms.uWaveAmplitude.value = currentEnv.waveAmplitude;
@@ -1076,17 +1297,31 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       // Apply light strength to local PointLight source
       warmLight.intensity = currentEnv.lanternIntensity * 2.2;
 
-      // 5. Update wireframe overlay
+      // Update Volumetric Lantern Light Cone intensity
+      coneUniforms.uIntensity.value = currentEnv.lanternIntensity;
+
+      // 6. Update wireframe overlay
       wireMat.color.copy(currentEnv.waterSpecular);
       wireMat.opacity = (isDarkRefTheme() ? 0.025 : 0.05) * (1.0 - scroll);
 
-      // 6. Sway palms silhouettes at the horizon
+      // 7. Sway palms silhouettes
       palmsData.forEach((palm) => {
         palm.group.rotation.z = palm.baseRotationZ + Math.sin(elapsed * 0.75 + palm.index) * 0.025;
         palm.group.rotation.x = Math.cos(elapsed * 0.6 + palm.index) * 0.012;
       });
 
-      // 7. Bob floating lily pads on wave heights
+      // 8. Flap wings & fly background birds
+      birdsData.forEach((bird, idx) => {
+        const flap = Math.sin(elapsed * bird.speed + bird.phase) * 0.65;
+        bird.wingL.rotation.y = flap;
+        bird.wingR.rotation.y = -flap;
+
+        const angle = elapsed * 0.06 + idx * 2.0;
+        bird.group.position.x = -6.0 + Math.sin(angle) * bird.radius + idx * 4.5;
+        bird.group.position.z = -8.5 + Math.cos(angle) * 1.5;
+      });
+
+      // 9. Bob floating lily pads on wave heights
       padData.forEach((pad) => {
         const height = getWaveHeightAt(
           pad.x,
@@ -1100,7 +1335,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
         pad.mesh.rotation.x = Math.cos(elapsed * currentEnv.waveSpeed + pad.phase) * 0.02;
       });
 
-      // 8. Drift mist particles
+      // 10. Drift mist particles
       const positions = particleGeo.attributes.position.array as Float32Array;
       for (let i = 0; i < particleCount; i++) {
         const data = particleData[i];
@@ -1114,7 +1349,18 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       particleMat.color.copy(currentEnv.fogColor);
       particleMat.opacity = 0.35 * (1.0 - scroll);
 
-      // 9. Camera positioning (calibrated lower-angle upward architectural look)
+      // 11. Update Fireflies positions & fade opacity
+      const ffPositions = fireflyGeo.attributes.position.array as Float32Array;
+      for (let i = 0; i < fireflyCount; i++) {
+        const data = fireflyData[i];
+        ffPositions[i * 3 + 1] = data.y + Math.sin(elapsed * data.speed + data.phase) * 0.18;
+        ffPositions[i * 3] += Math.sin(elapsed * 0.3 + i) * 0.0025;
+        ffPositions[i * 3 + 2] += Math.cos(elapsed * 0.2 + i) * 0.002;
+      }
+      fireflyGeo.attributes.position.needsUpdate = true;
+      fireflyMat.opacity = currentEnv.lanternIntensity * 0.55 * (1.0 - scroll);
+
+      // 12. Camera positioning (calibrated lower-angle upward architectural look)
       const targetCamX = mouse.x * 0.45;
       const targetCamY = 0.4 - mouse.y * 0.20; 
       const targetCamZ = 7.0 - scroll * 4.2;
@@ -1123,12 +1369,11 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       camera.position.y += (targetCamY - camera.position.y) * 0.05;
       camera.position.z += (targetCamZ - camera.position.z) * 0.05;
 
-      camera.lookAt(0, 1.15 - scroll * 0.25, -2); // frame deck canopy nicely looking up
+      camera.lookAt(0, 1.15 - scroll * 0.25, -2); // looking up towards canopy
 
-      // 10. Multi-scene clear and render
+      // 13. Render
       renderer.autoClear = false;
       renderer.clear();
-      renderer.render(skyScene, skyCamera);
       renderer.render(scene, camera);
     };
 
@@ -1144,6 +1389,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("resize", onResize);
       
+      camera.remove(fgLeafMesh);
+
       // Geometries
       waterGeo.dispose();
       skyGeo.dispose();
@@ -1162,6 +1409,12 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       suspensionRodGeo.dispose();
       cageGeo.dispose();
       bulbGeo.dispose();
+      coneGeo.dispose();
+      potL.geometry.dispose();
+      foregroundLeafGeo.dispose();
+      sideTable.geometry.dispose();
+      vaseGeo.dispose();
+      wingGeo.dispose();
       shorelineGeo.dispose();
       mountainGeo1.dispose();
       mountainGeo2.dispose();
@@ -1170,6 +1423,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       trunkGeo.dispose();
       padGeometry.dispose();
       particleGeo.dispose();
+      fireflyGeo.dispose();
 
       // Materials
       waterMat.dispose();
@@ -1183,6 +1437,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       cushionMat.dispose();
       lanternCageMat.dispose();
       bulbMat.dispose();
+      coneMat.dispose();
+      vaseMat.dispose();
       shorelineSandMat.dispose();
       mountainMat1.dispose();
       mountainMat2.dispose();
@@ -1190,12 +1446,14 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       trunkMaterial.dispose();
       padMaterial.dispose();
       particleMat.dispose();
+      fireflyMat.dispose();
 
       // Textures
       woodTexture.dispose();
       concreteTexture.dispose();
       leafTexture.dispose();
       mistTexture.dispose();
+      fireflyTexture.dispose();
 
       renderer.dispose();
     };
