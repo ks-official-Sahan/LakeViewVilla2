@@ -154,14 +154,14 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
             <HeroCanvas scrollProgress={canvasProgress} timeOfDay={timeOfDay} />
           </Suspense>
           
-          {/* Premium luxury vignette */}
+          {/* Light edge vignette — lagoon stays vivid */}
           <div
             aria-hidden
-            className="absolute inset-0 bg-gradient-to-b from-[var(--hero-overlay-from)] via-[var(--hero-overlay-via)] to-[var(--hero-overlay-to)] transition-colors duration-300"
+            className="absolute inset-0 bg-gradient-to-b from-[var(--hero-overlay-from)]/50 via-transparent to-[var(--hero-overlay-to)]/55 transition-colors duration-300"
           />
           <div
             aria-hidden
-            className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(201,165,90,0.04)_0%,transparent_65%)]"
+            className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(53,168,172,0.2)_0%,rgba(126,200,204,0.07)_35%,transparent_65%)]"
           />
         </div>
 

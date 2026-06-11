@@ -34,24 +34,24 @@ const ENV_PRESETS = [
     sunPos: [-12, 10, -8],
     fogColor: "#010508",
     fogDensity: 0.02,
-    water: "#020a0d",
-    waterSpecular: "#769bb0",
+    water: "#0C3540",
+    waterSpecular: "#8ab4c8",
     waveSpeed: 0.15,
     waveAmplitude: 0.03,
     lanternIntensity: 1.6,
   },
   {
     time: 5.5, // Dawn
-    skyTop: "#1B0B22",
-    skyBottom: "#D48B6E",
-    ambient: "#1B0E1E",
-    ambientIntensity: 0.35,
+    skyTop: "#3A6A8A",
+    skyBottom: "#F0C8A0",
+    ambient: "#4A6A7A",
+    ambientIntensity: 0.65,
     sun: "#E8A87C",
     sunIntensity: 0.8,
     sunPos: [15, 4, -4],
     fogColor: "#2B1A24",
     fogDensity: 0.035,
-    water: "#1E6B6E",
+    water: "#30A0A4",
     waterSpecular: "#E8A87C",
     waveSpeed: 0.20,
     waveAmplitude: 0.04,
@@ -59,16 +59,16 @@ const ENV_PRESETS = [
   },
   {
     time: 10, // Morning
-    skyTop: "#1A5C5E",
-    skyBottom: "#F5F0E6",
-    ambient: "#D6ECEF",
-    ambientIntensity: 0.8,
+    skyTop: "#2E9B9E",
+    skyBottom: "#FFF5E8",
+    ambient: "#E8F6F8",
+    ambientIntensity: 1.05,
     sun: "#FFF8E7",
     sunIntensity: 1.4,
     sunPos: [8, 15, 6],
     fogColor: "#F5F0E6",
     fogDensity: 0.012,
-    water: "#2A8A8E",
+    water: "#35A8AC",
     waterSpecular: "#FFF8E7",
     waveSpeed: 0.26,
     waveAmplitude: 0.05,
@@ -76,16 +76,16 @@ const ENV_PRESETS = [
   },
   {
     time: 14.5, // Afternoon
-    skyTop: "#0F4648",
-    skyBottom: "#FAF6EE",
-    ambient: "#E2F0F2",
-    ambientIntensity: 0.85,
+    skyTop: "#28A0A4",
+    skyBottom: "#FFFBF4",
+    ambient: "#ECF8FA",
+    ambientIntensity: 1.1,
     sun: "#FFFFFF",
     sunIntensity: 1.5,
     sunPos: [-6, 17, 8],
     fogColor: "#FAF6EE",
     fogDensity: 0.008,
-    water: "#268588",
+    water: "#32A5A9",
     waterSpecular: "#FFFFFF",
     waveSpeed: 0.28,
     waveAmplitude: 0.055,
@@ -119,8 +119,8 @@ const ENV_PRESETS = [
     sunPos: [10, 8, -6],
     fogColor: "#02070a",
     fogDensity: 0.015,
-    water: "#05151c",
-    waterSpecular: "#769bb0",
+    water: "#123840",
+    waterSpecular: "#8ab4c8",
     waveSpeed: 0.17,
     waveAmplitude: 0.035,
     lanternIntensity: 1.6,
@@ -136,7 +136,7 @@ const ENV_PRESETS = [
     sunPos: [-12, 10, -8],
     fogColor: "#010508",
     fogDensity: 0.02,
-    water: "#020a0d",
+    water: "#0C3540",
     waterSpecular: "#769bb0",
     waveSpeed: 0.15,
     waveAmplitude: 0.03,
@@ -313,7 +313,9 @@ const SKY_FRAGMENT = /* glsl */ `
       vec3(0.06, 0.12, 0.18),
       uIsNight * 0.75
     );
-    vec3 finalColor = mix(skyColor + sunDisk, cloudTint, cloudMix);
+    vec3 finalColor = mix(skyColor + sunDisk, cloudTint, cloudMix * 0.85);
+    float skyLuma = dot(finalColor, vec3(0.299, 0.587, 0.114));
+    finalColor = mix(vec3(skyLuma), finalColor, 1.18);
 
     gl_FragColor = vec4(finalColor, 1.0);
   }
@@ -341,16 +343,17 @@ const WATER_VERTEX = /* glsl */ `
     vUv = uv;
     vec3 pos = position;
 
-    Wave waves[3];
+    Wave waves[4];
     waves[0] = Wave(normalize(vec2(1.0, 0.4)), uWaveAmplitude * 0.7, 0.35, 0.6, uWaveSpeed * 0.8);
     waves[1] = Wave(normalize(vec2(-0.8, 0.8)), uWaveAmplitude * 0.35, 0.65, 0.45, uWaveSpeed * 1.3);
     waves[2] = Wave(normalize(vec2(0.3, -0.9)), uWaveAmplitude * 0.18, 1.20, 0.3, uWaveSpeed * 2.1);
+    waves[3] = Wave(normalize(vec2(0.6, 0.2)), uWaveAmplitude * 0.12, 2.10, 0.22, uWaveSpeed * 2.8);
 
     vec3 displaced = pos;
     vec3 tangent = vec3(1.0, 0.0, 0.0);
     vec3 binormal = vec3(0.0, 1.0, 0.0);
 
-    for(int i = 0; i < 3; i++) {
+    for(int i = 0; i < 4; i++) {
       float phase = dot(waves[i].dir, pos.xy) * waves[i].freq + uTime * waves[i].speed;
       float c = cos(phase);
       float s = sin(phase);
@@ -386,6 +389,8 @@ const WATER_VERTEX = /* glsl */ `
 const WATER_FRAGMENT = /* glsl */ `
   uniform vec3 uWaterColor;
   uniform vec3 uWaterSpecularColor;
+  uniform vec3 uSkyTop;
+  uniform vec3 uSkyBottom;
   uniform vec3 uSunDirection;
   uniform float uSunIntensity;
   uniform float uScrollProgress;
@@ -403,21 +408,78 @@ const WATER_FRAGMENT = /* glsl */ `
   varying vec3 vWorldPos;
   varying float vHeight;
 
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+
+  float causticNoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  }
+
+  float caustics(vec2 uv, float t) {
+    float c = 0.0;
+    c += causticNoise(uv * 3.5 + vec2(t * 0.4, t * 0.25));
+    c += causticNoise(uv * 7.0 - vec2(t * 0.55, t * 0.35)) * 0.5;
+    c += causticNoise(uv * 14.0 + vec2(t * 0.3, -t * 0.2)) * 0.25;
+    return pow(c * 0.55, 1.4);
+  }
+
+  vec3 saturateColor(vec3 c, float amount) {
+    float luma = dot(c, vec3(0.299, 0.587, 0.114));
+    return mix(vec3(luma), c, amount);
+  }
+
   void main() {
     vec3 normal = normalize(vNormal);
     vec3 viewDir = normalize(vViewPosition);
+    float viewDepth = length(vViewPosition);
 
+    // Depth readout — near water is clearer, far shore richer
+    float depthFade = smoothstep(4.0, 28.0, viewDepth);
     float heightFactor = clamp((vHeight + 0.12) * 3.5, 0.0, 1.0);
-    vec3 lagoonDeep = uWaterColor * 1.15;
-    vec3 lagoonBright = uWaterColor * 1.65 + vec3(0.06, 0.12, 0.10);
-    vec3 col = mix(lagoonDeep, lagoonBright, heightFactor);
 
+    vec3 lagoonDeep = uWaterColor * 1.25;
+    vec3 lagoonMid = uWaterColor * 1.75 + vec3(0.04, 0.14, 0.12);
+    vec3 lagoonBright = uWaterColor * 2.1 + vec3(0.08, 0.18, 0.14);
+    vec3 col = mix(mix(lagoonDeep, lagoonMid, heightFactor), lagoonBright, heightFactor * 0.45);
+    col = mix(col, lagoonDeep * 0.95, depthFade * 0.25);
+
+    // Sky reflection — mirror lagoon clarity
+    vec3 reflectDir = reflect(-viewDir, normal);
+    float skyBlend = reflectDir.y * 0.5 + 0.5;
+    vec3 skyReflect = mix(uSkyBottom, uSkyTop, clamp(skyBlend, 0.0, 1.0));
+    float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.2);
+    col = mix(col, skyReflect * 1.15, fresnel * 0.62);
+
+    // Sun specular + glitter path across ripples
     vec3 halfDir = normalize(uSunDirection + viewDir);
-    float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
-    col += uWaterSpecularColor * spec * uSunIntensity * 1.1;
+    float spec = pow(max(dot(normal, halfDir), 0.0), 28.0);
+    col += uWaterSpecularColor * spec * uSunIntensity * 1.45;
 
-    float glintSpec = pow(max(dot(normal, halfDir), 0.0), 220.0);
-    col += vec3(1.0, 0.95, 0.85) * glintSpec * uSunIntensity * 1.5;
+    float glintSpec = pow(max(dot(normal, halfDir), 0.0), 180.0);
+    col += vec3(1.0, 0.98, 0.9) * glintSpec * uSunIntensity * 2.2;
+
+    // Anisotropic sun streak on wave crests
+    vec2 sunXZ = normalize(uSunDirection.xz + vec2(0.001));
+    float streak = pow(max(dot(normalize(vWorldPos.xy) * 0.08, sunXZ), 0.0), 6.0);
+    col += uWaterSpecularColor * streak * uSunIntensity * 0.18;
+
+    // Shallow caustic light patterns (visible lagoon floor detail)
+    float distToShore = abs(vWorldPos.y - uShoreLine);
+    float shallowMask = smoothstep(5.0, 0.3, distToShore);
+    float caustic = caustics(vWorldPos.xy * 0.55, uTime) * shallowMask;
+    col += vec3(0.55, 0.85, 0.75) * caustic * uSunIntensity * 0.42;
+
+    // Lagoon floor sediment — visible clarity in shallows
+    float floorVar = causticNoise(vWorldPos.xy * 0.22 + vec2(3.7, 1.2));
+    col = mix(col, col * 0.82 + vec3(0.14, 0.24, 0.16), floorVar * shallowMask * 0.4);
 
     vec3 fragPosInView = -vViewPosition;
     vec3 lightDir = normalize(uLanternViewPosition - fragPosInView);
@@ -427,26 +489,24 @@ const WATER_FRAGMENT = /* glsl */ `
     float attenuation = 1.0 / (1.0 + 0.22 * lightDist + 0.12 * lightDist * lightDist);
     col += uLanternColor * specLantern * uLanternIntensity * attenuation * 2.2;
 
-    // Lantern warm caustic disc on lagoon surface
     vec2 lanternDist = vWorldPos.xy - uLanternPlanePos;
     float lanternRipple = sin(length(lanternDist) * 8.0 - uTime * 2.5) * 0.5 + 0.5;
     float causticDisc = exp(-dot(lanternDist, lanternDist) * 0.32) * lanternRipple;
-    col += uLanternColor * causticDisc * uLanternIntensity * 0.2;
+    col += uLanternColor * causticDisc * uLanternIntensity * 0.25;
 
-    float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.8);
-    col = mix(col, uWaterSpecularColor * 1.6 + uWaterColor * 0.3, fresnel * 0.45);
-
-    // Tangalle lagoon shoreline — sand → shallow teal → deep lagoon
-    float distToShore = abs(vWorldPos.y - uShoreLine);
-    vec3 sandShallow = vec3(0.91, 0.86, 0.78);
-    vec3 tealShallow = vec3(0.48, 0.64, 0.55);
-    float sandZone = smoothstep(1.6, 0.15, distToShore);
-    float shallowZone = smoothstep(3.5, 0.5, distToShore);
-    col = mix(col, sandShallow * 0.75 + uWaterColor * 0.25, sandZone * 0.45);
-    col = mix(col, tealShallow * 1.15, shallowZone * 0.55);
+    // Tangalle shoreline color bands — sand → emerald shallows → teal depth
+    vec3 sandShallow = vec3(0.94, 0.88, 0.72);
+    vec3 emeraldShallow = vec3(0.35, 0.78, 0.62);
+    vec3 tealMid = vec3(0.18, 0.62, 0.58);
+    float sandZone = smoothstep(1.4, 0.1, distToShore);
+    float shallowZone = smoothstep(4.0, 0.4, distToShore);
+    float midZone = smoothstep(7.0, 2.0, distToShore);
+    col = mix(col, sandShallow, sandZone * 0.5);
+    col = mix(col, emeraldShallow, shallowZone * 0.65);
+    col = mix(col, tealMid, midZone * 0.35);
 
     float wavePhase = uTime * 2.8 + vWorldPos.x * 2.0 + distToShore * 1.5;
-    float shoreFoam = smoothstep(0.75, 0.0, distToShore) * (0.45 + 0.45 * sin(wavePhase));
+    float shoreFoam = smoothstep(0.8, 0.0, distToShore) * (0.5 + 0.5 * sin(wavePhase));
 
     vec2 rock1 = vec2(-6.0, 4.5);
     vec2 rock2 = vec2(-4.8, 5.2);
@@ -459,15 +519,18 @@ const WATER_FRAGMENT = /* glsl */ `
           min(distance(vWorldPos.xy, rock3), distance(vWorldPos.xy, rock4))),
       distance(vWorldPos.xy, rock5)
     );
-    float rockFoam = smoothstep(0.48, 0.0, minRockDist) * (0.4 + 0.6 * sin(uTime * 3.4 + vWorldPos.x * 3.5));
+    float rockFoam = smoothstep(0.5, 0.0, minRockDist) * (0.5 + 0.5 * sin(uTime * 3.4 + vWorldPos.x * 3.5));
 
     float finalFoam = max(shoreFoam, rockFoam);
-    col = mix(col, vec3(0.92, 0.96, 1.0) * (uSunIntensity * 0.4 + 0.6), finalFoam * 0.65);
+    col = mix(col, vec3(0.96, 0.99, 1.0) * (uSunIntensity * 0.35 + 0.65), finalFoam * 0.72);
 
-    float edgeVignette = smoothstep(0.0, 0.85, distance(vUv, vec2(0.5)));
-    col = mix(col, uWaterColor * 0.7, edgeVignette * 0.18);
+    // Fine ripple detail on surface
+    float ripple = sin(vWorldPos.x * 4.5 + uTime * 1.6) * sin(vWorldPos.y * 3.8 - uTime * 1.2);
+    col += uWaterColor * ripple * 0.04;
 
-    float alpha = 0.92 * (1.0 - uScrollProgress * 0.82);
+    col = saturateColor(col, 1.55);
+
+    float alpha = 0.98 * (1.0 - uScrollProgress * 0.68);
 
     gl_FragColor = vec4(col, alpha);
   }
@@ -552,14 +615,14 @@ const createPalmLeafTexture = () => {
 
   ctx.clearRect(0, 0, 128, 256);
   
-  ctx.strokeStyle = "#02070a";
+  ctx.strokeStyle = "#1a5c3a";
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(64, 250);
   ctx.quadraticCurveTo(64, 128, 48, 10);
   ctx.stroke();
 
-  ctx.strokeStyle = "#010507";
+  ctx.strokeStyle = "#2a7a4a";
   ctx.lineWidth = 1.8;
   
   const leafletsCount = 38;
@@ -604,7 +667,6 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -612,7 +674,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     let rafId: number;
 
     // ─── Renderer Setup ──────────────────────────────────────────────────
-    const dpr = Math.min(window.devicePixelRatio, window.innerWidth < 768 ? 1.0 : 1.5);
+    const dpr = Math.min(window.devicePixelRatio, window.innerWidth < 768 ? 1.25 : 1.75);
     const w = window.innerWidth;
     const h = window.innerHeight;
 
@@ -626,7 +688,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     renderer.setSize(w, h);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.22;
+    renderer.toneMappingExposure = 1.48;
     renderer.debug.checkShaderErrors = false;
 
     // ─── Scene & Camera ──────────────────────────────────────────────────
@@ -643,7 +705,11 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
     scene.add(ambientLight);
 
+    const hemiLight = new THREE.HemisphereLight(0x9ee8ec, 0x3d8a7a, 0.55);
+    scene.add(hemiLight);
+
     const sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    sunLight.castShadow = false;
     scene.add(sunLight);
 
     // ─── Sky Dome Background ──────────────────────────────────────────────
@@ -685,10 +751,11 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const leafTexture = createPalmLeafTexture();
     const leafMaterial = new THREE.MeshStandardMaterial({
       map: leafTexture,
+      color: 0x5aaa78,
       transparent: true,
-      alphaTest: 0.35,
+      alphaTest: 0.3,
       side: THREE.DoubleSide,
-      roughness: 0.85,
+      roughness: 0.75,
     });
 
     const leafGeo = new THREE.PlaneGeometry(0.7, 1.8);
@@ -712,15 +779,17 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     });
 
     // ─── Water Geometry & Material ───────────────────────────────────────
-    const SEG = window.innerWidth < 768 ? 64 : 128;
+    const SEG = window.innerWidth < 768 ? 96 : 160;
     const waterGeo = new THREE.PlaneGeometry(28, 28, SEG, SEG);
     
     const waterUniforms = {
       uTime: { value: 0 },
       uWaveSpeed: { value: 0.2 },
       uWaveAmplitude: { value: 0.045 },
-      uWaterColor: { value: new THREE.Color(0x1a5c5e) },
+      uWaterColor: { value: new THREE.Color(0x35a8ac) },
       uWaterSpecularColor: { value: new THREE.Color(0xfff) },
+      uSkyTop: { value: new THREE.Color(0x2e9b9e) },
+      uSkyBottom: { value: new THREE.Color(0xfff5e8) },
       uSunDirection: { value: new THREE.Vector3(0, 1, 0) },
       uSunIntensity: { value: 1.0 },
       uScrollProgress: { value: 0.0 },
@@ -1053,17 +1122,35 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     const shorelineGeo = new THREE.BoxGeometry(45, 0.4, 3);
     const shorelineSandMat = new THREE.MeshStandardMaterial({
-      color: 0x4a6a62,
-      roughness: 0.92,
+      color: 0x8a9e7a,
+      roughness: 0.88,
     });
     const shorelineMesh = new THREE.Mesh(shorelineGeo, shorelineSandMat);
     shorelineMesh.position.set(0, -1.2, -7.5);
     landscapeGroup.add(shorelineMesh);
 
+    const reedMat = new THREE.MeshStandardMaterial({
+      color: 0x5cb87a,
+      side: THREE.DoubleSide,
+      roughness: 0.9,
+    });
+    const reedGeo = new THREE.PlaneGeometry(0.05, 0.75);
+    const reedsData: Array<{ mesh: THREE.Mesh; baseRotZ: number; phase: number }> = [];
+    for (let r = 0; r < 28; r++) {
+      const reed = new THREE.Mesh(reedGeo, reedMat);
+      const rx = -12 + r * 0.88 + (Math.random() - 0.5) * 0.3;
+      const baseRotZ = (Math.random() - 0.5) * 0.12;
+      reed.position.set(rx, -0.85 + Math.random() * 0.15, -5.0 - Math.random() * 2.8);
+      reed.rotation.y = (Math.random() - 0.5) * 0.4;
+      reed.rotation.z = baseRotZ;
+      landscapeGroup.add(reed);
+      reedsData.push({ mesh: reed, baseRotZ, phase: Math.random() * Math.PI * 2 });
+    }
+
     const treelineMat = new THREE.MeshBasicMaterial({
-      color: 0x030a0d,
+      color: 0x2d6a58,
       transparent: true,
-      opacity: 0.88,
+      opacity: 0.92,
       side: THREE.DoubleSide,
     });
     const treelineCrowns: THREE.Mesh[] = [];
@@ -1079,8 +1166,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     const rockGeo = new THREE.DodecahedronGeometry(1, 0);
     const rockMat = new THREE.MeshStandardMaterial({
-      color: 0x2a4a4e,
-      roughness: 0.88,
+      color: 0x5a7a72,
+      roughness: 0.82,
     });
     const rocks: THREE.Mesh[] = [];
 
@@ -1106,8 +1193,8 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     scene.add(palmsGroup);
 
     const trunkMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1a3a3e,
-      roughness: 0.92,
+      color: 0x3d5c48,
+      roughness: 0.88,
     });
 
     const birdSilhouetteMat = new THREE.MeshStandardMaterial({
@@ -1217,24 +1304,50 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
 
     const padGeometry = new THREE.CylinderGeometry(0.18, 0.18, 0.01, 12);
     const padMaterial = new THREE.MeshStandardMaterial({
-      color: 0x8ec4a0,
-      roughness: 0.75,
+      color: 0xa8ddb8,
+      roughness: 0.7,
+      emissive: 0x1a4a38,
+      emissiveIntensity: 0.15,
     });
 
-    const padData: Array<{ mesh: THREE.Mesh; x: number; z: number; phase: number; scale: number }> = [];
+    const lotusMat = new THREE.MeshStandardMaterial({
+      color: 0xf4b8c8,
+      emissive: 0x6a2848,
+      emissiveIntensity: 0.25,
+      roughness: 0.65,
+    });
+    const lotusGeo = new THREE.CylinderGeometry(0.035, 0.045, 0.025, 8);
+    const lotusCenterMat = new THREE.MeshStandardMaterial({ color: 0xffe8a0, emissive: 0x8a6020, emissiveIntensity: 0.3 });
+    const lotusCenterGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.03, 6);
 
-    for (let i = 0; i < 12; i++) {
+    const padData: Array<{ mesh: THREE.Mesh; lotus?: THREE.Group; x: number; z: number; phase: number; scale: number }> = [];
+
+    for (let i = 0; i < 24; i++) {
       const mesh = new THREE.Mesh(padGeometry, padMaterial);
-      const x = (Math.random() - 0.5) * 6;
-      const z = (Math.random() - 0.5) * 6 - 0.5;
+      const x = (Math.random() - 0.5) * 8;
+      const z = (Math.random() - 0.5) * 7 - 1.5;
       const scale = 0.6 + Math.random() * 0.7;
-      
+
       mesh.scale.set(scale, 1, scale);
       mesh.rotation.y = Math.random() * Math.PI;
       padsGroup.add(mesh);
 
+      let lotusGroup: THREE.Group | undefined;
+      if (i % 3 === 0) {
+        lotusGroup = new THREE.Group();
+        const bloom = new THREE.Mesh(lotusGeo, lotusMat);
+        bloom.position.y = 0.02;
+        lotusGroup.add(bloom);
+        const center = new THREE.Mesh(lotusCenterGeo, lotusCenterMat);
+        center.position.y = 0.035;
+        lotusGroup.add(center);
+        lotusGroup.scale.setScalar(scale);
+        padsGroup.add(lotusGroup);
+      }
+
       padData.push({
         mesh,
+        lotus: lotusGroup,
         x,
         z,
         phase: Math.random() * Math.PI * 2,
@@ -1292,10 +1405,10 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     particleGeo.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
 
     const particleMat = new THREE.PointsMaterial({
-      size: 3.5,
+      size: 2.8,
       map: mistTexture,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.12,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
@@ -1393,9 +1506,10 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     const clock = new THREE.Clock();
     const tempViewPos = new THREE.Vector3();
     const tempWorldPos = new THREE.Vector3();
+    const boostedWater = new THREE.Color();
 
     const animate = () => {
-      rafId = requestAnimationFrame(animate);
+      if (!prefersReduced) rafId = requestAnimationFrame(animate);
       
       const elapsed = clock.getElapsedTime();
       const scroll = scrollRef.current;
@@ -1413,7 +1527,10 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       sunLight.position.copy(currentEnv.sunPos);
 
       fog.color.copy(currentEnv.fogColor);
-      fog.density = currentEnv.fogDensity * 0.55 * (1.0 - scroll * 0.4);
+      fog.density = currentEnv.fogDensity * 0.28 * (1.0 - scroll * 0.4);
+      hemiLight.intensity = 0.45 + currentEnv.ambientIntensity * 0.35;
+      hemiLight.color.set(0x9ee8ec);
+      hemiLight.groundColor.copy(currentEnv.water).multiplyScalar(0.85);
 
       // 3. Update Sky dome variables
       skyMat.uniforms.uColorTop.value.copy(currentEnv.skyTop);
@@ -1441,8 +1558,12 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       waterUniforms.uTime.value = elapsed;
       waterUniforms.uWaveSpeed.value = currentEnv.waveSpeed;
       waterUniforms.uWaveAmplitude.value = currentEnv.waveAmplitude * 0.85;
-      waterUniforms.uWaterColor.value.copy(currentEnv.water);
+      const isNight = computeIsNight(timeVal) > 0.5;
+      boostedWater.copy(currentEnv.water).multiplyScalar(isNight ? 1.2 : 1.35);
+      waterUniforms.uWaterColor.value.copy(boostedWater);
       waterUniforms.uWaterSpecularColor.value.copy(currentEnv.waterSpecular);
+      waterUniforms.uSkyTop.value.copy(currentEnv.skyTop);
+      waterUniforms.uSkyBottom.value.copy(currentEnv.skyBottom);
       waterUniforms.uSunDirection.value.copy(currentEnv.sunPos).normalize();
       waterUniforms.uSunIntensity.value = currentEnv.sunIntensity;
       waterUniforms.uScrollProgress.value = scroll;
@@ -1478,7 +1599,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
         birdSilhouetteMat.opacity = birdVis;
       });
 
-      // 9. Bob floating lily pads on wave heights
+      // 9. Bob floating lily pads + lotus blooms on wave heights
       padData.forEach((pad) => {
         const height = getWaveHeightAt(
           pad.x,
@@ -1487,9 +1608,19 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
           currentEnv.waveSpeed,
           currentEnv.waveAmplitude
         );
-        pad.mesh.position.set(pad.x, waterMesh.position.y + height + 0.005, pad.z);
+        const waterY = waterMesh.position.y + height + 0.005;
+        pad.mesh.position.set(pad.x, waterY, pad.z);
         pad.mesh.rotation.z = Math.sin(elapsed * currentEnv.waveSpeed + pad.phase) * 0.04;
         pad.mesh.rotation.x = Math.cos(elapsed * currentEnv.waveSpeed + pad.phase) * 0.02;
+        if (pad.lotus) {
+          pad.lotus.position.set(pad.x, waterY + 0.01, pad.z);
+          pad.lotus.rotation.y = pad.mesh.rotation.y;
+        }
+      });
+
+      reedsData.forEach((reed) => {
+        reed.mesh.rotation.z =
+          reed.baseRotZ + Math.sin(elapsed * 1.1 + reed.phase) * 0.1;
       });
 
       // 10. Drift mist particles
@@ -1504,7 +1635,7 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       }
       particleGeo.attributes.position.needsUpdate = true;
       particleMat.color.copy(currentEnv.fogColor);
-      particleMat.opacity = 0.35 * (1.0 - scroll);
+      particleMat.opacity = 0.1 * (1.0 - scroll);
 
       // 11. Update Fireflies positions & fade opacity
       const ffPositions = fireflyGeo.attributes.position.array as Float32Array;
@@ -1579,11 +1710,14 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       heronBodyGeo.dispose();
       heronNeckGeo.dispose();
       crownGeo.dispose();
+      reedGeo.dispose();
       shorelineGeo.dispose();
       rockGeo.dispose();
       leafGeo.dispose();
       trunkGeo.dispose();
       padGeometry.dispose();
+      lotusGeo.dispose();
+      lotusCenterGeo.dispose();
       particleGeo.dispose();
       fireflyGeo.dispose();
 
@@ -1605,11 +1739,14 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
       flowerCenterMat.dispose();
       fgLeafMat.dispose();
       shorelineSandMat.dispose();
+      reedMat.dispose();
       treelineMat.dispose();
       rockMat.dispose();
       trunkMaterial.dispose();
       birdSilhouetteMat.dispose();
       padMaterial.dispose();
+      lotusMat.dispose();
+      lotusCenterMat.dispose();
       particleMat.dispose();
       fireflyMat.dispose();
 
