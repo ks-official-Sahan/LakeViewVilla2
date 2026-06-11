@@ -12,6 +12,7 @@ const VERTEX_SHADER = /* glsl */ `
 
   varying vec2  vUv;
   varying float vElevation;
+  varying vec3  vPosition;
 
   // Classic smooth noise helpers
   vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -84,6 +85,7 @@ const VERTEX_SHADER = /* glsl */ `
     pos.z -= uScrollProgress * 2.2;
 
     vElevation = elevation;
+    vPosition = pos;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
   }
 `;
@@ -95,26 +97,43 @@ const FRAGMENT_SHADER = /* glsl */ `
 
   varying vec2  vUv;
   varying float vElevation;
+  varying vec3  vPosition;
 
   void main() {
+    // 3D Normal estimation using screen derivatives
+    vec3 normal = normalize(cross(dFdx(vPosition), dFdy(vPosition)));
+    if (!gl_FrontFacing) normal = -normal;
+
     // Luxury ivory-to-charcoal palette — no cyan/blue/purple
     vec3 deepCharcoal = vec3(0.059, 0.063, 0.067);   // #0F1011
     vec3 warmGoldDark = vec3(0.788, 0.647, 0.353);   // #C9A55A
     vec3 warmGoldLight = vec3(0.722, 0.576, 0.247);  // #B8933F
     vec3 softIvory    = vec3(0.965, 0.949, 0.910);   // #F5F2E8
     vec3 pureWhite    = vec3(1.0, 1.0, 1.0);
-
-    float t = uTime * 0.18;
+    vec3 lagoonTeal   = vec3(0.039, 0.522, 0.569);   // #0A8591 (Lagoon aqua-teal)
 
     // Interpolate theme colors based on uDarkMode
     vec3 baseColor = mix(softIvory, deepCharcoal, uDarkMode);
-    vec3 midColor  = mix(warmGoldLight, warmGoldDark, uDarkMode);
+    vec3 midColor  = mix(lagoonTeal, warmGoldDark, uDarkMode);
     vec3 peakColor = mix(pureWhite, softIvory, uDarkMode);
 
     // Elevation-based color interpolation
     float ev = (vElevation + 0.65) * 0.77;
     vec3 col = mix(baseColor, midColor, smoothstep(0.2, 0.65, ev));
     col      = mix(col, peakColor,  smoothstep(0.65, 1.0, ev) * 0.35);
+
+    // Specular light highlight for lagoon waters
+    vec3 lightDir = normalize(vec3(0.5, 0.5, 0.8));
+    vec3 viewDir = vec3(0.0, 0.0, 1.0);
+    vec3 halfDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfDir), 0.0), 24.0);
+    
+    vec3 specColor = mix(lagoonTeal * 1.3, warmGoldDark * 1.2, uDarkMode);
+    col += specColor * spec * 0.25;
+
+    // Fresnel reflection effect
+    float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
+    col = mix(col, peakColor, fresnel * 0.15);
 
     // Edge vignette for depth
     float vignette = smoothstep(0.0, 0.45, distance(vUv, vec2(0.5)));

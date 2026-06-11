@@ -25,8 +25,10 @@
 
   /** Fluid chrome — nav height matched in Navigation + hero top inset */
   --header-h: clamp(3.5rem, 0.75rem + 4vw, 4rem);
+  /** Nav pill height — compact, non-intrusive */
+  --nav-h: clamp(3.25rem, 0.5rem + 3.5vw, 3.75rem);
   /** vmin keeps headline dominant vs body on short-wide laptops */
-  --fluid-hero-title: clamp(2.125rem, 1.35rem + 4.2vmin, 5.75rem);
+  --fluid-hero-title: clamp(2.5rem, 1.5rem + 5vmin, 6.5rem);
   --fluid-hero-body: clamp(0.875rem, 0.8rem + 0.35vmin, 1.15rem);
   --fluid-hero-eyebrow: clamp(0.5625rem, 0.5rem + 0.18vmin, 0.6875rem);
   --fluid-cta-text: clamp(0.8125rem, 0.76rem + 0.12vmin, 0.9375rem);
@@ -154,6 +156,18 @@
   30%  { opacity: 1; }
   80%  { opacity: 1; }
   100% { transform: translateY(200%); opacity: 0; }
+}
+
+/* ── Hero: clip-path reveal from bottom (used by hero-text) ────────────── */
+@keyframes clip-reveal-up {
+  from { clip-path: inset(100% 0 0 0); opacity: 0; }
+  to   { clip-path: inset(0% 0 0 0); opacity: 1; }
+}
+
+/* ── Button shimmer sweep (used by gold CTA) ──────────────────────────── */
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 /* ── Button micro-interactions ──────────────────────────────────────────── */
