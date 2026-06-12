@@ -6,6 +6,7 @@ import { audit } from "@/lib/admin/audit";
 import { cacheInvalidatePattern } from "@/lib/cache";
 import { bumpContentPageCache } from "@/lib/cache/tags";
 import { auth } from "@/lib/auth/config";
+import { contentPageUrl, notifyIndexNow } from "@/lib/indexnow";
 
 export async function saveContentBlock(pageSlug: string, sectionSlug: string, data: any) {
   const session = await auth();
@@ -39,6 +40,7 @@ export async function saveContentBlock(pageSlug: string, sectionSlug: string, da
 
   await cacheInvalidatePattern(`content:${pageSlug}`);
   bumpContentPageCache(pageSlug);
+  notifyIndexNow([contentPageUrl(pageSlug)]);
   return block;
 }
 

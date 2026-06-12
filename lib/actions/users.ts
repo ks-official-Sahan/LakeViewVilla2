@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db/prisma";
 import { requireRole } from "@/lib/auth/rbac";
+import { sendWelcomeEmail } from "@/lib/email/welcome";
 import { Role } from "@prisma/client";
 
 const userUpdateSchema = z.object({
@@ -61,6 +62,14 @@ export async function createUser(data: z.infer<typeof createUserSchema>) {
         entityId: user.id,
         newValue: { email: user.email, role: user.role },
       },
+    });
+
+    // Send credentials once — password is never logged server-side.
+    await sendWelcomeEmail({
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      temporaryPassword: parsed.data.password,
     });
 
     revalidatePath("/admin/users");

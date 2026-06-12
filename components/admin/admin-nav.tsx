@@ -15,6 +15,7 @@ import {
   Settings,
   DatabaseBackup,
   Globe,
+  UserCircle,
 } from "lucide-react";
 
 export type NavItemDef = {
@@ -29,6 +30,7 @@ export const ADMIN_NAV_GROUPS: { heading: string; items: NavItemDef[] }[] = [
     heading: "Overview",
     items: [
       { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+      { label: "Account", href: "/admin/account", icon: UserCircle },
       { label: "Public site", href: "/", icon: Globe },
     ],
   },

@@ -131,7 +131,28 @@ export default function VisitPage({
     setIsSubmitting(true);
     setSubmitStatus("idle");
     try {
-      const message = [
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          message: data.message,
+          checkIn: data.checkIn,
+          checkOut: data.checkOut,
+          guests: data.guests,
+          inquiryType: "reservation",
+          source: "visit",
+        }),
+      });
+
+      if (!res.ok) {
+        setSubmitStatus("error");
+        return;
+      }
+
+      const waMessage = [
         "Contact Form Enquiry — Lake View Villa Tangalle",
         "",
         `Name: ${data.name}`,
@@ -142,20 +163,9 @@ export default function VisitPage({
         `Guests: ${data.guests}`,
         "",
         `Message: ${data.message}`,
-        "",
-        `Source: ${typeof window !== "undefined" ? window.location.href : ""}`,
       ].join("\n");
-
-      const wa = buildWhatsAppUrl(SITE_CONFIG.whatsappNumber, message);
+      const wa = buildWhatsAppUrl(SITE_CONFIG.whatsappNumber, waMessage);
       trackContact("whatsapp", wa, "Chat on WhatsApp");
-      setTimeout(() => window.open(wa, "_blank", "noopener"), 120);
-
-      setTimeout(() => {
-        const mailto = `mailto:info@lakeviewvillatangalle.com?subject=${encodeURIComponent(
-          `Villa Enquiry from ${data.name}`
-        )}&body=${encodeURIComponent(message)}`;
-        window.location.href = mailto;
-      }, 800);
 
       setSubmitStatus("success");
       reset({ guests: 2 } satisfies Partial<ContactForm>);

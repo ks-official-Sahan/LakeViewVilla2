@@ -1,7 +1,30 @@
+import { after } from "next/server";
 import { SITE_CONFIG } from "@/data/site";
 
-// lib/indexnow.ts
 const INDEXNOW_KEY = process.env.INDEXNOW_KEY;
+
+const SITE_ORIGIN = SITE_CONFIG.primaryDomain.replace(/\/$/, "");
+
+/** Absolute public URL for a site path (leading slash). */
+export function absoluteSiteUrl(path: string): string {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${SITE_ORIGIN}${normalized}`;
+}
+
+export function blogPostUrl(slug: string): string {
+  return absoluteSiteUrl(`/blog/${slug}`);
+}
+
+export function contentPageUrl(pageSlug: string): string {
+  const routes: Record<string, string> = {
+    home: "/",
+    visit: "/visit",
+    stays: "/stays",
+    gallery: "/gallery",
+    faq: "/faq",
+  };
+  return absoluteSiteUrl(routes[pageSlug] ?? `/${pageSlug}`);
+}
 
 export async function pingIndexNow(urls: string[]): Promise<void> {
   if (!INDEXNOW_KEY) {
@@ -9,17 +32,19 @@ export async function pingIndexNow(urls: string[]): Promise<void> {
     return;
   }
 
-  const host = new URL(SITE_CONFIG.primaryDomain).hostname;
+  const unique = [...new Set(urls.map((u) => u.trim()).filter(Boolean))];
+  if (unique.length === 0) return;
+
+  const host = new URL(SITE_ORIGIN).hostname;
 
   const body = JSON.stringify({
     host,
     key: INDEXNOW_KEY,
-    keyLocation: `${SITE_CONFIG.primaryDomain.replace(/\/$/, "")}/${INDEXNOW_KEY}.txt`,
-    urlList: urls,
+    keyLocation: `${SITE_ORIGIN}/${INDEXNOW_KEY}.txt`,
+    urlList: unique.slice(0, 10_000),
   });
 
-  // Ping both — Bing processes faster for .ae, IndexNow.org syndicates to others
-  await Promise.allSettled([
+  const results = await Promise.allSettled([
     fetch("https://www.bing.com/indexnow", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -31,4 +56,24 @@ export async function pingIndexNow(urls: string[]): Promise<void> {
       body,
     }),
   ]);
+
+  for (const r of results) {
+    if (r.status === "rejected") {
+      console.warn("[IndexNow] Ping failed:", r.reason);
+    }
+  }
+}
+
+/** Fire-and-forget IndexNow submission after publish/update (server actions / routes). */
+export function notifyIndexNow(urls: string[]): void {
+  if (!INDEXNOW_KEY || urls.length === 0) return;
+
+  after(async () => {
+    try {
+      await pingIndexNow(urls);
+      console.log("[IndexNow] Submitted", urls.length, "URL(s)");
+    } catch (err) {
+      console.warn("[IndexNow] notify failed:", err);
+    }
+  });
 }

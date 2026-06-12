@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import FAQClient from "./client";
-import { DirectionalTransition } from "@/components/motion/directional-transition";
 import { SuspenseReveal } from "@/components/motion/suspense-reveal";
 import { FAQ_ITEMS } from "@/data/content";
 import { getContentBlock } from "@/lib/cms/get-content-block";
@@ -59,11 +58,9 @@ export default async function Page() {
         ]}
         faq={faqList}
       />
-      <DirectionalTransition>
-        <SuspenseReveal>
+      <SuspenseReveal>
       <FAQClient cmsHero={heroBlock} cmsQuestions={questionsBlock} />
-        </SuspenseReveal>
-      </DirectionalTransition>
+      </SuspenseReveal>
     </>
   );
 }

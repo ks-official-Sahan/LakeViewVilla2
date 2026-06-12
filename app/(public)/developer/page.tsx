@@ -3,7 +3,6 @@ import Script from "next/script";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import { serializeJsonLd } from "@/lib/utils";
 import DevClient from "./client";
-import { DirectionalTransition } from "@/components/motion/directional-transition";
 import { SuspenseReveal } from "@/components/motion/suspense-reveal";
 
 export const metadata: Metadata = {
@@ -62,7 +61,6 @@ export default function DeveloperPage() {
   ];
 
   return (
-    <DirectionalTransition>
       <SuspenseReveal>
     <main className="relative bg-background text-foreground">
       <SeoJsonLd breadcrumb={breadcrumb} />
@@ -79,6 +77,5 @@ export default function DeveloperPage() {
       <DevClient initial={null} statusInitial={null} />
     </main>
       </SuspenseReveal>
-    </DirectionalTransition>
   );
 }

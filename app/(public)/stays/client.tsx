@@ -15,6 +15,7 @@ import { trackContact } from "@/lib/analytics";
 /* ---------- schema ---------- */
 const enquirySchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
   phone: z
     .string()
     .regex(
@@ -87,25 +88,43 @@ export default function StaysPage({
     setIsSubmitting(true);
     setSubmitStatus("idle");
     try {
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          message: data.message,
+          checkIn: data.checkIn,
+          checkOut: data.checkOut,
+          guests: data.guests,
+          inquiryType: "direct_reservation",
+          source: "stays",
+        }),
+      });
+
+      if (!res.ok) {
+        setSubmitStatus("error");
+        return;
+      }
+
       const composed = [
-        "WhatsApp Enquiry — Lake View Villa Tangalle",
+        "Stay Enquiry — Lake View Villa Tangalle",
         "",
         `Name: ${data.name}`,
+        `Email: ${data.email}`,
         `Phone: ${data.phone}`,
         `Check-in: ${data.checkIn}`,
         `Check-out: ${data.checkOut}`,
         `Guests: ${data.guests}`,
         data.message ? `\nMessage: ${data.message}` : "",
-        "",
-        `Source: ${typeof window !== "undefined" ? window.location.href : ""}`,
       ]
         .filter(Boolean)
         .join("\n");
 
       const wa = buildWhatsAppUrl(SITE_CONFIG.whatsappNumber, composed);
-
       trackContact("whatsapp", wa, "Chat on WhatsApp");
-      setTimeout(() => window.open(wa, "_blank", "noopener"), 120);
 
       setSubmitStatus("success");
       reset({ guests: 2 } satisfies Partial<EnquiryForm>);
@@ -331,6 +350,30 @@ export default function StaysPage({
                       {errors.name && (
                         <p className="text-red-500 text-xs mt-1 font-sans font-medium">
                           {errors.name.message}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label
+                        className="block text-xs font-display font-bold uppercase tracking-widest text-foreground/80 mb-2"
+                        htmlFor="s-email"
+                      >
+                        Email *
+                      </label>
+                      <input
+                        id="s-email"
+                        type="email"
+                        {...register("email")}
+                        className="w-full px-4 py-3.5 rounded-sm bg-background border border-border/60 text-foreground placeholder:text-foreground/40 text-sm focus:outline-none focus:border-accent"
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        aria-invalid={!!errors.email}
+                      />
+                      {errors.email && (
+                        <p className="text-red-500 text-xs mt-1 font-sans font-medium">
+                          {errors.email.message}
                         </p>
                       )}
                     </div>

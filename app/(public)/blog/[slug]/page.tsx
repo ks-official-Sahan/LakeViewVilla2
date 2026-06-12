@@ -14,7 +14,6 @@ import { generateBlogArticleSchema } from "@/lib/seo/structured-data";
 import { markdownToHtml, estimateReadTime } from "@/lib/blog/markdown";
 import { ReadingProgress } from "./reading-progress";
 import { ShareButtons } from "./share-buttons";
-import { DirectionalTransition } from "@/components/motion/directional-transition";
 import { SuspenseReveal } from "@/components/motion/suspense-reveal";
 import { navBack, navForward } from "@/lib/navigation/view-transitions";
 
@@ -135,8 +134,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       {/* Reading progress bar */}
       <ReadingProgress />
 
-      <DirectionalTransition>
-        <SuspenseReveal>
+      <SuspenseReveal>
       <main>
         {/* ── Cinematic Hero ───────────────────────────────────────────── */}
         <div className="relative overflow-hidden">
@@ -356,8 +354,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           )}
         </div>
       </main>
-        </SuspenseReveal>
-      </DirectionalTransition>
+      </SuspenseReveal>
 
       {/* JSON-LD Structured Data */}
       <script

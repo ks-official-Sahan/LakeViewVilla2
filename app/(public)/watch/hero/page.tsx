@@ -2,7 +2,6 @@
 import React from "react";
 import Script from "next/script";
 import Link from "next/link";
-import { DirectionalTransition } from "@/components/motion/directional-transition";
 import { navBack, navFade } from "@/lib/navigation/view-transitions";
 
 export const metadata = {
@@ -59,7 +58,6 @@ export default function WatchHeroPage() {
   };
 
   return (
-    <DirectionalTransition>
     <main className="min-h-screen bg-[var(--color-background)] py-24 md:py-32">
       {/* Background ambient radial glow */}
       <div
@@ -145,6 +143,5 @@ export default function WatchHeroPage() {
         {JSON.stringify(breadcrumb)}
       </Script>
     </main>
-    </DirectionalTransition>
   );
 }

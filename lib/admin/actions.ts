@@ -19,6 +19,7 @@ import type { MediaType, BlogStatus, Prisma } from "@prisma/client";
 import { generateSEOMeta } from "@/lib/ai/seo-generator";
 import { normalizeBlogSlug } from "@/lib/utils/blog-slug";
 import { openRouterChatCompletion } from "@/lib/ai/openrouter-chat";
+import { blogPostUrl, notifyIndexNow } from "@/lib/indexnow";
 
 function optionalStr(v: unknown): string | undefined {
   if (v === undefined || v === null) return undefined;
@@ -319,6 +320,11 @@ export async function updateBlogPost(id: string, raw: Record<string, unknown>) {
     data.publishedAt = new Date(publishAtRaw);
   }
 
+  const previous = await prisma.blogPost.findUnique({
+    where: { id },
+    select: { status: true, slug: true },
+  });
+
   const post = await prisma.blogPost.update({ where: { id }, data });
 
   await audit({
@@ -331,6 +337,15 @@ export async function updateBlogPost(id: string, raw: Record<string, unknown>) {
 
   await cacheInvalidatePattern("blog:*");
   bumpBlogAndSitemapCache();
+
+  if (post.status === "PUBLISHED") {
+    const urls = [blogPostUrl(post.slug)];
+    if (previous?.slug && previous.slug !== post.slug) {
+      urls.push(blogPostUrl(previous.slug));
+    }
+    notifyIndexNow(urls);
+  }
+
   return post;
 }
 
@@ -488,6 +503,11 @@ export async function publishBlogPost(id: string, publishAt?: string) {
 
   await cacheInvalidatePattern("blog:*");
   bumpBlogAndSitemapCache();
+
+  if (post.status === "PUBLISHED") {
+    notifyIndexNow([blogPostUrl(post.slug)]);
+  }
+
   return post;
 }
 

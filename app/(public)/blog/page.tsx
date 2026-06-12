@@ -10,7 +10,6 @@ import type { Metadata } from "next";
 import { estimateReadTime } from "@/lib/blog/markdown";
 import { serializeJsonLd } from "@/lib/utils";
 import { getContentBlock } from "@/lib/cms/get-content-block";
-import { DirectionalTransition } from "@/components/motion/directional-transition";
 import { SuspenseReveal } from "@/components/motion/suspense-reveal";
 import { navBack, navFade, navForward } from "@/lib/navigation/view-transitions";
 
@@ -138,8 +137,7 @@ export default async function BlogPage({
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(blogListLd) }}
         />
       ) : null}
-      <DirectionalTransition>
-        <SuspenseReveal>
+      <SuspenseReveal>
       <main className="min-h-screen bg-[var(--color-background)]">
         {/* ── Hero ─────────────────────────────────────────────── */}
         <section className="relative overflow-hidden py-24 md:py-32">
@@ -424,8 +422,7 @@ export default async function BlogPage({
           )}
         </div>
       </main>
-        </SuspenseReveal>
-      </DirectionalTransition>
+      </SuspenseReveal>
     </>
   );
 }

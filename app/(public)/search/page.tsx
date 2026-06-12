@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DirectionalTransition } from "@/components/motion/directional-transition";
 import { SuspenseReveal } from "@/components/motion/suspense-reveal";
 import { navFade } from "@/lib/navigation/view-transitions";
 
@@ -28,7 +27,6 @@ export default function SearchPage({
   const suggestions = ["stays", "gallery", "visit", "blog", "tangalle"];
 
   return (
-    <DirectionalTransition>
       <SuspenseReveal>
     <main className="min-h-screen bg-[var(--color-background)] py-24 md:py-32 flex items-center justify-center">
       {/* Background ambient radial glow */}
@@ -119,6 +117,5 @@ export default function SearchPage({
       </div>
     </main>
       </SuspenseReveal>
-    </DirectionalTransition>
   );
 }

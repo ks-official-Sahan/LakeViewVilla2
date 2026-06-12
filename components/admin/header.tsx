@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { logoutAction } from "@/lib/admin/actions";
 import type { Role } from "@prisma/client";
 import { LogOut, Menu } from "lucide-react";
@@ -54,17 +55,24 @@ export function AdminHeader({ user, onOpenMobileNav }: AdminHeaderProps) {
           {badge.label}
         </span>
 
-        <div className="hidden text-right text-sm md:block">
+        <Link
+          href="/admin/account"
+          className="hidden text-right text-sm md:block hover:opacity-80 transition-opacity"
+        >
           <p className="font-medium text-[var(--color-foreground)]">
             {user.name ?? user.email}
           </p>
           <p className="text-xs text-[var(--color-muted)]">{user.email}</p>
-        </div>
+        </Link>
 
         {/* Avatar */}
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-sm font-semibold text-[var(--color-primary)]">
+        <Link
+          href="/admin/account"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-sm font-semibold text-[var(--color-primary)] hover:opacity-80 transition-opacity"
+          aria-label="Account settings"
+        >
           {(user.name ?? user.email).charAt(0).toUpperCase()}
-        </div>
+        </Link>
 
         <button
           onClick={async () => {
