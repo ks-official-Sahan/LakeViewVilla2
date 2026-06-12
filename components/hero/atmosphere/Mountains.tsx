@@ -2,7 +2,7 @@
 
 import type { HeroComponentProps } from "../types";
 
-/** Phase 6 — LOD mountain hills behind northern tree line. */
+/** Mountains live in `terrain/FarShore.tsx` (Phase 3). Kept as a no-op stub. */
 export function Mountains(_props: HeroComponentProps = {}) {
   return null;
 }

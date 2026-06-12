@@ -1,3 +1,7 @@
+/**
+ * @deprecated Legacy imperative Three.js hero (Phase 0–6). Production uses `components/hero/HeroScene`.
+ * Kept for rollback: `localStorage.setItem("hero-r3f", "0")` or `NEXT_PUBLIC_HERO_LEGACY=1`.
+ */
 "use client";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
@@ -2168,17 +2172,22 @@ export default function HeroCanvas({ scrollProgress, timeOfDay }: HeroCanvasProp
     scene.add(fireflies);
 
     // ─── Camera Path (scroll-keyframed: inside → balcony → road → rise over lake) ──
+    const lakeFocusNear = new THREE.Vector3(-0.5, WATER_Y + 0.08, -10.5);
+    const lakeFocusMid = new THREE.Vector3(-0.5, WATER_Y, -13.5);
+    const lakeFocusFar = new THREE.Vector3(-0.5, WATER_Y - 0.05, -19.0);
     const cameraKeyframes: CameraKeyframe[] = [
       { t: 0.0, pos: new THREE.Vector3(6.02, 1.42, 4.9), look: new THREE.Vector3(4.8, 0.9, -2.0) },
-      { t: 0.15, pos: new THREE.Vector3(6.06, 1.4, 3.6), look: new THREE.Vector3(4.2, 0.55, -4.0) },
-      { t: 0.3, pos: new THREE.Vector3(6.1, 1.36, 2.2), look: new THREE.Vector3(3.2, 0.25, -6.0) },
-      { t: 0.42, pos: new THREE.Vector3(6.12, 1.32, 1.0), look: new THREE.Vector3(2.0, 0.05, -7.5) },
-      { t: 0.52, pos: new THREE.Vector3(6.08, 1.18, 0.15), look: new THREE.Vector3(0.8, -0.1, -8.8) },
-      { t: 0.62, pos: new THREE.Vector3(5.2, 1.08, -0.35), look: new THREE.Vector3(0.0, -0.2, -9.8) },
-      { t: 0.72, pos: new THREE.Vector3(3.6, 1.05, -0.8), look: new THREE.Vector3(-0.5, -0.25, -11.0) },
-      { t: 0.82, pos: new THREE.Vector3(2.0, 1.55, -2.8), look: new THREE.Vector3(-0.3, -0.35, -13.5) },
-      { t: 0.92, pos: new THREE.Vector3(0.4, 3.2, -6.5), look: new THREE.Vector3(0.0, -0.45, -16.0) },
-      { t: 1.0, pos: new THREE.Vector3(-0.6, 5.8, -11.5), look: new THREE.Vector3(0.2, -0.55, -22.0) },
+      { t: 0.12, pos: new THREE.Vector3(6.04, 1.41, 3.75), look: new THREE.Vector3(4.4, 0.65, -3.8) },
+      { t: 0.24, pos: new THREE.Vector3(6.07, 1.39, 2.45), look: new THREE.Vector3(3.6, 0.4, -5.8) },
+      { t: 0.36, pos: new THREE.Vector3(6.12, 1.34, 1.05), look: new THREE.Vector3(2.6, 0.15, -7.2) },
+      { t: 0.46, pos: new THREE.Vector3(6.1, 1.24, -0.05), look: new THREE.Vector3(1.4, -0.02, -8.6) },
+      { t: 0.56, pos: new THREE.Vector3(5.55, 1.14, -0.45), look: new THREE.Vector3(0.2, -0.12, -9.6) },
+      { t: 0.66, pos: new THREE.Vector3(4.35, 1.08, -0.85), look: new THREE.Vector3(-0.3, -0.2, -10.8) },
+      { t: 0.74, pos: new THREE.Vector3(3.1, 1.06, -1.6), look: lakeFocusNear.clone() },
+      { t: 0.82, pos: new THREE.Vector3(1.6, 1.45, -3.2), look: lakeFocusNear.clone() },
+      { t: 0.9, pos: new THREE.Vector3(0.2, 2.8, -6.2), look: lakeFocusMid.clone() },
+      { t: 0.96, pos: new THREE.Vector3(-0.35, 4.8, -9.5), look: lakeFocusFar.clone() },
+      { t: 1.0, pos: new THREE.Vector3(-0.5, 6.4, -12.5), look: lakeFocusFar.clone() },
     ];
 
     // ─── Environment State ───────────────────────────────────────────────

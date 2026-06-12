@@ -9,10 +9,7 @@ import { HeroSceneSync } from "./HeroSceneSync";
 import { SceneContents } from "./SceneContents";
 import type { HeroSceneProps } from "./types";
 
-/**
- * Trade-off: frameloop="always" in Phase 0 keeps scroll camera + env preview responsive.
- * Phase 7 will switch to "demand" with explicit invalidate() on scroll/time updates.
- */
+/** R3F hero root — demand frameloop driven by HeroFrameLoop + HeroSceneSync invalidation. */
 export default function HeroScene({ scrollProgress, timeOfDay, className }: HeroSceneProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [dpr, setDpr] = useState<[number, number]>([1, 1.75]);
@@ -35,7 +32,8 @@ export default function HeroScene({ scrollProgress, timeOfDay, className }: Hero
         className="h-full w-full"
         dpr={dpr}
         frameloop="demand"
-        camera={{ fov: CAMERA_FOV, near: CAMERA_NEAR, far: CAMERA_FAR, position: [6.0, 1.4, 3.0] }}
+        performance={{ min: 0.5, max: 1, debounce: 200 }}
+        camera={{ fov: CAMERA_FOV, near: CAMERA_NEAR, far: CAMERA_FAR, position: [6.02, 1.42, 4.9] }}
         gl={{
           alpha: true,
           antialias: !isMobile,

@@ -11,7 +11,7 @@ import { HeroText } from "./hero-text";
 import { StoryReveal } from "./story-reveal";
 import { BookingCallout } from "./booking-callout";
 import { HeroFallback } from "@/components/hero/HeroFallback";
-import { isHeroR3FEnabled } from "@/components/hero/lib/feature-flag";
+import { isHeroLegacyEnabled } from "@/components/hero/lib/feature-flag";
 
 const HeroCanvas = dynamic(() => import("@/components/webgl/HeroCanvas"), {
   ssr: false,
@@ -46,10 +46,10 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const [canvasProgress, setCanvasProgress] = useState(0);
-  const [useR3F, setUseR3F] = useState(false);
+  const [useLegacyHero, setUseLegacyHero] = useState(false);
 
   useEffect(() => {
-    setUseR3F(isHeroR3FEnabled());
+    setUseLegacyHero(isHeroLegacyEnabled());
   }, []);
 
   const getLocalTime = () => {
@@ -189,10 +189,10 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
       >
         <div ref={canvasWrapRef} className="absolute inset-0">
           <Suspense fallback={<HeroFallback />}>
-            {useR3F ? (
-              <HeroScene scrollProgress={canvasProgress} timeOfDay={timeOfDay} />
-            ) : (
+            {useLegacyHero ? (
               <HeroCanvas scrollProgress={canvasProgress} timeOfDay={timeOfDay} />
+            ) : (
+              <HeroScene scrollProgress={canvasProgress} timeOfDay={timeOfDay} />
             )}
           </Suspense>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { invalidate } from "@react-three/fiber";
 import { useEffect } from "react";
 import { useHeroStore } from "@/stores/heroStore";
 import { useEnvDerived, useEnvInterpolation } from "./hooks/useEnvInterpolation";
@@ -27,6 +28,7 @@ export function HeroSceneSync({ scrollProgress, timeOfDay }: HeroSceneSyncProps)
 
   useEffect(() => {
     setScrollProgress(scrollProgress);
+    invalidate();
   }, [scrollProgress, setScrollProgress]);
 
   useEffect(() => {
@@ -37,6 +39,7 @@ export function HeroSceneSync({ scrollProgress, timeOfDay }: HeroSceneSyncProps)
       windDirection: derived.windDirection,
       lanternIntensity: env.lanternIntensity,
     });
+    invalidate();
   }, [timeOfDay, derived, env.lanternIntensity, setTimeOfDay, setDerived]);
 
   useEffect(() => {

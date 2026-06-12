@@ -3,6 +3,8 @@ import { create } from "zustand";
 export interface HeroSceneState {
   timeOfDay: number;
   scrollProgress: number;
+  /** Monotonic scene clock (seconds), advanced by HeroFrameLoop. */
+  elapsed: number;
   isNight: boolean;
   goldenHourBoost: number;
   windDirection: number;
@@ -11,6 +13,7 @@ export interface HeroSceneState {
   isMobile: boolean;
   setTimeOfDay: (t: number) => void;
   setScrollProgress: (p: number) => void;
+  setElapsed: (elapsed: number) => void;
   setDerived: (derived: {
     isNight: boolean;
     goldenHourBoost: number;
@@ -24,6 +27,7 @@ export interface HeroSceneState {
 export const useHeroStore = create<HeroSceneState>((set) => ({
   timeOfDay: 10,
   scrollProgress: 0,
+  elapsed: 0,
   isNight: false,
   goldenHourBoost: 0,
   windDirection: 1,
@@ -32,6 +36,7 @@ export const useHeroStore = create<HeroSceneState>((set) => ({
   isMobile: false,
   setTimeOfDay: (timeOfDay) => set({ timeOfDay }),
   setScrollProgress: (scrollProgress) => set({ scrollProgress }),
+  setElapsed: (elapsed) => set({ elapsed }),
   setDerived: (derived) => set(derived),
   setWeatherState: (weatherState) => set({ weatherState }),
   setIsMobile: (isMobile) => set({ isMobile }),

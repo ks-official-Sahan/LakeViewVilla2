@@ -190,6 +190,11 @@ export function computeBirdVisibility(time: number): number {
   return Math.max(midday, Math.max(dawnPeak, duskPeak));
 }
 
+/** 0 = new moon, 1 = full moon (simplified diurnal cycle for shader crescent). */
+export function computeMoonPhase(time: number): number {
+  return 0.5 + 0.5 * Math.cos((time / 24) * Math.PI * 2);
+}
+
 export function interpolateEnv(time: number, target: EnvConfig): void {
   const tOfDay = Math.max(0, Math.min(23.99, time));
 

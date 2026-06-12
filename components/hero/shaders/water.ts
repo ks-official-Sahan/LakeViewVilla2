@@ -10,6 +10,8 @@ export const WATER_VERTEX = /* glsl */ `
   varying float vHeight;
   varying float vWorldZ;
   varying float vWorldX;
+  varying float vDepth;
+  varying float vFoamFactor;
 
   struct Wave {
     vec2 dir;
@@ -30,17 +32,19 @@ export const WATER_VERTEX = /* glsl */ `
     waves[3] = Wave(normalize(vec2(0.6, 0.2)), uWaveAmplitude * 0.12, 2.10, 0.22, uWaveSpeed * 2.8);
 
     int waveCount = uMobile > 0.5 ? 2 : 4;
+    float steepSum = 0.0;
 
     vec3 displaced = pos;
     vec3 tangent = vec3(1.0, 0.0, 0.0);
     vec3 binormal = vec3(0.0, 1.0, 0.0);
 
-    for(int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
       if (i >= waveCount) break;
       float phase = dot(waves[i].dir, pos.xy) * waves[i].freq + uTime * waves[i].speed;
       float c = cos(phase);
       float s = sin(phase);
       float QA = waves[i].steepness * waves[i].amp;
+      steepSum += abs(s) * waves[i].steepness;
 
       displaced.x += waves[i].dir.x * QA * c;
       displaced.y += waves[i].dir.y * QA * c;
@@ -58,6 +62,10 @@ export const WATER_VERTEX = /* glsl */ `
       binormal.z += waves[i].dir.y * kAmpCos;
     }
 
+    float detail = sin(pos.x * 3.2 + uTime * uWaveSpeed * 2.5) * uWaveAmplitude * 0.08;
+    detail += cos(pos.y * 2.8 - uTime * uWaveSpeed * 1.9) * uWaveAmplitude * 0.05;
+    displaced.z += detail;
+
     vec4 mvPosition = modelViewMatrix * vec4(displaced, 1.0);
     gl_Position = projectionMatrix * mvPosition;
 
@@ -68,6 +76,8 @@ export const WATER_VERTEX = /* glsl */ `
     vec4 worldPos = modelMatrix * vec4(displaced, 1.0);
     vWorldX = worldPos.x;
     vWorldZ = worldPos.z;
+    vDepth = length(vViewPosition);
+    vFoamFactor = clamp(steepSum * 0.35 + abs(detail) * 12.0, 0.0, 1.0);
   }
 `;
 
@@ -88,6 +98,8 @@ export const WATER_FRAGMENT = /* glsl */ `
   uniform vec3 uLanternColor;
   uniform float uLanternIntensity;
   uniform float uMobile;
+  uniform float uIsNight;
+  uniform float uWindX;
 
   varying vec2 vUv;
   varying vec3 vNormal;
@@ -96,6 +108,8 @@ export const WATER_FRAGMENT = /* glsl */ `
   varying float vHeight;
   varying float vWorldZ;
   varying float vWorldX;
+  varying float vDepth;
+  varying float vFoamFactor;
 
   float noiseH(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -117,7 +131,9 @@ export const WATER_FRAGMENT = /* glsl */ `
     c += causticNoise(uv * 3.5 + vec2(t * 0.4, t * 0.25));
     c += causticNoise(uv * 7.0 - vec2(t * 0.55, t * 0.35)) * 0.5;
     c += causticNoise(uv * 14.0 + vec2(t * 0.3, -t * 0.2)) * 0.25;
-    c += causticNoise(uv * 22.0 - vec2(t * 0.15, t * 0.45)) * 0.12;
+    if (uMobile < 0.5) {
+      c += causticNoise(uv * 22.0 - vec2(t * 0.15, t * 0.45)) * 0.12;
+    }
     return pow(c * 0.48, 1.4);
   }
 
@@ -134,7 +150,7 @@ export const WATER_FRAGMENT = /* glsl */ `
   void main() {
     vec3 normal = normalize(vNormal);
     vec3 viewDir = normalize(vViewPosition);
-    float viewDepth = length(vViewPosition);
+    float viewDepth = vDepth;
 
     float depthFade = smoothstep(4.0, 28.0, viewDepth);
     float heightFactor = clamp((vHeight + 0.12) * 3.5, 0.0, 1.0);
@@ -145,6 +161,11 @@ export const WATER_FRAGMENT = /* glsl */ `
     vec3 col = mix(mix(lagoonDeep, lagoonMid, heightFactor), lagoonBright, heightFactor * 0.45);
     col = mix(col, lagoonDeep * 0.95, depthFade * 0.25);
     col = tropicalAbsorption(depthFade * 2.5, col);
+
+    vec2 lakePos = vec2(vWorldX, vWorldZ);
+    float shoreNoise = causticNoise(lakePos * 0.12 + vec2(uWindX * 0.5, 0.0)) * 2.2;
+    float distLake = length(lakePos - uLakeCenter);
+    float irregularShore = smoothstep(uLakeRadius + shoreNoise, uLakeRadius - 2.8 - shoreNoise * 0.5, distLake);
 
     float distToShore = abs(vWorldZ - uShoreWorldZ);
 
@@ -167,7 +188,7 @@ export const WATER_FRAGMENT = /* glsl */ `
       col += uWaterSpecularColor * streak * uSunIntensity * 0.18;
     }
 
-    float shallowMask = smoothstep(5.0, 0.3, distToShore);
+    float shallowMask = smoothstep(5.0, 0.3, distToShore) * (1.0 + heightFactor * 0.35);
     float caustic = caustics(vWorldPos.xy * 0.55, uTime) * shallowMask;
     col += vec3(0.55, 0.85, 0.75) * caustic * uSunIntensity * 0.42;
 
@@ -199,6 +220,7 @@ export const WATER_FRAGMENT = /* glsl */ `
 
     float wavePhase = uTime * 2.8 + vWorldPos.x * 2.0 + distToShore * 1.5;
     float shoreFoam = smoothstep(0.8, 0.0, distToShore) * (0.5 + 0.5 * sin(wavePhase));
+    shoreFoam = max(shoreFoam, vFoamFactor * smoothstep(4.0, 0.5, distToShore) * 0.35);
 
     vec2 rock1 = vec2(-4.0, 8.5);
     vec2 rock2 = vec2(1.5, 9.0);
@@ -214,20 +236,21 @@ export const WATER_FRAGMENT = /* glsl */ `
     float finalFoam = max(shoreFoam, rockFoam);
     col = mix(col, vec3(0.96, 0.99, 1.0) * (uSunIntensity * 0.35 + 0.65), finalFoam * 0.72);
 
+    float bio = smoothstep(3.5, 0.4, distToShore) * uIsNight;
+    bio *= 0.5 + 0.5 * sin(uTime * 2.2 + vWorldX * 1.7 + vWorldZ * 1.3);
+    col += vec3(0.04, 0.22, 0.42) * bio * 0.18;
+
     float ripple = sin(vWorldPos.x * 4.5 + uTime * 1.6) * sin(vWorldPos.y * 3.8 - uTime * 1.2);
     col += uWaterColor * ripple * 0.04;
 
     col = saturateColor(col, 1.42);
 
-    vec2 lakePos = vec2(vWorldX, vWorldZ);
-    float distLake = length(lakePos - uLakeCenter);
-    float perimeterFade = smoothstep(uLakeRadius, uLakeRadius - 2.5, distLake);
+    float fieldJunction = smoothstep(-9.0, -5.5, vWorldX);
+    float lakeMask = irregularShore * fieldJunction;
 
     float shoreDepthFade = smoothstep(-2.5, -5.5, vWorldZ);
     col = mix(col, emeraldShallow * 1.15, (1.0 - shoreDepthFade) * 0.22);
 
-    float fieldJunction = smoothstep(-9.0, -5.5, vWorldX);
-    float lakeMask = perimeterFade * fieldJunction;
     col = mix(col * 0.55, col, lakeMask);
 
     float alpha = 0.94 * lakeMask * (1.0 - uScrollProgress * 0.45);

@@ -1,38 +1,29 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { invalidate, useFrame, useThree } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { buildCameraPath, buildLookAtPath } from "../camera/cameraKeyframes";
+import { CAMERA_KEYFRAMES, sampleCameraKeyframes } from "../camera/cameraKeyframes";
 import { useHeroStore } from "@/stores/heroStore";
 
 export interface UseScrollCameraOptions {
-  /** When true, applies mouse parallax for t < 0.4 (Phase 6). */
+  /** When true, applies mouse parallax (fades with scroll). */
   enableParallax?: boolean;
 }
 
 /**
- * GSAP + Lenis scroll-driven camera hook.
- * Phase 0: spline sampling from store scrollProgress with exponential smoothing.
- * Phase 6: full ScrollTrigger + Lenis binding and quaternion slerp.
- *
- * Dependency audit:
- * - enableParallax: stable config flag only.
- * - scrollProgress: read from zustand each frame (no effect deps).
+ * Scroll-keyframed camera — segment lerp between authored keyframes.
+ * Uses lookAt (not quaternion slerp) so the view stays locked on the lake focus target.
  */
 export function useScrollCamera(options: UseScrollCameraOptions = {}) {
   const { enableParallax = false } = options;
   const { camera } = useThree();
 
-  const cameraPathRef = useRef(buildCameraPath());
-  const lookAtPathRef = useRef(buildLookAtPath());
-  const smoothedPos = useRef(new THREE.Vector3());
-  const smoothedLook = useRef(new THREE.Vector3());
-  const targetQuat = useRef(new THREE.Quaternion());
-  const dummy = useRef(new THREE.Object3D());
+  const smoothedPos = useRef(new THREE.Vector3(6.02, 1.42, 4.9));
+  const smoothedLook = useRef(new THREE.Vector3(4.8, 0.9, -2.0));
   const targetPos = useRef(new THREE.Vector3());
   const targetLook = useRef(new THREE.Vector3());
-  const initialized = useRef(false);
+  const prevScroll = useRef(0);
   const mouse = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -48,36 +39,32 @@ export function useScrollCamera(options: UseScrollCameraOptions = {}) {
   }, [enableParallax]);
 
   useFrame((_, delta) => {
-    const scrollProgress = useHeroStore.getState().scrollProgress;
-    const t = Math.max(0, Math.min(1, scrollProgress));
+    const { scrollProgress, elapsed } = useHeroStore.getState();
+    const scrollT = Math.max(0, Math.min(1, scrollProgress));
 
-    cameraPathRef.current.getPoint(t, targetPos.current);
-    lookAtPathRef.current.getPoint(t, targetLook.current);
+    sampleCameraKeyframes(scrollT, CAMERA_KEYFRAMES, targetPos.current, targetLook.current);
 
-    if (enableParallax && t < 0.4) {
-      const parallaxFade = 1 - t * 0.5;
+    if (enableParallax) {
+      const parallaxFade = 1 - scrollT * 0.5;
       targetPos.current.x += mouse.current.x * 0.25 * parallaxFade;
       targetPos.current.y -= mouse.current.y * 0.1 * parallaxFade;
     }
 
-    if (!initialized.current) {
-      smoothedPos.current.copy(targetPos.current);
-      smoothedLook.current.copy(targetLook.current);
-      initialized.current = true;
-    }
+    // Subtle breathing — stronger inside villa, fades as we rise over the lake
+    const breathe = 1 - scrollT * 0.65;
+    targetPos.current.x += Math.sin(elapsed * 0.3) * 0.04 * breathe;
+    targetPos.current.y += Math.cos(elapsed * 0.25) * 0.02 * breathe;
 
-    const posLerp = 1 - Math.pow(0.01, delta);
-    const rotLerp = 1 - Math.pow(0.008, delta);
+    // Faster follow when scroll is moving — avoids lagging through geometry
+    const scrollDelta = Math.abs(scrollT - prevScroll.current);
+    prevScroll.current = scrollT;
+    const baseSmooth = 1 - Math.pow(0.94, delta * 60);
+    const smooth = THREE.MathUtils.clamp(baseSmooth + scrollDelta * 12, baseSmooth, 0.32);
 
-    smoothedPos.current.lerp(targetPos.current, posLerp);
-    smoothedLook.current.lerp(targetLook.current, rotLerp);
+    smoothedPos.current.lerp(targetPos.current, smooth);
+    smoothedLook.current.lerp(targetLook.current, smooth);
 
     camera.position.copy(smoothedPos.current);
-
-    dummy.current.position.copy(camera.position);
-    dummy.current.lookAt(smoothedLook.current);
-    targetQuat.current.copy(dummy.current.quaternion);
-    camera.quaternion.slerp(targetQuat.current, rotLerp);
-    invalidate();
+    camera.lookAt(smoothedLook.current);
   });
 }
