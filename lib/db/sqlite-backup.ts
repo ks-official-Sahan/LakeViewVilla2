@@ -1,16 +1,12 @@
 /**
- * @deprecated Use sqlite-fallback.ts / fallback-provider.ts instead.
+ * @deprecated Use fallback-cache.ts / fallback-provider.ts instead.
  */
-import {
-  isSqliteAvailable,
-  sqliteReadAll,
-  sqliteReplaceModel,
-} from "./sqlite-fallback";
+import { isCacheTierAvailable, cacheReadAll, cacheReplaceModel } from "./fallback-cache";
 
 export const sqliteBackup = {
-  isAvailable: isSqliteAvailable,
+  isAvailable: isCacheTierAvailable,
   write: async (modelName: string, records: unknown[]) => {
-    sqliteReplaceModel(modelName, records as Record<string, unknown>[]);
+    await cacheReplaceModel(modelName, records as Record<string, unknown>[]);
   },
-  read: async (modelName: string) => sqliteReadAll(modelName),
+  read: async (modelName: string) => cacheReadAll(modelName),
 };

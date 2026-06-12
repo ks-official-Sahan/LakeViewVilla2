@@ -10,6 +10,9 @@
 import fs from "fs";
 import path from "path";
 import type Database from "better-sqlite3";
+import { recordIdFor } from "./fallback-records";
+
+export { recordIdFor };
 
 const DEFAULT_SQLITE_PATH = path.join(process.cwd(), "data", "fallback.db");
 
@@ -60,16 +63,6 @@ export function getSqliteDb(): Database.Database | null {
     console.warn("[Fallback DB] SQLite unavailable — using JSON fallback only:", err);
     return null;
   }
-}
-
-export function recordIdFor(modelName: string, record: Record<string, unknown>): string | null {
-  if (modelName === "setting" && typeof record.key === "string") {
-    return record.key;
-  }
-  if (typeof record.id === "string") {
-    return record.id;
-  }
-  return null;
 }
 
 export function sqliteReadAll(modelName: string): any[] {

@@ -1,9 +1,7 @@
 /**
- * Layered offline fallback: SQLite (first) → JSON (last resort).
+ * Layered offline fallback: Turso/libSQL → local SQLite → JSON (last resort).
  *
- * Read path:  SQLite → JSON file (data/fallback_db.json)
- * Write path: SQLite → JSON file (only when SQLite fails)
- * Sync queue: always JSON (data/fallback_sync_queue.json) for Postgres replay
+ * Sync queue: JSON file (data/fallback_sync_queue.json) for Neon replay.
  */
 import {
   readJsonFallbackData,
@@ -13,13 +11,13 @@ import {
   removeQueueItem,
 } from "./fallback-store";
 import {
-  isSqliteAvailable,
+  cacheDeleteRecord,
+  cacheReadAll,
+  cacheReplaceModel,
+  cacheUpsertRecord,
+  isCacheTierAvailable,
   recordIdFor,
-  sqliteDeleteRecord,
-  sqliteReadAll,
-  sqliteReplaceModel,
-  sqliteUpsertRecord,
-} from "./sqlite-fallback";
+} from "./fallback-cache";
 
 export { addToSyncQueue, getSyncQueue, removeQueueItem };
 
@@ -36,46 +34,44 @@ export const FALLBACK_MODELS = [
 
 let jsonHydrated = false;
 
-function hydrateSqliteFromJsonOnce() {
-  if (jsonHydrated || !isSqliteAvailable()) return;
+async function hydrateCacheFromJsonOnce() {
+  if (jsonHydrated || !(await isCacheTierAvailable())) return;
   jsonHydrated = true;
 
   for (const modelName of FALLBACK_MODELS) {
-    const sqliteRows = sqliteReadAll(modelName);
-    if (sqliteRows.length > 0) continue;
+    const cacheRows = await cacheReadAll(modelName);
+    if (cacheRows.length > 0) continue;
 
     const jsonRows = readJsonFallbackData(modelName);
     if (jsonRows.length > 0) {
-      sqliteReplaceModel(modelName, jsonRows);
-      console.log(`[Fallback DB] Hydrated SQLite ${modelName} from JSON (${jsonRows.length} rows)`);
+      await cacheReplaceModel(modelName, jsonRows);
+      console.log(
+        `[Fallback DB] Hydrated cache ${modelName} from JSON (${jsonRows.length} rows)`
+      );
     }
   }
 }
 
-export function readFallbackData(modelName: string): any[] {
-  hydrateSqliteFromJsonOnce();
+export async function readFallbackData(modelName: string): Promise<any[]> {
+  await hydrateCacheFromJsonOnce();
 
-  if (isSqliteAvailable()) {
-    const rows = sqliteReadAll(modelName);
-    if (rows.length > 0) {
-      return rows;
-    }
+  const cacheRows = await cacheReadAll(modelName);
+  if (cacheRows.length > 0) {
+    return cacheRows;
   }
 
   return readJsonFallbackData(modelName);
 }
 
-export function writeFallbackData(modelName: string, records: any[]) {
-  if (isSqliteAvailable()) {
-    const ok = sqliteReplaceModel(modelName, records);
-    if (ok) return;
-  }
+export async function writeFallbackData(modelName: string, records: any[]) {
+  const ok = await cacheReplaceModel(modelName, records);
+  if (ok) return;
 
   writeJsonFallbackData(modelName, records);
 }
 
-function upsertLocalRecord(modelName: string, record: any) {
-  if (isSqliteAvailable() && sqliteUpsertRecord(modelName, record)) {
+async function upsertLocalRecord(modelName: string, record: any) {
+  if (await cacheUpsertRecord(modelName, record)) {
     return;
   }
 
@@ -94,7 +90,7 @@ function upsertLocalRecord(modelName: string, record: any) {
   writeJsonFallbackData(modelName, existing);
 }
 
-function deleteLocalRecord(modelName: string, where: Record<string, unknown>) {
+async function deleteLocalRecord(modelName: string, where: Record<string, unknown>) {
   const id =
     modelName === "setting" && typeof where.key === "string"
       ? where.key
@@ -104,7 +100,7 @@ function deleteLocalRecord(modelName: string, where: Record<string, unknown>) {
 
   if (!id) return;
 
-  if (isSqliteAvailable() && sqliteDeleteRecord(modelName, id)) {
+  if (await cacheDeleteRecord(modelName, id)) {
     return;
   }
 
@@ -114,8 +110,11 @@ function deleteLocalRecord(modelName: string, where: Record<string, unknown>) {
   writeJsonFallbackData(modelName, filtered);
 }
 
-function findLocalRecord(modelName: string, where: Record<string, unknown>): any | null {
-  const records = readFallbackData(modelName);
+async function findLocalRecord(
+  modelName: string,
+  where: Record<string, unknown>
+): Promise<any | null> {
+  const records = await readFallbackData(modelName);
   return (
     records.find((r) => {
       for (const [key, val] of Object.entries(where)) {
@@ -126,7 +125,7 @@ function findLocalRecord(modelName: string, where: Record<string, unknown>): any
   );
 }
 
-export function applyOfflineCreate(modelName: string, data: Record<string, unknown>) {
+export async function applyOfflineCreate(modelName: string, data: Record<string, unknown>) {
   const now = new Date().toISOString();
   const record =
     modelName === "setting"
@@ -138,33 +137,36 @@ export function applyOfflineCreate(modelName: string, data: Record<string, unkno
           updatedAt: (data.updatedAt as string) ?? now,
         };
 
-  upsertLocalRecord(modelName, record);
+  await upsertLocalRecord(modelName, record);
   return record;
 }
 
-export function applyOfflineUpdate(
+export async function applyOfflineUpdate(
   modelName: string,
   where: Record<string, unknown>,
   data: Record<string, unknown>
 ) {
-  const existing = findLocalRecord(modelName, where);
+  const existing = await findLocalRecord(modelName, where);
   const base = existing ?? where;
   const record = {
     ...base,
     ...data,
     updatedAt: new Date().toISOString(),
   };
-  upsertLocalRecord(modelName, record);
+  await upsertLocalRecord(modelName, record);
   return record;
 }
 
-export function applyOfflineDelete(modelName: string, where: Record<string, unknown>) {
-  const existing = findLocalRecord(modelName, where);
-  deleteLocalRecord(modelName, where);
+export async function applyOfflineDelete(
+  modelName: string,
+  where: Record<string, unknown>
+) {
+  const existing = await findLocalRecord(modelName, where);
+  await deleteLocalRecord(modelName, where);
   return existing ?? { ...where };
 }
 
-export function applyOfflineUpsert(
+export async function applyOfflineUpsert(
   modelName: string,
   create: Record<string, unknown>,
   update: Record<string, unknown>,
@@ -178,15 +180,15 @@ export function applyOfflineUpsert(
         ? { id: create.id }
         : null);
 
-  if (whereKey && findLocalRecord(modelName, whereKey)) {
+  if (whereKey && (await findLocalRecord(modelName, whereKey))) {
     return applyOfflineUpdate(modelName, whereKey, { ...create, ...update });
   }
 
   return applyOfflineCreate(modelName, { ...create, ...update });
 }
 
-export async function warmSqliteFromPostgres(client: Record<string, unknown>) {
-  if (!isSqliteAvailable()) return;
+export async function warmCacheFromPostgres(client: Record<string, unknown>) {
+  if (!(await isCacheTierAvailable())) return;
 
   for (const modelName of FALLBACK_MODELS) {
     try {
@@ -195,12 +197,15 @@ export async function warmSqliteFromPostgres(client: Record<string, unknown>) {
 
       const records = await model.findMany();
       if (records.length > 0) {
-        sqliteReplaceModel(modelName, records);
+        await cacheReplaceModel(modelName, records);
       }
     } catch (err) {
       console.warn(`[Fallback DB] Warm cache skipped for ${modelName}:`, err);
     }
   }
 
-  console.log("[Fallback DB] SQLite warm cache complete");
+  console.log("[Fallback DB] Cache warm complete (Turso/libSQL → local SQLite)");
 }
+
+/** @deprecated Use warmCacheFromPostgres */
+export const warmSqliteFromPostgres = warmCacheFromPostgres;

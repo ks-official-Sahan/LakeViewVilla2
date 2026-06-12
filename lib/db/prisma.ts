@@ -8,7 +8,7 @@ import {
   addToSyncQueue,
   getSyncQueue,
   removeQueueItem,
-  warmSqliteFromPostgres,
+  warmCacheFromPostgres,
   applyOfflineCreate,
   applyOfflineUpdate,
   applyOfflineDelete,
@@ -67,32 +67,32 @@ async function syncPendingQueue(client: PrismaClient) {
   isSyncing = false;
 }
 
-function readFallbackMany(modelName: string, queryArgs: any): any[] {
-  const records = readFallbackData(modelName);
-  if (!queryArgs || !queryArgs.where) return records;
+function readFallbackMany(modelName: string, queryArgs: any): Promise<any[]> {
+  return readFallbackData(modelName).then((records) => {
+    if (!queryArgs || !queryArgs.where) return records;
 
-  return records.filter((r) => {
-    for (const [key, val] of Object.entries(queryArgs.where)) {
-      if (val !== undefined && r[key] !== val) {
-        if (typeof val === "object" && val !== null) {
-          if ("equals" in val && r[key] !== (val as any).equals) return false;
-          if ("in" in val && Array.isArray((val as any).in) && !(val as any).in.includes(r[key]))
+    return records.filter((r) => {
+      for (const [key, val] of Object.entries(queryArgs.where)) {
+        if (val !== undefined && r[key] !== val) {
+          if (typeof val === "object" && val !== null) {
+            if ("equals" in val && r[key] !== (val as any).equals) return false;
+            if ("in" in val && Array.isArray((val as any).in) && !(val as any).in.includes(r[key]))
+              return false;
+          } else {
             return false;
-        } else {
-          return false;
+          }
         }
       }
-    }
-    return true;
+      return true;
+    });
   });
 }
 
-function readFallbackFirst(modelName: string, queryArgs: any): any | null {
-  const matched = readFallbackMany(modelName, queryArgs);
-  return matched[0] || null;
+function readFallbackFirst(modelName: string, queryArgs: any): Promise<any | null> {
+  return readFallbackMany(modelName, queryArgs).then((matched) => matched[0] || null);
 }
 
-function handleOfflineMethod(modelName: string, methodName: string, args: any[]): any {
+async function handleOfflineMethod(modelName: string, methodName: string, args: any[]): Promise<any> {
   if (methodName === "findMany") {
     return readFallbackMany(modelName, args[0]);
   }
@@ -100,12 +100,13 @@ function handleOfflineMethod(modelName: string, methodName: string, args: any[])
     return readFallbackFirst(modelName, args[0]);
   }
   if (methodName === "count") {
-    return readFallbackMany(modelName, args[0]).length;
+    const rows = await readFallbackMany(modelName, args[0]);
+    return rows.length;
   }
 
   if (methodName === "create") {
     const data = args[0]?.data ?? {};
-    const record = applyOfflineCreate(modelName, data);
+    const record = await applyOfflineCreate(modelName, data);
     addToSyncQueue("CREATE", modelName, data);
     return record;
   }
@@ -113,14 +114,14 @@ function handleOfflineMethod(modelName: string, methodName: string, args: any[])
   if (methodName === "update") {
     const where = args[0]?.where ?? {};
     const data = args[0]?.data ?? {};
-    const record = applyOfflineUpdate(modelName, where, data);
+    const record = await applyOfflineUpdate(modelName, where, data);
     addToSyncQueue("UPDATE", modelName, { where, data });
     return record;
   }
 
   if (methodName === "delete") {
     const where = args[0]?.where ?? {};
-    const record = applyOfflineDelete(modelName, where);
+    const record = await applyOfflineDelete(modelName, where);
     addToSyncQueue("DELETE", modelName, { where });
     return record;
   }
@@ -129,7 +130,7 @@ function handleOfflineMethod(modelName: string, methodName: string, args: any[])
     const create = args[0]?.create ?? {};
     const update = args[0]?.update ?? {};
     const where = args[0]?.where ?? {};
-    const record = applyOfflineUpsert(modelName, create, update, where);
+    const record = await applyOfflineUpsert(modelName, create, update, where);
     addToSyncQueue("UPSERT", modelName, { where, create, update });
     return record;
   }
@@ -160,8 +161,8 @@ function createResilientPrismaClient(): any {
   function maybeWarmCache() {
     if (!hasRealDatabase || cacheWarmed || isDbOffline) return;
     cacheWarmed = true;
-    warmSqliteFromPostgres(rawClient as unknown as Record<string, unknown>).catch((err) => {
-      console.warn("[Fallback DB] SQLite warm cache failed:", err);
+    warmCacheFromPostgres(rawClient as unknown as Record<string, unknown>).catch((err) => {
+      console.warn("[Fallback DB] Cache warm failed:", err);
       cacheWarmed = false;
     });
   }
@@ -193,7 +194,7 @@ function createResilientPrismaClient(): any {
                 const modelName = prop.toString();
 
                 if (isDbOffline) {
-                  const offlineResult = handleOfflineMethod(modelName, methodName, args);
+                  const offlineResult = await handleOfflineMethod(modelName, methodName, args);
                   if (offlineResult !== undefined) return offlineResult;
                 }
 
@@ -219,7 +220,7 @@ function createResilientPrismaClient(): any {
                   if (openCircuit) {
                     isDbOffline = true;
                     console.warn(
-                      `[Fallback DB] Database query failed. Circuit breaker opened. Falling back to SQLite → JSON. Method: ${methodName} on ${modelName}. Error: ${err?.message || err}`
+                      `[Fallback DB] Database query failed. Circuit breaker opened. Falling back to Turso/libSQL → SQLite → JSON. Method: ${methodName} on ${modelName}. Error: ${err?.message || err}`
                     );
                   } else {
                     console.warn(
@@ -228,7 +229,7 @@ function createResilientPrismaClient(): any {
                     throw err;
                   }
 
-                  const offlineResult = handleOfflineMethod(modelName, methodName, args);
+                  const offlineResult = await handleOfflineMethod(modelName, methodName, args);
                   if (offlineResult !== undefined) return offlineResult;
 
                   throw err;
