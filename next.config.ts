@@ -137,7 +137,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   // Packages that must run in Node.js (not bundled by webpack)
-  serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  serverExternalPackages: ["@prisma/client", "bcryptjs", "better-sqlite3"],
 
   // R3F / Three.js — require browser APIs, must be excluded from SSR
   transpilePackages: ["three", "@react-three/fiber", "@react-three/drei"],
