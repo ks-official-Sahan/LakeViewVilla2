@@ -4,7 +4,6 @@ import type { ComponentType } from "react";
 
 export function ClientEffects() {
   const [mods, setMods] = useState<{
-    SmoothScroll?: ComponentType;
     CursorFollower?: ComponentType;
     RippleBackground?: ComponentType;
   }>({});
@@ -21,15 +20,12 @@ export function ClientEffects() {
       process.env.NEXT_PUBLIC_FEATURE_WEBGL_BG === "true";
 
     const load = async () => {
-      const [{ SmoothScroll }, { CursorFollower }] = await Promise.all([
-        import("@/components/motion/smooth-scroll"),
-        import("@/components/motion/cursor-follower"),
-      ]);
+      const { CursorFollower } = await import("@/components/motion/cursor-follower");
       const webgl =
         enableWebGL && !prefersReducedMotion
           ? (await import("@/components/webgl/ripple-background")).default
           : undefined;
-      setMods({ SmoothScroll, CursorFollower, RippleBackground: webgl });
+      setMods({ CursorFollower, RippleBackground: webgl });
     };
 
     // Idle or first interaction — whichever comes first
@@ -60,12 +56,10 @@ export function ClientEffects() {
     }
   }, []);
 
-  const { SmoothScroll, CursorFollower, RippleBackground } = mods;
+  const { CursorFollower, RippleBackground } = mods;
   return (
     <>
       {RippleBackground ? <RippleBackground /> : null}
-      {SmoothScroll ? <SmoothScroll /> : null}
-      {/* cursor follower only on non-coarse pointers – handled inside the component */}
       {CursorFollower ? <CursorFollower /> : null}
       <div 
         aria-hidden="true"

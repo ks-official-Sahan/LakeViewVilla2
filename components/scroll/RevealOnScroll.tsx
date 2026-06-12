@@ -190,15 +190,13 @@ export function RevealOnScroll({
     batch,
   ]);
 
-  const Component = Tag as ElementType;
-
-  return (
-    <Component
-      ref={ref}
-      className={className}
-      style={{ willChange: "transform, opacity", ...style }}
-    >
-      {children}
-    </Component>
+  return React.createElement(
+    Tag,
+    {
+      ref,
+      className,
+      style: { willChange: "transform, opacity", ...style },
+    },
+    children,
   );
 }

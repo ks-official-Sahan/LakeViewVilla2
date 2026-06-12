@@ -99,7 +99,8 @@
     "vaul": "1.1.2",
     "web-vitals": "5.1.0",
     "ws": "^8.20.0",
-    "zod": "3.25.67"
+    "zod": "3.25.67",
+    "zustand": "^4.5.7"
   },
   "devDependencies": {
     "@lhci/cli": "0.14.0",

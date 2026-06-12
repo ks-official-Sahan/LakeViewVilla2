@@ -10,13 +10,21 @@ import { trackContact } from "@/lib/analytics";
 import { HeroText } from "./hero-text";
 import { StoryReveal } from "./story-reveal";
 import { BookingCallout } from "./booking-callout";
+import { HeroFallback } from "@/components/hero/HeroFallback";
+import { isHeroR3FEnabled } from "@/components/hero/lib/feature-flag";
 
 const HeroCanvas = dynamic(() => import("@/components/webgl/HeroCanvas"), {
   ssr: false,
-  loading: () => (
-    <div className="absolute inset-0 bg-[#0b2027] before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer-translate_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-teal-500/10 before:to-transparent" />
-  ),
+  loading: () => <HeroFallback />,
 });
+
+const HeroScene = dynamic(() => import("@/components/hero/HeroScene"), {
+  ssr: false,
+  loading: () => <HeroFallback />,
+});
+
+/** ~300vh scroll pin: 100vh hero + 200% additional scroll distance */
+const HERO_PIN_END = "+=200%";
 
 interface ScrollStoryProps {
   cmsHero?: {
@@ -38,6 +46,11 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const [canvasProgress, setCanvasProgress] = useState(0);
+  const [useR3F, setUseR3F] = useState(false);
+
+  useEffect(() => {
+    setUseR3F(isHeroR3FEnabled());
+  }, []);
 
   const getLocalTime = () => {
     const now = new Date();
@@ -87,7 +100,7 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
       const heroPin = ScrollTrigger.create({
         trigger: heroRef.current,
         start: "top top",
-        end: "+=130%",
+        end: HERO_PIN_END,
         pin: true,
         pinSpacing: true,
         scrub: 0.8,
@@ -105,7 +118,7 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
           scrollTrigger: {
             trigger: heroRef.current,
             start: "top top",
-            end: "+=65%",
+            end: "+=100%",
             scrub: 0.6,
           },
         });
@@ -120,7 +133,7 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
             scrollTrigger: {
               trigger: heroRef.current,
               start: "top top",
-              end: "+=130%",
+              end: HERO_PIN_END,
               scrub: 0.8,
             },
           }
@@ -170,12 +183,17 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
       <section
         ref={heroRef}
         id="home"
+        data-hero-section
         aria-label="Lake View Villa — hero"
         className="relative flex flex-col items-center justify-center h-svh w-full bg-[var(--hero-bg)] transition-colors duration-300"
       >
         <div ref={canvasWrapRef} className="absolute inset-0">
-          <Suspense fallback={null}>
-            <HeroCanvas scrollProgress={canvasProgress} timeOfDay={timeOfDay} />
+          <Suspense fallback={<HeroFallback />}>
+            {useR3F ? (
+              <HeroScene scrollProgress={canvasProgress} timeOfDay={timeOfDay} />
+            ) : (
+              <HeroCanvas scrollProgress={canvasProgress} timeOfDay={timeOfDay} />
+            )}
           </Suspense>
         </div>
 

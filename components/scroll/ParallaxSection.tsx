@@ -61,16 +61,14 @@ export function ParallaxSection({
     return () => ctx.revert();
   }, [speed, axis, prefersReduced]);
 
-  const Component = Tag as ElementType;
-
-  return (
-    <Component
-      ref={ref}
-      className={`will-change-transform ${className}`}
-      style={style}
-    >
-      {children}
-    </Component>
+  return React.createElement(
+    Tag,
+    {
+      ref,
+      className: `will-change-transform ${className}`,
+      style,
+    },
+    children,
   );
 }
 
