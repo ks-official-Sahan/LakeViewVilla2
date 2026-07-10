@@ -78,7 +78,7 @@ export function Navigation() {
                 className="h-10 w-10"
                 priority
               />
-              <span className="text-lg md:text-xl title-shadow">
+              <span id="nav-logo-text" className="text-lg md:text-xl title-shadow">
                 Lake View Villa
               </span>
             </Link>

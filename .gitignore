@@ -38,3 +38,13 @@ schema.json
 .gemini/
 gemini.md
 gha-creds-*.json
+.agents/
+.claude/
+LakeViewVilla.zip
+Claude.md
+Gemini.md
+agents.md
+.lighthouseci/
+docs/
+context/
+test-results/

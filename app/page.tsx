@@ -2,8 +2,7 @@ import SeoJsonLd from "@/components/SeoJsonLd";
 import { Highlights } from "@/components/sections/highlights";
 import { Footer } from "@/components/layout/footer";
 import { BelowFold } from "@/components/layout/below-fold";
-// import { PinnedHero } from "@/components/sections/pinned-hero";
-import { PinnedHero } from "@/components/sections/hero";
+import { ScrollStory } from "@/components/sections/scroll-story";
 
 export default function HomePage() {
   return (
@@ -13,7 +12,7 @@ export default function HomePage() {
           { name: "Home", url: "https://lakeviewvillatangalle.com" },
         ]}
       />
-      <PinnedHero nextSectionId="highlights" />
+      <ScrollStory nextSectionId="highlights" />
       <section id="highlights">
         <Highlights />
       </section>

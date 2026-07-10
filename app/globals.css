@@ -508,3 +508,12 @@ a:hover .hover-underline-lux::after,
     height: 2px;
   }
 }
+
+/* ------------------------------- Hero Fog Gradient Mask ----------------------------- */
+.hero-fog {
+  background: linear-gradient(180deg, transparent 0%, transparent 22%, rgba(244,247,246,0.08) 38%, rgba(244,247,246,0.55) 60%, rgba(244,247,246,0.93) 78%, #f4f7f6 100%);
+}
+
+.dark .hero-fog {
+  background: linear-gradient(180deg, transparent 0%, transparent 22%, rgba(10,15,16,0.08) 38%, rgba(10,15,16,0.55) 60%, rgba(10,15,16,0.93) 78%, #0a0f10 100%);
+}
