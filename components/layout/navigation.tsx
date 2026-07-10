@@ -154,7 +154,7 @@ export function Navigation() {
                 priority
               />
             </div>
-            <span className="hidden sm:flex items-baseline gap-1 font-[var(--font-display)] font-bold text-sm tracking-wide">
+            <span id="nav-logo-text" className="hidden sm:flex items-baseline gap-1 font-[var(--font-display)] font-bold text-sm tracking-wide">
               Lake View{" "}
               <span className="italic text-[var(--color-gold)] font-[var(--font-serif)] font-normal">Villa</span>
             </span>
