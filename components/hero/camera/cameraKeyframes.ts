@@ -34,6 +34,21 @@ export const CAMERA_KEYFRAMES: CameraKeyframe[] = [
   { t: 1.0, pos: new THREE.Vector3(-0.5, 6.4, -12.5), look: LAKE_FOCUS_FAR.clone() },
 ];
 
+/**
+ * Maps scroll 0–1 to camera path t so ~55% of scroll covers villa interior + exit,
+ * and the final 45% covers road + lake rise (more time inside, deliberate lake reveal).
+ */
+export function mapScrollToCameraT(scroll: number): number {
+  const s = Math.max(0, Math.min(1, scroll));
+  const pathExitT = 0.66;
+  const scrollExitShare = 0.55;
+
+  if (s <= scrollExitShare) {
+    return (s / scrollExitShare) * pathExitT;
+  }
+  return pathExitT + ((s - scrollExitShare) / (1 - scrollExitShare)) * (1 - pathExitT);
+}
+
 export function sampleCameraKeyframes(
   scroll: number,
   keyframes: CameraKeyframe[],

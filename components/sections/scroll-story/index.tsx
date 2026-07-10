@@ -12,6 +12,7 @@ import { StoryReveal } from "./story-reveal";
 import { BookingCallout } from "./booking-callout";
 import { HeroFallback } from "@/components/hero/HeroFallback";
 import { isHeroLegacyEnabled } from "@/components/hero/lib/feature-flag";
+import { syncHeroScroll } from "@/stores/heroStore";
 
 const HeroCanvas = dynamic(() => import("@/components/webgl/HeroCanvas"), {
   ssr: false,
@@ -97,20 +98,25 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
     () => {
       const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+      const triggers: ScrollTrigger[] = [];
+
       const heroPin = ScrollTrigger.create({
         trigger: heroRef.current,
         start: "top top",
         end: HERO_PIN_END,
         pin: true,
         pinSpacing: true,
-        scrub: 0.8,
+        scrub: true,
         onUpdate(self) {
-          setCanvasProgress(self.progress);
+          const p = self.progress;
+          syncHeroScroll(p);
+          setCanvasProgress(p);
         },
       });
+      triggers.push(heroPin);
 
       if (!prefersReduced) {
-        gsap.to(heroTextRef.current, {
+        const textTween = gsap.to(heroTextRef.current, {
           y: -120,
           opacity: 0,
           filter: "blur(6px)",
@@ -123,7 +129,7 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
           },
         });
 
-        gsap.fromTo(
+        const canvasTween = gsap.fromTo(
           canvasWrapRef.current,
           { scale: 1, filter: "brightness(1)" },
           {
@@ -138,11 +144,15 @@ export function ScrollStory({ cmsHero }: ScrollStoryProps) {
             },
           }
         );
+
+        if (textTween.scrollTrigger) triggers.push(textTween.scrollTrigger);
+        if (canvasTween.scrollTrigger) triggers.push(canvasTween.scrollTrigger);
       }
 
+      syncHeroScroll(heroPin.progress);
+
       return () => {
-        heroPin.kill();
-        ScrollTrigger.getAll().forEach((t) => t.kill());
+        triggers.forEach((t) => t.kill());
       };
     },
     { scope: wrapperRef }

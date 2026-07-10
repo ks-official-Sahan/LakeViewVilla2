@@ -1,7 +1,7 @@
 "use client";
 
 import { invalidate } from "@react-three/fiber";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { useHeroStore } from "@/stores/heroStore";
 import { useEnvDerived, useEnvInterpolation } from "./hooks/useEnvInterpolation";
 import { MOBILE_BREAKPOINT } from "./constants";
@@ -26,7 +26,7 @@ export function HeroSceneSync({ scrollProgress, timeOfDay }: HeroSceneSyncProps)
   const env = useEnvInterpolation(timeOfDay);
   const derived = useEnvDerived(timeOfDay);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setScrollProgress(scrollProgress);
     invalidate();
   }, [scrollProgress, setScrollProgress]);

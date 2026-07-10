@@ -24,6 +24,11 @@ export interface HeroSceneState {
   setIsMobile: (m: boolean) => void;
 }
 
+/** Synchronous scroll write — call from ScrollTrigger onUpdate (avoids React effect lag). */
+export function syncHeroScroll(scrollProgress: number) {
+  useHeroStore.setState({ scrollProgress });
+}
+
 export const useHeroStore = create<HeroSceneState>((set) => ({
   timeOfDay: 10,
   scrollProgress: 0,
