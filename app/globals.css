@@ -517,3 +517,12 @@ a:hover .hover-underline-lux::after,
 .dark .hero-fog {
   background: linear-gradient(180deg, transparent 0%, transparent 22%, rgba(10,15,16,0.08) 38%, rgba(10,15,16,0.55) 60%, rgba(10,15,16,0.93) 78%, #0a0f10 100%);
 }
+
+@keyframes cardShine {
+  0% {
+    transform: translateX(-20%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}

@@ -250,17 +250,6 @@ export function Highlights() {
           ))}
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes cardShine {
-          0% {
-            transform: translateX(-20%);
-          }
-          100% {
-            transform: translateX(120%);
-          }
-        }
-      `}</style>
     </section>
   );
 }
