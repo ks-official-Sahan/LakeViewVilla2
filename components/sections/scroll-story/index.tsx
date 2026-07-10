@@ -124,7 +124,7 @@ export function ScrollStory({ nextSectionId }: Props) {
             end: "bottom bottom",
             scrub: true,
             pin: innerStickyRef.current,
-            pinSpacing: false,
+            pinSpacing: true,
           },
         });
 
@@ -155,6 +155,9 @@ export function ScrollStory({ nextSectionId }: Props) {
         tl.to(cloudRef.current, { opacity: 0, ease: "power1.inOut", duration: 0.3 }, 0.40);
         tl.to(logoStrokeRef.current, { opacity: 0, ease: "power1.inOut", duration: 0.3 }, 0.40);
         tl.to(logoClipRef.current, { opacity: 1, ease: "power1.inOut", duration: 0.3 }, 0.40);
+
+        // Fade out the video background (revealing the parent's solid bg-background)
+        // tl.to(bgImageRef2.current, { opacity: 0, ease: "power1.inOut", duration: 0.3 }, 0.65);
 
         tl.to(
           centerLogoRef.current,
@@ -224,7 +227,7 @@ export function ScrollStory({ nextSectionId }: Props) {
           }}
         >
           <div
-            className="w-full h-full will-change-transform filter brightness-[0.55] md:brightness-[0.6]"
+            className="relative w-full h-full will-change-transform filter brightness-[0.55] md:brightness-[0.6]"
             style={{
               animation: prefersReducedMotion ? "none" : "ken-burns 24s ease-out forwards",
             }}

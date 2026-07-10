@@ -151,7 +151,7 @@ export function Highlights() {
     <section
       id="highlights"
       ref={sectionRef}
-      className="relative py-28 md:py-32"
+      className="relative py-28 md:py-32 bg-background z-30"
       aria-labelledby="highlights-heading"
     >
       {/* Decorative background */}
