@@ -1,3 +1,7 @@
+/**
+ * JSON last-resort offline store + sync queue for Postgres replay.
+ * Prefer reads/writes through fallback-provider.ts (SQLite → JSON).
+ */
 import fs from "fs";
 import path from "path";
 
@@ -11,7 +15,7 @@ function ensureDirectories() {
   }
 }
 
-export function readFallbackData(modelName: string): any[] {
+export function readJsonFallbackData(modelName: string): any[] {
   ensureDirectories();
   if (!fs.existsSync(STORE_PATH)) return [];
   try {
@@ -24,7 +28,7 @@ export function readFallbackData(modelName: string): any[] {
   }
 }
 
-export function writeFallbackData(modelName: string, records: any[]) {
+export function writeJsonFallbackData(modelName: string, records: any[]) {
   ensureDirectories();
   try {
     let current: Record<string, any[]> = {};

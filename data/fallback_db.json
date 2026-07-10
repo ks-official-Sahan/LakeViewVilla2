@@ -207,6 +207,268 @@
       "ipAddress": null,
       "userAgent": null,
       "timestamp": "2026-06-10T07:54:03.561Z"
+    },
+    {
+      "id": "cmq9hf0h6000004l13wzdcw2n",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-11T12:36:40.362Z"
+    },
+    {
+      "id": "cmq9hfwqr000104l1uthh41hz",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-11T12:37:22.179Z"
+    },
+    {
+      "id": "cmq9hgbd4000204l18qyp8hf1",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-11T12:37:41.128Z"
+    },
+    {
+      "id": "cmq9hmj7l000004jru4gufwl7",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "UPDATE",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "action": "PASSWORD_RESET"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-11T12:42:31.233Z"
+    },
+    {
+      "id": "cmq9hn531000204jrm0tq00hu",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "CREATE",
+      "entityType": "User",
+      "entityId": "cmq9hn52o000104jrsfx851ty",
+      "oldValue": null,
+      "newValue": {
+        "role": "MANAGER",
+        "email": "chathura@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-11T12:42:59.582Z"
+    },
+    {
+      "id": "cmq9hnbi1000304jrja1eg5zv",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGOUT",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": null,
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-11T12:43:07.897Z"
+    },
+    {
+      "id": "cmq9ho9cu0000ycb8tuv54a1o",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-11T12:43:51.774Z"
+    },
+    {
+      "id": "cmq9hsflx0001ycb85grnoy8k",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGOUT",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": null,
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-11T12:47:06.501Z"
+    },
+    {
+      "id": "cmq9ii6fz000504jruslqp5x8",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "CREATE",
+      "entityType": "BlogPost",
+      "entityId": "cmq9ii6ec000404jrdjbr41w5",
+      "oldValue": null,
+      "newValue": {
+        "slug": "vi",
+        "title": "vi"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-11T13:07:07.679Z"
+    },
+    {
+      "id": "cmqaasehw0000qob8qrump900",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "LOGIN",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "email": "sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-12T02:18:53.924Z"
+    },
+    {
+      "id": "cmqaaxcrh0001qob8c755osbf",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "UPDATE",
+      "entityType": "User",
+      "entityId": "cmpy0lqk000008cb8gsskhoo4",
+      "oldValue": null,
+      "newValue": {
+        "name": "Sahan",
+        "email": "sahan@gmail.com",
+        "selfService": true
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-12T02:22:44.958Z"
+    },
+    {
+      "id": "cmqaaynmi0003qob8iutqco0s",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "CREATE",
+      "entityType": "User",
+      "entityId": "cmqaayn8j0002qob8zb2k5o24",
+      "oldValue": null,
+      "newValue": {
+        "role": "MANAGER",
+        "email": "kingsahan380w@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-12T02:23:45.691Z"
+    },
+    {
+      "id": "cmqab0h8f0004qob8fkuluqtb",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "DELETE",
+      "entityType": "User",
+      "entityId": "cmqaayn8j0002qob8zb2k5o24",
+      "oldValue": null,
+      "newValue": null,
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-12T02:25:10.719Z"
+    },
+    {
+      "id": "cmqab44w50006qob8edujo3hn",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "CREATE",
+      "entityType": "User",
+      "entityId": "cmqab44ky0005qob8chx4u69e",
+      "oldValue": null,
+      "newValue": {
+        "role": "MANAGER",
+        "email": "kingsahan380w@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-12T02:28:01.349Z"
+    },
+    {
+      "id": "cmqabab6b0007qob8yc1xujyr",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "DELETE",
+      "entityType": "User",
+      "entityId": "cmqab44ky0005qob8chx4u69e",
+      "oldValue": null,
+      "newValue": null,
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-12T02:32:49.428Z"
+    },
+    {
+      "id": "cmqabb2q80009qob81a87e2py",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "CREATE",
+      "entityType": "User",
+      "entityId": "cmqabb29m0008qob8c6iaev5j",
+      "oldValue": null,
+      "newValue": {
+        "role": "DEVELOPER",
+        "email": "ks.official.sahan@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-12T02:33:25.136Z"
+    },
+    {
+      "id": "cmqabd2jb000bqob8ypl8c5z6",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "CREATE",
+      "entityType": "User",
+      "entityId": "cmqabd1zc000aqob8xmqxncsq",
+      "oldValue": null,
+      "newValue": {
+        "role": "MANAGER",
+        "email": "janithsadika50@gmail.com"
+      },
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-12T02:34:58.199Z"
+    },
+    {
+      "id": "cmqabd7vs000cqob8y66u1h29",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "DELETE",
+      "entityType": "User",
+      "entityId": "cmq9hn52o000104jrsfx851ty",
+      "oldValue": null,
+      "newValue": null,
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-12T02:35:05.128Z"
+    },
+    {
+      "id": "cmqabdz8y000dqob85ocjkepc",
+      "userId": "cmpy0lqk000008cb8gsskhoo4",
+      "action": "UPDATE_SETTING",
+      "entityType": "Setting",
+      "entityId": "site.name",
+      "oldValue": null,
+      "newValue": null,
+      "ipAddress": null,
+      "userAgent": null,
+      "timestamp": "2026-06-12T02:35:40.594Z"
     }
   ],
   "mediaAsset": [
@@ -259,6 +521,68 @@
       "uploadedById": "cmpy0lqk000008cb8gsskhoo4",
       "createdAt": "2026-06-08T10:40:21.111Z",
       "updatedAt": "2026-06-08T10:40:21.111Z"
+    }
+  ],
+  "user": [
+    {
+      "id": "cmpy0lqk000008cb8gsskhoo4",
+      "email": "sahan@gmail.com",
+      "name": "Sahan",
+      "passwordHash": "$2b$12$niw3PmOh8za3sMD3Z4O3aeKXGSXvjDxTW6h04pl9dE0GdogGEZSgG",
+      "role": "DEVELOPER",
+      "avatar": null,
+      "emailVerified": null,
+      "createdAt": "2026-06-03T12:00:32.688Z",
+      "updatedAt": "2026-06-12T02:22:44.135Z"
+    },
+    {
+      "id": "cmqabb29m0008qob8c6iaev5j",
+      "email": "ks.official.sahan@gmail.com",
+      "name": "Dev",
+      "passwordHash": "$2b$12$G5D7YT7FkbLj7m1iM9xWCunZuSMsVGsk1.1U7gA.RwmDpu2128qk.",
+      "role": "DEVELOPER",
+      "avatar": null,
+      "emailVerified": null,
+      "createdAt": "2026-06-12T02:33:24.538Z",
+      "updatedAt": "2026-06-12T02:33:24.538Z"
+    },
+    {
+      "id": "cmqabd1zc000aqob8xmqxncsq",
+      "email": "janithsadika50@gmail.com",
+      "name": "Owner",
+      "passwordHash": "$2b$12$CHnXIzgzPfl/fvmRzKrVgusycrhgZFmBZhin2cFYgQOPi7clUhuGO",
+      "role": "MANAGER",
+      "avatar": null,
+      "emailVerified": null,
+      "createdAt": "2026-06-12T02:34:57.480Z",
+      "updatedAt": "2026-06-12T02:34:57.480Z"
+    }
+  ],
+  "setting": [
+    {
+      "key": "media.categories",
+      "value": "[\"all\",\"indoor\",\"outdoor\",\"kitchen\",\"bedroom-1\",\"bedroom-2\",\"bathroom\",\"with-guests\",\"garden\",\"lake-view\",\"drone\",\"dining\"]",
+      "updatedAt": "2026-06-03T12:00:35.188Z"
+    },
+    {
+      "key": "site.contact.email",
+      "value": "\"janithsadika50@gmail.com\"",
+      "updatedAt": "2026-06-03T12:00:34.714Z"
+    },
+    {
+      "key": "site.contact.whatsapp",
+      "value": "\"+94701164056\"",
+      "updatedAt": "2026-06-03T12:00:34.346Z"
+    },
+    {
+      "key": "site.description",
+      "value": "\"Private vacation rental offering panoramic lake views in Tangalle, Sri Lanka.\"",
+      "updatedAt": "2026-06-03T12:00:33.669Z"
+    },
+    {
+      "key": "site.name",
+      "value": "Lake View Villa Tangalle",
+      "updatedAt": "2026-06-12T02:35:40.016Z"
     }
   ]
 }

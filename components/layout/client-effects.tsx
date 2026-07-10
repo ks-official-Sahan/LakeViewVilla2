@@ -4,7 +4,6 @@ import type { ComponentType } from "react";
 
 export function ClientEffects() {
   const [mods, setMods] = useState<{
-    SmoothScroll?: ComponentType;
     CursorFollower?: ComponentType;
     RippleBackground?: ComponentType;
   }>({});
@@ -21,15 +20,12 @@ export function ClientEffects() {
       process.env.NEXT_PUBLIC_FEATURE_WEBGL_BG === "true";
 
     const load = async () => {
-      const [{ SmoothScroll }, { CursorFollower }] = await Promise.all([
-        import("@/components/motion/smooth-scroll"),
-        import("@/components/motion/cursor-follower"),
-      ]);
+      const { CursorFollower } = await import("@/components/motion/cursor-follower");
       const webgl =
         enableWebGL && !prefersReducedMotion
           ? (await import("@/components/webgl/ripple-background")).default
           : undefined;
-      setMods({ SmoothScroll, CursorFollower, RippleBackground: webgl });
+      setMods({ CursorFollower, RippleBackground: webgl });
     };
 
     // Idle or first interaction — whichever comes first
@@ -60,13 +56,18 @@ export function ClientEffects() {
     }
   }, []);
 
-  const { SmoothScroll, CursorFollower, RippleBackground } = mods;
+  const { CursorFollower, RippleBackground } = mods;
   return (
     <>
       {RippleBackground ? <RippleBackground /> : null}
-      {SmoothScroll ? <SmoothScroll /> : null}
-      {/* cursor follower only on non-coarse pointers – handled inside the component */}
       {CursorFollower ? <CursorFollower /> : null}
+      <div 
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-[9999] opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
     </>
   );
 }

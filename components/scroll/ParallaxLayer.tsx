@@ -74,11 +74,13 @@ export function ParallaxLayer({
     return () => mm.revert();
   }, [depth, axis, prefersReduced, mobileScale]);
 
-  const Component = Tag as React.ElementType;
-
-  return (
-    <Component ref={ref} className={`will-change-transform ${className}`} style={style}>
-      {children}
-    </Component>
+  return React.createElement(
+    Tag,
+    {
+      ref,
+      className: `will-change-transform ${className}`,
+      style,
+    },
+    children,
   );
 }

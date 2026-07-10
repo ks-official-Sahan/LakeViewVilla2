@@ -1,10 +1,12 @@
-// Safe stub — @prisma/adapter-better-sqlite3 not installed
-// Full SQLite backup implementation deferred to later phase
+/**
+ * @deprecated Use fallback-cache.ts / fallback-provider.ts instead.
+ */
+import { isCacheTierAvailable, cacheReadAll, cacheReplaceModel } from "./fallback-cache";
 
 export const sqliteBackup = {
-  isAvailable: () => false,
-  write: async () => {},
-  read: async () => null,
+  isAvailable: isCacheTierAvailable,
+  write: async (modelName: string, records: unknown[]) => {
+    await cacheReplaceModel(modelName, records as Record<string, unknown>[]);
+  },
+  read: async (modelName: string) => cacheReadAll(modelName),
 };
-
-// TODO(Phase 1): Implement actual SQLite backup with @prisma/adapter-better-sqlite3

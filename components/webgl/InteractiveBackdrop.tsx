@@ -105,6 +105,7 @@ export function InteractiveBackdrop() {
         });
         renderer.setPixelRatio(dpr);
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.debug.checkShaderErrors = false;
 
         // Plane geometry with fine segments for wave distortion
         const geometry = new THREE.PlaneGeometry(16, 12, 100, 80);

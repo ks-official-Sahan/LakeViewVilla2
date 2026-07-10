@@ -3,6 +3,7 @@ import Script from "next/script";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import { serializeJsonLd } from "@/lib/utils";
 import DevClient from "./client";
+import { SuspenseReveal } from "@/components/motion/suspense-reveal";
 
 export const metadata: Metadata = {
   title: "Developer – Sahan | Hyper-Luxury Full-Stack Engineer",
@@ -60,6 +61,7 @@ export default function DeveloperPage() {
   ];
 
   return (
+      <SuspenseReveal>
     <main className="relative bg-background text-foreground">
       <SeoJsonLd breadcrumb={breadcrumb} />
       <Script
@@ -74,5 +76,6 @@ export default function DeveloperPage() {
       />
       <DevClient initial={null} statusInitial={null} />
     </main>
+      </SuspenseReveal>
   );
 }

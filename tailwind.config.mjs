@@ -25,6 +25,12 @@ const config = {
         "4k": "2560px",
       },
       colors: {
+        lagoon: "var(--color-teal-dark)",
+        tidal: "var(--color-primary)",
+        sage: "var(--color-secondary)",
+        coral: "var(--chart-4)",
+        gold: "var(--color-gold)",
+        ivory: "var(--color-ivory)",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {

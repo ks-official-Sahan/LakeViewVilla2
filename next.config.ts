@@ -137,7 +137,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   // Packages that must run in Node.js (not bundled by webpack)
-  serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  serverExternalPackages: ["@prisma/client", "bcryptjs", "better-sqlite3"],
 
   // R3F / Three.js — require browser APIs, must be excluded from SSR
   transpilePackages: ["three", "@react-three/fiber", "@react-three/drei"],
@@ -176,7 +176,7 @@ const nextConfig: NextConfig = {
     deviceSizes: [360, 414, 640, 768, 1024, 1280, 1440, 1536, 1920],
     imageSizes: [16, 24, 32, 48, 64, 96, 128, 256],
     minimumCacheTTL: 31536000,
-    qualities: [75, 80, 82, 85, 90],
+    qualities: [75, 80, 82, 85, 90, 95],
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "**" },

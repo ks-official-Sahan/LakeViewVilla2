@@ -1,6 +1,6 @@
 import type React from "react";
 import type { Metadata, Viewport } from "next";
-import { Montserrat, DM_Sans, Playfair_Display } from "next/font/google";
+import { Playfair_Display } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import "./globals.css";
@@ -30,20 +30,6 @@ if (
 ) {
   throw new Error("NEXT_PUBLIC_WHATSAPP is required for production builds");
 }
-
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-montserrat",
-  weight: ["400", "500", "600", "700", "800", "900"],
-});
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-dm-sans",
-  weight: ["400", "500", "600", "700"],
-});
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -160,12 +146,21 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${montserrat.variable} ${dmSans.variable} ${playfair.variable}`}
+      className={`${playfair.variable}`}
       data-scroll-behavior="smooth"
       style={{ scrollBehavior: "smooth" }}
     >
       <head>
         <link rel="canonical" href={SITE_CONFIG.primaryDomain} />
+        <link
+          rel="preconnect"
+          href="https://api.fontshare.com"
+          crossOrigin=""
+        />
+        <link
+          href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&f[]=satoshi@300,400,500,700,900&display=swap"
+          rel="stylesheet"
+        />
 
         <link
           rel="preload"
@@ -286,7 +281,7 @@ export default function RootLayout({
                   <Suspense fallback={null}>
                     <ClientEffects />
                   </Suspense>
-                  <main id="content" className="relative isolate" style={{ viewTransitionName: "main-content" }}>
+                  <main id="content" className="relative isolate">
                     <Suspense fallback={null}>{children}</Suspense>
                   </main>
                   {/* Analytics & tracking components (client-side) */}

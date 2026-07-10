@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, type CSSProperties, type ElementType } from "react";
+import React, { useRef, useEffect, type CSSProperties } from "react";
 import { gsap } from "@/lib/gsap";
 import { useReducedMotion } from "framer-motion";
 
@@ -92,38 +92,36 @@ export function SplitTextReveal({
     return () => mm.revert();
   }, [text, variant, duration, stagger, start, prefersReduced, intensity]);
 
-  const Component = Tag as ElementType;
-
-  return (
-    <Component
-      ref={containerRef}
-      className={className}
-      style={{ perspective: "800px", ...style }}
-      aria-label={text}
-    >
-      {parts.map((part, i) => (
-        <span
-          key={`${part}-${i}`}
-          data-reveal-part
-          className="inline-block"
-          style={{
-            transformStyle: "preserve-3d",
-            willChange: "transform, opacity, filter",
-          }}
-          aria-hidden="true"
-        >
-          {variant === "words" ? (
-            <>
-              {part}
-              {i < parts.length - 1 && "\u00A0"}
-            </>
-          ) : variant === "chars" ? (
-            part === " " ? "\u00A0" : part
-          ) : (
-            part
-          )}
-        </span>
-      ))}
-    </Component>
+  return React.createElement(
+    Tag,
+    {
+      ref: containerRef,
+      className,
+      style: { perspective: "800px", ...style },
+      "aria-label": text,
+    },
+    parts.map((part, i) => (
+      <span
+        key={`${part}-${i}`}
+        data-reveal-part
+        className="inline-block"
+        style={{
+          transformStyle: "preserve-3d",
+          willChange: "transform, opacity, filter",
+        }}
+        aria-hidden="true"
+      >
+        {variant === "words" ? (
+          <>
+            {part}
+            {i < parts.length - 1 && "\u00A0"}
+          </>
+        ) : variant === "chars" ? (
+          part === " " ? "\u00A0" : part
+        ) : (
+          part
+        )}
+      </span>
+    )),
   );
 }

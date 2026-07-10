@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import StaysPage from "./client";
+import { SuspenseReveal } from "@/components/motion/suspense-reveal";
 import { RATES, OFFERS, BOOKING_FACTS } from "@/data/content";
 import { getContentBlock } from "@/lib/cms/get-content-block";
 import { getMediaAssetsByLocation } from "@/lib/media/queries";
@@ -86,6 +87,7 @@ export default async function Page() {
           })),
         ]}
       />
+      <SuspenseReveal>
       <StaysPage
         cmsHero={heroBlock}
         cmsRooms={roomsBlock}
@@ -94,6 +96,7 @@ export default async function Page() {
         room1Images={room1Images}
         room2Images={room2Images}
       />
+      </SuspenseReveal>
     </>
   );
 }

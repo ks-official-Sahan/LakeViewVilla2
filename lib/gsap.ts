@@ -8,15 +8,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { useGSAP } from "@gsap/react";
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger, useGSAP, ScrollToPlugin);
-
-  // Premium easing presets
-  gsap.config({
-    nullTargetWarn: false,
-  });
-}
-
 export const EASE = {
   /** Smooth deceleration — elements settling into place */
   out: "power3.out",
@@ -36,5 +27,56 @@ export const DURATION = {
   slow: 0.9,
   reveal: 1.2,
 } as const;
+
+export const BREAKPOINTS = {
+  mobile: "(max-width: 767px)",
+  tablet: "(min-width: 768px) and (max-width: 1023px)",
+  desktop: "(min-width: 1024px)",
+  reducedMotion: "(prefers-reduced-motion: reduce)",
+} as const;
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger, useGSAP, ScrollToPlugin);
+
+  gsap.config({
+    nullTargetWarn: false,
+  });
+
+  // Default ScrollTrigger configuration for consistent performance
+  ScrollTrigger.defaults({
+    toggleActions: "play none none reverse",
+  });
+
+  // Register a reusable custom effect for staggered slide reveals
+  gsap.registerEffect({
+    name: "reveal",
+    effect: (targets: any, config: any) => {
+      return gsap.from(targets, {
+        y: config.y,
+        opacity: 0,
+        duration: config.duration,
+        ease: EASE.out,
+        stagger: config.stagger,
+      });
+    },
+    defaults: { y: 40, duration: 0.8, stagger: 0.1 },
+    extendTimeline: true,
+  });
+}
+
+/** Helper to safely configure scroll-driven timelines */
+export function createScrollTimeline(
+  trigger: string | Element,
+  vars?: gsap.plugins.ScrollTriggerStaticVars
+) {
+  return gsap.timeline({
+    scrollTrigger: {
+      trigger,
+      start: "top 80%",
+      toggleActions: "play none none reverse",
+      ...vars,
+    },
+  });
+}
 
 export { gsap, ScrollTrigger, ScrollToPlugin, useGSAP };

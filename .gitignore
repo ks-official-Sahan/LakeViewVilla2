@@ -64,3 +64,8 @@ CLAUDE.md
 !/context/AudioContext.tsx
 LakeViewVilla.zip
 docs/PLAN.md
+
+# runtime fallback cache (Turso replica / local SQLite / sync queue)
+data/fallback.db
+data/fallback.db-*
+data/fallback_sync_queue.json

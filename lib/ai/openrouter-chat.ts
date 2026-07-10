@@ -6,13 +6,21 @@ export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 /** Instruct/chat models suitable for blog copy — avoid code-only models here. */
 const DEFAULT_FALLBACK_MODELS = [
+  "google/gemma-4-31b-it:free",
+  "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "openai/gpt-oss-120b:free",
   "google/gemma-4-26b-a4b-it:free",
   "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
   "nvidia/nemotron-3-super-120b-a12b:free",
-  "google/gemma-4-31b-it:free",
 ] as const;
 
-export type OpenRouterMessage = { role: "system" | "user" | "assistant"; content: string };
+/** Paid models — only used when OPENROUTER_ALLOW_PAID_MODELS=true */
+const PAID_FALLBACK_MODELS = ["openrouter/owl-alpha"] as const;
+
+export type OpenRouterMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
 
 export interface OpenRouterChatOptions {
   messages: OpenRouterMessage[];
@@ -23,7 +31,16 @@ export interface OpenRouterChatOptions {
 
 export function modelChain(): string[] {
   const env = process.env.OPENROUTER_MODEL?.trim();
-  const chain = [env, ...DEFAULT_FALLBACK_MODELS].filter((m): m is string => Boolean(m));
+  const allowPaid = process.env.OPENROUTER_ALLOW_PAID_MODELS === "true";
+  const paidModels = allowPaid ? [...PAID_FALLBACK_MODELS] : [];
+  if (allowPaid && paidModels.length > 0) {
+    console.warn(
+      "[OpenRouter] OPENROUTER_ALLOW_PAID_MODELS is enabled — paid fallback models may incur charges.",
+    );
+  }
+  const chain = [env, ...DEFAULT_FALLBACK_MODELS, ...paidModels].filter(
+    (m): m is string => Boolean(m),
+  );
   return [...new Set(chain)];
 }
 
@@ -46,7 +63,10 @@ export function parseOpenRouterError(text: string): {
   }
 }
 
-export function isRetryableOpenRouterError(status: number, errorCode?: number): boolean {
+export function isRetryableOpenRouterError(
+  status: number,
+  errorCode?: number,
+): boolean {
   if (status === 429 || status === 503) return true;
   if (errorCode === 429) return true;
   return false;
@@ -81,15 +101,21 @@ export async function openRouterChatCompletion(
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL ?? "https://lakeviewvillatangalle.com",
+        "HTTP-Referer":
+          process.env.NEXT_PUBLIC_SITE_URL ??
+          "https://lakeviewvillatangalle.com",
         "X-Title": "LakeViewVilla CMS",
       },
       body: JSON.stringify({
         model,
         messages: options.messages,
         temperature: options.temperature ?? 0.7,
-        ...(options.max_tokens != null ? { max_tokens: options.max_tokens } : {}),
-        ...(options.response_format ? { response_format: options.response_format } : {}),
+        ...(options.max_tokens != null
+          ? { max_tokens: options.max_tokens }
+          : {}),
+        ...(options.response_format
+          ? { response_format: options.response_format }
+          : {}),
         ...extraBody,
       }),
     });
@@ -117,7 +143,8 @@ export async function openRouterChatCompletion(
     }
 
     const canTryNext =
-      isRetryableOpenRouterError(res.status, lastParsed.code) && i < models.length - 1;
+      isRetryableOpenRouterError(res.status, lastParsed.code) &&
+      i < models.length - 1;
     if (canTryNext) {
       console.warn(
         `[OpenRouter] model ${model} failed (${res.status}, code ${lastParsed.code ?? "n/a"}), trying next model…`,

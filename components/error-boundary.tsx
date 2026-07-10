@@ -17,6 +17,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import Link from "next/link";
+import { navFade } from "@/lib/navigation/view-transitions";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -125,7 +126,7 @@ export class ErrorBoundary extends React.Component<
                 </div>
 
                 <Button variant="ghost" asChild className="w-full">
-                  <Link href="/" transitionTypes={["spa-page"]}>
+                  <Link href="/" transitionTypes={[...navFade]}>
                     <Home className="mr-2 h-4 w-4" />
                     Back to Home
                   </Link>
