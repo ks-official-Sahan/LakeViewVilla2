@@ -224,7 +224,7 @@ export function ScrollStory({ nextSectionId }: Props) {
           }}
         >
           <div
-            className="w-full h-full will-change-transform filter brightness-[0.7] md:brightness-[0.75]"
+            className="w-full h-full will-change-transform filter brightness-[0.55] md:brightness-[0.6]"
             style={{
               animation: prefersReducedMotion ? "none" : "ken-burns 24s ease-out forwards",
             }}
@@ -252,6 +252,12 @@ export function ScrollStory({ nextSectionId }: Props) {
           }}
         />
 
+        {/* Scrim Overlay for Readability */}
+        <div
+          className="absolute inset-0 z-25 pointer-events-none bg-[linear-gradient(180deg,rgba(0,0,0,0.65)_0%,rgba(0,0,0,0.4)_50%,rgba(0,0,0,0.75)_100%)]"
+          aria-hidden="true"
+        />
+
         <div
           ref={heroContentRef}
           className="absolute inset-0 z-30 flex items-center justify-center px-4"
@@ -276,7 +282,7 @@ export function ScrollStory({ nextSectionId }: Props) {
 
             <div className="flex flex-col gap-2 max-w-3xl">
               <p
-                className="text-white/95 font-medium leading-relaxed tracking-normal"
+                className="text-white font-medium leading-relaxed tracking-normal"
                 style={{
                   fontSize: "clamp(1rem, 2.2vw + 0.2rem, 1.5rem)",
                   textShadow: "0 2px 10px rgba(0,0,0,0.5)"
@@ -285,11 +291,10 @@ export function ScrollStory({ nextSectionId }: Props) {
                 {HERO_CONTENT.tagline}
               </p>
             </div>
-
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center mt-6">
               <Button
                 size="lg"
-                className="group relative inline-flex items-center justify-between gap-6 pl-8 pr-2 py-2 h-14 rounded-full border border-white/40 hover:border-white/60 bg-white/10 hover:bg-white/20 text-white font-semibold transition-all duration-300 shadow-lg scale-[1] active:scale-[0.97]"
+                className="group relative inline-flex items-center justify-between gap-6 pl-8 pr-2 py-2 h-14 rounded-full border border-white/60 hover:border-white/80 bg-white/15 hover:bg-white/25 text-white font-semibold transition-all duration-300 shadow-lg scale-[1] active:scale-[0.97]"
                 onClick={handleGallery}
               >
                 <span className="text-sm md:text-base tracking-wide select-none">
@@ -302,13 +307,13 @@ export function ScrollStory({ nextSectionId }: Props) {
 
               <Button
                 size="lg"
-                className="group relative inline-flex items-center justify-between gap-6 pl-8 pr-2 py-2 h-14 rounded-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold transition-all duration-300 shadow-2xl scale-[1] active:scale-[0.97]"
+                className="group relative inline-flex items-center justify-between gap-6 pl-8 pr-2 py-2 h-14 rounded-full bg-cyan-900 hover:bg-cyan-950 text-white font-semibold transition-all duration-300 shadow-2xl scale-[1] active:scale-[0.97]"
                 onClick={handleWhatsApp}
               >
                 <span className="text-sm md:text-base tracking-wide select-none">
                   {HERO_CONTENT.ctas[1]}
                 </span>
-                <span className="flex items-center justify-center w-10 h-10 rounded-full bg-white text-cyan-600 transition-transform duration-300 group-hover:translate-x-1">
+                <span className="flex items-center justify-center w-10 h-10 rounded-full bg-white text-cyan-900 transition-transform duration-300 group-hover:translate-x-1">
                   <ArrowRight className="w-5 h-5" />
                 </span>
               </Button>
